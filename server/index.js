@@ -500,21 +500,12 @@ io.on('connection', (socket) => {
       delete games[socket.gameRoom];
     }
   });
-});
 
-/* ════════════════════════════════════════════════
-   تشغيل السيرفر
-════════════════════════════════════════════════ */
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`\n🚀 WidBid Server on port ${PORT}`);
-  console.log(`📡 Socket.io ready`);
-  console.log(`🗄️  Database: ${process.env.DB_NAME}`);
-});
-
-/* ════════════════════════════════════════════════
-   أحداث الرتب المتقدمة — Master → Super Owner
-════════════════════════════════════════════════ */
+  /* ════════════════════════════════════════════════
+     أحداث الرتب المتقدمة — Master → Super Owner
+     (تم نقلها داخل connection بعد إصلاح خلل البنية —
+      كانت معرّفة خارج نطاق socket فتسبب ReferenceError)
+  ════════════════════════════════════════════════ */
 
   // ── تعيين رتبة (Master 700+) ─────────────────
   socket.on('assignRole', async (data) => {
@@ -912,3 +903,14 @@ server.listen(PORT, () => {
   });
 
 /* ════════ نهاية أحداث الرتب المتقدمة ════════ */
+});
+
+/* ════════════════════════════════════════════════
+   تشغيل السيرفر
+════════════════════════════════════════════════ */
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`\n🚀 WidBid Server on port ${PORT}`);
+  console.log(`📡 Socket.io ready`);
+  console.log(`🗄️  Database: ${process.env.DB_NAME}`);
+});
