@@ -41,17 +41,32 @@
 
 <!-- ══ MAIN ══ -->
 <div class="main" id="mainArea">
-  <div class="members-panel" id="membersPanel">
-    <div class="members-header">المتواجدون</div>
-    <div class="members-list" id="membersList"></div>
+
+  <!-- ══ SEATS ZONE (مقاعد صوتية مثل WEVO) ══ -->
+  <div class="seats-zone" id="seatsZone">
+    <div class="seats-row" id="seatsRow">
+      <!-- تُملأ ديناميكياً بـ JS -->
+    </div>
   </div>
+
+  <!-- ══ CHAT AREA ══ -->
   <div class="chat-area">
     <div class="chat-bg"></div>
     <div id="messages">
       <div class="welcome-banner" id="welcomeBanner">مرحباً بكم</div>
     </div>
+  </div><!-- end chat-area -->
+
+  <!-- ══ MEMBERS PANEL (جانبي) ══ -->
+  <div class="members-panel" id="membersPanel">
+    <div class="members-header">
+      المتواجدون
+      <span class="members-close" onclick="toggleMembers()">✕</span>
+    </div>
+    <div class="members-list" id="membersList"></div>
   </div>
-</div>
+
+</div><!-- end main -->
 
 <!-- ══ TOOLBAR 1 ══ -->
 <div class="toolbar1">

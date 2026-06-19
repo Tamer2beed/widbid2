@@ -98,6 +98,59 @@ function toggleMembers() {
   document.getElementById('membersPanel').classList.toggle('open');
 }
 
+/* ── منطقة المقاعد الصوتية (WEVO Style) ── */
+const MAX_SEATS = 8;
+let seatsData   = Array(MAX_SEATS).fill(null); // null = فارغ
+
+function renderSeats(users) {
+  const row = document.getElementById('seatsRow');
+  if (!row) return;
+
+  // ملء المقاعد بالمستخدمين المتواجدين (أعلى رتبة أولاً)
+  const sorted = [...users]
+    .filter(u => typeof u === 'object')
+    .sort((a, b) => (b.rank||100) - (a.rank||100))
+    .slice(0, MAX_SEATS);
+
+  // أكمل بمقاعد فارغة
+  while (sorted.length < MAX_SEATS) sorted.push(null);
+
+  row.innerHTML = sorted.map((u, i) => {
+    if (!u) return `
+      <div class="seat" onclick="claimSeat(${i})">
+        <div class="seat-avatar">
+          <span class="seat-num">${i + 1}</span>
+        </div>
+        <div class="seat-name empty">فارغ</div>
+      </div>`;
+    const color = getRankColor(u.rank || 100);
+    const init  = getInitial(u.username);
+    const micCls = u.micOn ? 'mic-on' : '';
+    return `
+      <div class="seat" onclick="clickSeat('${u.username}',${u.rank||100})">
+        <div class="seat-avatar taken ${micCls}" style="border-color:${color}">
+          <span style="font-size:18px;font-weight:700;color:${color}">${init}</span>
+          <span class="seat-num">${i + 1}</span>
+        </div>
+        <div class="seat-name">${u.username}</div>
+      </div>`;
+  }).join('');
+}
+
+function claimSeat(idx) {
+  showToast('🎤 اضغط على المايك للتحدث');
+}
+function clickSeat(name, rank) {
+  if (typeof showMemberMenu === 'function') showMemberMenu(name, rank);
+}
+
+// ربط المقاعد بقائمة الأعضاء
+const _origRenderMembers = renderMembers;
+window.renderMembers = function(users) {
+  _origRenderMembers(users);
+  renderSeats(users);
+};
+
 /* ── المايك ─────────────────────────────── */
 let micOn = false;
 function toggleMic() {
