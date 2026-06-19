@@ -150,6 +150,22 @@ router.post('/logout', verifyToken, async (req, res) => {
   res.json({ success: true, message: 'تم تسجيل الخروج' });
 });
 
+/* ── GET /api/auth/me — alias لـ verify (يُستخدم في صفحة الدخول) */
+router.get('/me', verifyToken, async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      'SELECT id, username, rank, avatar, is_active, is_banned FROM users WHERE id = ?',
+      [req.user.id]
+    );
+    if (!rows.length || !rows[0].is_active || rows[0].is_banned) {
+      return res.status(401).json({ success: false });
+    }
+    res.json({ success: true, user: rows[0] });
+  } catch {
+    res.status(500).json({ success: false });
+  }
+});
+
 /* ── GET /api/auth/verify — التحقق من Token */
 router.get('/verify', verifyToken, async (req, res) => {
   try {

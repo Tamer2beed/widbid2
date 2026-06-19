@@ -362,10 +362,26 @@ html,body {
    WidBid Login — Mobile First
 ════════════════════════════════════════ */
 
-// إذا كان مسجلاً مسبقاً → توجيه مباشر
-if (localStorage.getItem('token')) {
-  window.location.href = '/rooms.html';
-}
+// إذا كان مسجلاً مسبقاً → تحقق من السيرفر أولاً قبل التوجيه
+(async () => {
+  const token = localStorage.getItem('token');
+  if (!token || token.startsWith('guest_')) return; // زائر → ابقَ في صفحة الدخول
+  try {
+    const r = await fetch('/api/auth/me', {
+      headers: { Authorization: token }
+    });
+    if (r.ok) {
+      window.location.href = '/rooms.html'; // التوكن صالح → انتقل
+    } else {
+      // التوكن منتهي أو غير صالح → امسحه وابقَ
+      localStorage.removeItem('token');
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('rank');
+    }
+  } catch {
+    // السيرفر غير متاح → ابقَ في صفحة الدخول
+  }
+})();
 
 /* ── التبويبات ───────────────────────── */
 function switchTab(tab) {
