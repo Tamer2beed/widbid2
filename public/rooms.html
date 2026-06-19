@@ -7,18 +7,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root {
-  --primary:   #2C3E7A;
-  --secondary: #4A90D9;
+  --primary:   #0099CC;
+  --primary-d: #007AA3;
   --accent:    #F0A500;
   --success:   #27AE60;
   --danger:    #E74C3C;
-  --bg:        #F4F6F9;
+  --bg:        #F0F4F8;
   --card:      #FFFFFF;
   --text:      #1A1A2E;
   --muted:     #7F8C8D;
-  --border:    #E0E0E0;
-  --header-h:  56px;
-  --bottom-h:  62px;
+  --border:    #E0E6ED;
+  --header-h:  54px;
+  --bottom-h:  60px;
 }
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body { height:100%; font-family:'Tajawal',sans-serif; background:var(--bg); overflow:hidden; }
@@ -29,58 +29,123 @@ html,body { height:100%; font-family:'Tajawal',sans-serif; background:var(--bg);
   height:var(--header-h);
   background:var(--primary);
   display:flex; align-items:center; justify-content:center;
-  box-shadow:0 2px 8px rgba(0,0,0,0.15);
+  box-shadow:0 2px 6px rgba(0,0,0,0.18);
 }
-.logo { color:#fff; font-size:24px; font-weight:900; letter-spacing:3px; }
+.logo { color:#fff; font-size:22px; font-weight:900; letter-spacing:2px; }
 .logo span { color:var(--accent); }
-.header-right { position:absolute; right:14px; display:flex; gap:10px; }
-.header-left  { position:absolute; left:14px; }
-.h-icon { color:#fff; font-size:22px; cursor:pointer; opacity:.85; }
+.header-icons { position:absolute; left:12px; display:flex; gap:14px; align-items:center; }
+.header-right { position:absolute; right:12px; }
+.h-icon { color:#fff; font-size:22px; cursor:pointer; opacity:.9; }
 .h-icon:active { opacity:.5; }
-.notif-badge {
-  position:relative; display:inline-block;
-}
-.notif-badge::after {
-  content:attr(data-count);
-  position:absolute; top:-4px; left:-4px;
-  background:var(--danger); color:#fff;
-  font-size:9px; font-weight:700;
-  width:16px; height:16px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
+.notif-wrap { position:relative; }
+.notif-dot {
+  position:absolute; top:-2px; left:-2px;
+  width:8px; height:8px; border-radius:50%;
+  background:var(--danger); border:1.5px solid var(--primary);
   display:none;
 }
-.notif-badge.has-notif::after { display:flex; }
+.notif-dot.show { display:block; }
 
-/* ══ TABS ══ */
-.tabs {
-  position:fixed; top:var(--header-h); right:0; left:0; z-index:90;
-  background:var(--card);
-  display:flex;
-  border-bottom:2px solid var(--border);
-  box-shadow:0 1px 4px rgba(0,0,0,0.05);
-}
-.tab {
-  flex:1; padding:11px 4px; text-align:center;
-  font-size:13px; font-weight:600; color:var(--muted);
-  cursor:pointer; border-bottom:2px solid transparent;
-  margin-bottom:-2px; transition:all .2s;
-}
-.tab.active { color:var(--primary); border-bottom-color:var(--primary); }
-.tab .tab-icon { font-size:16px; display:block; margin-bottom:2px; }
-
-/* ══ CONTENT ══ */
+/* ══ CONTENT SCROLL AREA ══ */
 .content {
   position:fixed;
-  top:calc(var(--header-h) + 46px);
+  top:var(--header-h);
   bottom:var(--bottom-h);
   right:0; left:0;
   overflow-y:auto;
   overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
 }
-.tab-pane { display:none; }
-.tab-pane.active { display:block; }
+.pane { display:none; }
+.pane.active { display:block; }
 
-/* ══ SEARCH BAR ══ */
+/* ══ STATS TOTAL BAR ══ */
+.total-bar {
+  background:var(--primary);
+  color:#fff;
+  display:flex; justify-content:center; gap:32px;
+  padding:7px 0 9px;
+}
+.total-stat { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; }
+.total-stat .val { font-size:15px; font-weight:900; }
+
+/* ══ CATEGORY ROW (مثل WEVO) ══ */
+.cat-row {
+  display:flex; align-items:center;
+  padding:14px 16px;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+  transition:background .12s;
+  gap:14px;
+}
+.cat-row:active { background:#EBF7FF; }
+.cat-icon-wrap {
+  width:46px; height:46px; border-radius:50%;
+  background:var(--primary);
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; flex-shrink:0;
+  box-shadow:0 2px 6px rgba(0,153,204,.3);
+}
+.cat-info { flex:1; min-width:0; }
+.cat-name { font-size:16px; font-weight:700; color:var(--text); }
+.cat-stats {
+  display:flex; gap:16px; margin-top:3px;
+}
+.cat-stat { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:4px; }
+.cat-arrow { font-size:18px; color:var(--muted); }
+
+/* ══ ROOMS LIST (داخل تصنيف) ══ */
+.back-bar {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 14px;
+  background:var(--primary);
+  color:#fff;
+  cursor:pointer;
+  font-size:15px; font-weight:700;
+}
+.back-bar:active { opacity:.8; }
+.back-icon { font-size:20px; }
+.cat-label { font-size:13px; opacity:.85; margin-right:4px; }
+
+.room-row {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  cursor:pointer; transition:background .12s;
+}
+.room-row:active { background:#EBF7FF; }
+.room-icon {
+  width:46px; height:46px; border-radius:12px;
+  background:linear-gradient(135deg, var(--primary), #00C6FF);
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; flex-shrink:0; position:relative;
+}
+.live-dot {
+  position:absolute; bottom:-2px; right:-2px;
+  width:11px; height:11px; border-radius:50%;
+  background:var(--success); border:2px solid #fff;
+}
+.room-info { flex:1; min-width:0; }
+.room-name {
+  font-size:15px; font-weight:700; color:var(--text);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.room-meta { display:flex; align-items:center; gap:8px; margin-top:3px; }
+.room-meta span { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:3px; }
+.badge {
+  font-size:10px; padding:2px 7px; border-radius:10px; font-weight:700;
+}
+.badge-pub  { background:#E3F4FB; color:#007AA3; }
+.badge-priv { background:#FCE4EC; color:#C62828; }
+.fav-btn {
+  font-size:22px; cursor:pointer; flex-shrink:0;
+  transition:transform .15s;
+}
+.fav-btn:active { transform:scale(1.35); }
+
+/* ══ SEARCH ══ */
 .search-wrap {
   padding:10px 12px;
   background:var(--card);
@@ -90,8 +155,7 @@ html,body { height:100%; font-family:'Tajawal',sans-serif; background:var(--bg);
 .search-box {
   display:flex; align-items:center; gap:8px;
   background:var(--bg); border-radius:24px;
-  padding:8px 14px;
-  border:1px solid var(--border);
+  padding:8px 14px; border:1px solid var(--border);
 }
 .search-box input {
   flex:1; border:none; background:transparent; outline:none;
@@ -100,82 +164,76 @@ html,body { height:100%; font-family:'Tajawal',sans-serif; background:var(--bg);
 }
 .search-box input::placeholder { color:var(--muted); }
 .search-box .s-icon { font-size:18px; color:var(--muted); }
-.clear-btn { cursor:pointer; font-size:16px; color:var(--muted); display:none; }
+.clear-x { cursor:pointer; font-size:16px; color:var(--muted); display:none; }
 
-/* ══ قائمة الغرف ══ */
-.rooms-list { padding:8px 0; }
-
-/* صف غرفة */
-.room-row {
-  display:flex; align-items:center; gap:10px;
-  padding:12px 14px;
-  background:var(--card);
-  border-bottom:1px solid var(--border);
-  cursor:pointer; transition:background .15s;
-}
-.room-row:active { background:#F0F4FF; }
-
-.room-icon {
-  width:48px; height:48px; border-radius:12px;
-  background:linear-gradient(135deg,var(--primary),var(--secondary));
-  display:flex; align-items:center; justify-content:center;
-  font-size:22px; flex-shrink:0;
-  position:relative;
-}
-.room-icon .live-dot {
-  position:absolute; bottom:-3px; right:-3px;
-  width:12px; height:12px; border-radius:50%;
-  background:var(--success); border:2px solid #fff;
-}
-
-.room-info { flex:1; min-width:0; }
-.room-name {
-  font-size:15px; font-weight:700; color:var(--text);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.room-meta {
-  display:flex; align-items:center; gap:10px; margin-top:3px;
-}
-.room-meta span { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:3px; }
-.room-badge {
-  font-size:10px; padding:2px 7px; border-radius:10px; font-weight:600;
-}
-.badge-pub  { background:#E3F2FD; color:#1565C0; }
-.badge-priv { background:#FCE4EC; color:#C62828; }
-
-.fav-btn {
-  font-size:22px; cursor:pointer; flex-shrink:0;
-  opacity:.7; transition:transform .15s;
-}
-.fav-btn.active { opacity:1; }
-.fav-btn:active { transform:scale(1.3); }
-
-/* ══ مجموعة (الغرف المميزة / حسب القسم) ══ */
-.group-header {
-  padding:10px 14px 6px;
-  font-size:12px; font-weight:700;
-  color:var(--muted); text-transform:uppercase;
-  letter-spacing:.5px;
-  background:var(--bg);
-  border-bottom:1px solid var(--border);
-}
-
-/* ══ بطاقة فارغة ══ */
+/* ══ EMPTY / SKELETON ══ */
 .empty-state {
   display:flex; flex-direction:column; align-items:center;
   padding:60px 24px; gap:12px; color:var(--muted); text-align:center;
 }
-.empty-state .e-icon { font-size:56px; opacity:.5; }
+.empty-state .e-icon { font-size:52px; opacity:.45; }
 .empty-state p { font-size:14px; }
 
-/* ══ STATS BAR ══ */
-.stats-bar {
-  background:var(--card); border-top:1px solid var(--border);
-  display:flex; justify-content:center; gap:32px;
-  padding:6px 0;
+.skel-row {
+  display:flex; gap:12px; padding:13px 16px;
+  background:var(--card); border-bottom:1px solid var(--border);
 }
-.stat { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--muted); }
-.stat strong { color:var(--text); font-weight:700; }
+@keyframes shimmer {
+  0%{background-position:200% 0} 100%{background-position:-200% 0}
+}
+.skeleton {
+  background: linear-gradient(90deg,#e8e8e8 25%,#f5f5f5 50%,#e8e8e8 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.4s infinite;
+  border-radius:6px;
+}
+
+/* ══ FAB — Owner فقط ══ */
+.fab {
+  position:fixed; bottom:calc(var(--bottom-h) + 14px); left:16px;
+  width:52px; height:52px; border-radius:50%;
+  background:var(--primary); color:#fff;
+  font-size:28px; display:none; align-items:center; justify-content:center;
+  box-shadow:0 4px 16px rgba(0,153,204,.45);
+  cursor:pointer; z-index:99; transition:transform .15s;
+}
+.fab.visible { display:flex; }
+.fab:active { transform:scale(.92); }
+
+/* ══ MODAL إنشاء غرفة ══ */
+.overlay {
+  position:fixed; inset:0; z-index:200;
+  background:rgba(0,0,0,.5); display:none; align-items:flex-end;
+}
+.overlay.show { display:flex; }
+.sheet {
+  width:100%; background:var(--card);
+  border-radius:20px 20px 0 0;
+  padding:20px 16px 36px;
+  animation:up .25s ease;
+}
+@keyframes up { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.sheet-title { font-size:17px; font-weight:700; text-align:center; margin-bottom:18px; color:var(--text); }
+.f-label { font-size:13px; font-weight:600; color:var(--muted); display:block; margin-bottom:6px; }
+.f-input, .f-select {
+  width:100%; height:48px; border:1.5px solid var(--border);
+  border-radius:10px; padding:0 14px; margin-bottom:14px;
+  font-family:'Tajawal',sans-serif; font-size:14px;
+  color:var(--text); background:var(--bg); outline:none; direction:rtl;
+}
+.f-input:focus, .f-select:focus { border-color:var(--primary); }
+.btn-primary {
+  width:100%; height:50px; background:var(--primary);
+  color:#fff; border:none; border-radius:12px;
+  font-family:'Tajawal',sans-serif; font-size:16px; font-weight:700;
+  cursor:pointer; margin-top:4px;
+}
+.btn-ghost {
+  width:100%; height:44px; background:transparent;
+  color:var(--muted); border:none; border-radius:12px;
+  font-family:'Tajawal',sans-serif; font-size:14px;
+  cursor:pointer; margin-top:6px;
+}
 
 /* ══ BOTTOM NAV ══ */
 .bottom-nav {
@@ -184,260 +242,258 @@ html,body { height:100%; font-family:'Tajawal',sans-serif; background:var(--bg);
   background:var(--card);
   border-top:1px solid var(--border);
   display:flex;
-  box-shadow:0 -2px 8px rgba(0,0,0,0.06);
+  box-shadow:0 -2px 8px rgba(0,0,0,0.07);
 }
 .nav-btn {
   flex:1; display:flex; flex-direction:column; align-items:center;
   justify-content:center; gap:3px; cursor:pointer;
   font-size:11px; font-weight:600; color:var(--muted);
-  transition:color .2s;
+  transition:color .18s;
 }
 .nav-btn .nav-icon { font-size:22px; }
 .nav-btn.active { color:var(--primary); }
 
-/* ══ FAB إنشاء غرفة ══ */
-.fab {
-  position:fixed; bottom:calc(var(--bottom-h) + 14px); left:16px;
-  width:52px; height:52px; border-radius:50%;
-  background:var(--primary); color:#fff;
-  font-size:26px; display:flex; align-items:center; justify-content:center;
-  box-shadow:0 4px 16px rgba(44,62,122,.4);
-  cursor:pointer; z-index:99; transition:transform .15s;
-  display:none; /* يظهر فقط للـ Owner+ */
-}
-.fab:active { transform:scale(.93); }
-
-/* ══ MODAL إنشاء غرفة ══ */
-.modal-overlay {
-  position:fixed; inset:0; z-index:200;
-  background:rgba(0,0,0,.5); display:none; align-items:flex-end;
-}
-.modal-overlay.show { display:flex; }
-.modal-sheet {
-  width:100%; background:var(--card);
-  border-radius:20px 20px 0 0;
-  padding:20px 16px 32px;
-  animation:slideUp .25s ease;
-}
-@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-.modal-title {
-  font-size:17px; font-weight:700; color:var(--text);
-  margin-bottom:16px; text-align:center;
-}
-.form-field { margin-bottom:14px; }
-.form-field label { font-size:13px; font-weight:600; color:var(--muted); display:block; margin-bottom:6px; }
-.form-field input, .form-field select {
-  width:100%; height:48px; border:1px solid var(--border);
-  border-radius:10px; padding:0 14px;
-  font-family:'Tajawal',sans-serif; font-size:14px;
-  color:var(--text); background:var(--bg); outline:none;
-  direction:rtl;
-}
-.form-field input:focus, .form-field select:focus {
-  border-color:var(--secondary);
-}
-.btn-create {
-  width:100%; height:50px; background:var(--primary);
-  color:#fff; border:none; border-radius:12px;
-  font-family:'Tajawal',sans-serif; font-size:16px; font-weight:700;
-  cursor:pointer; margin-top:6px;
-}
-.btn-cancel {
-  width:100%; height:44px; background:transparent;
-  color:var(--muted); border:none;
-  font-family:'Tajawal',sans-serif; font-size:14px;
-  cursor:pointer; margin-top:4px;
-}
-
-/* ══ Toast ══ */
+/* ══ TOAST ══ */
 .toast {
-  position:fixed; bottom:calc(var(--bottom-h) + 12px);
-  right:50%; transform:translateX(50%);
-  background:var(--text); color:#fff;
-  padding:10px 20px; border-radius:10px;
-  font-size:13px; font-weight:500;
-  z-index:500; opacity:0; pointer-events:none;
-  transition:opacity .3s; white-space:nowrap;
+  position:fixed; bottom:calc(var(--bottom-h) + 14px); left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:rgba(0,0,0,.78); color:#fff;
+  padding:9px 20px; border-radius:24px;
+  font-size:14px; opacity:0; transition:all .25s;
+  pointer-events:none; white-space:nowrap; z-index:300;
 }
-.toast.show { opacity:1; }
-
-/* ══ Skeleton Loading ══ */
-.skeleton {
-  background:linear-gradient(90deg,#e8e8e8 25%,#f5f5f5 50%,#e8e8e8 75%);
-  background-size:200% 100%;
-  animation:shimmer 1.4s infinite;
-  border-radius:8px;
-}
-@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-.skel-row {
-  display:flex; align-items:center; gap:10px;
-  padding:12px 14px; border-bottom:1px solid var(--border);
-}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 
-<!-- ══ HEADER ══ -->
+<!-- HEADER -->
 <div class="header">
-  <div class="logo">W<span>i</span>dBid</div>
   <div class="header-right">
-    <span class="h-icon notif-badge" id="notifBtn">🔔</span>
-    <span class="h-icon" id="profileBtn">👤</span>
+    <span class="h-icon" onclick="logout()">🚪</span>
+  </div>
+  <div class="logo">Wid<span>B</span>id</div>
+  <div class="header-icons">
+    <span class="h-icon" onclick="showPane('search')">🔍</span>
+    <span class="h-icon notif-wrap" onclick="showPane('more')">
+      🔔<span class="notif-dot" id="notifDot"></span>
+    </span>
   </div>
 </div>
 
-<!-- ══ TABS ══ -->
-<div class="tabs">
-  <div class="tab active" onclick="switchTab('all')" id="tab-all">
-    <span class="tab-icon">🏠</span>الغرف
-  </div>
-  <div class="tab" onclick="switchTab('fav')" id="tab-fav">
-    <span class="tab-icon">❤️</span>المفضلة
-  </div>
-  <div class="tab" onclick="switchTab('search')" id="tab-search">
-    <span class="tab-icon">🔍</span>بحث
-  </div>
-  <div class="tab" onclick="switchTab('more')" id="tab-more">
-    <span class="tab-icon">···</span>المزيد
-  </div>
-</div>
-
-<!-- ══ CONTENT ══ -->
+<!-- CONTENT -->
 <div class="content">
 
-  <!-- تبويب: كل الغرف -->
-  <div class="tab-pane active" id="pane-all">
-    <div id="roomsList"></div>
-    <div class="stats-bar" id="statsBar">
-      <div class="stat">👥 <strong id="totalUsers">—</strong> مستخدم</div>
-      <div class="stat">💬 <strong id="totalRooms">—</strong> غرفة</div>
+  <!-- تبويب الغرف (الرئيسي) -->
+  <div class="pane active" id="pane-rooms">
+    <div class="total-bar">
+      <div class="total-stat">👥 <span class="val" id="totalUsers">0</span> مستخدم</div>
+      <div class="total-stat">💬 <span class="val" id="totalRooms">0</span> غرفة</div>
     </div>
+    <div id="catList"></div>
   </div>
 
-  <!-- تبويب: المفضلة -->
-  <div class="tab-pane" id="pane-fav">
+  <!-- تبويب داخل تصنيف -->
+  <div class="pane" id="pane-cat">
+    <div class="back-bar" onclick="showPane('rooms')">
+      <span class="back-icon">◀</span>
+      <span id="catTitle">الغرف</span>
+      <span class="cat-label" id="catStats"></span>
+    </div>
+    <div id="roomsList"></div>
+  </div>
+
+  <!-- تبويب المفضلة -->
+  <div class="pane" id="pane-fav">
     <div id="favList"></div>
   </div>
 
-  <!-- تبويب: البحث -->
-  <div class="tab-pane" id="pane-search">
+  <!-- تبويب البحث -->
+  <div class="pane" id="pane-search">
     <div class="search-wrap">
       <div class="search-box">
         <span class="s-icon">🔍</span>
-        <input id="searchInput" placeholder="ابحث باسم الغرفة أو رقمها..." autocomplete="off" />
-        <span class="clear-btn" id="clearBtn" onclick="clearSearch()">✕</span>
+        <input id="searchInput" type="text" placeholder="ابحث عن غرفة..." oninput="doSearch()">
+        <span class="clear-x" id="clearX" onclick="clearSearch()">✕</span>
       </div>
     </div>
     <div id="searchResults">
       <div class="empty-state">
         <div class="e-icon">🔍</div>
-        <p>اكتب اسم الغرفة أو رقمها للبحث</p>
+        <p>اكتب اسم الغرفة أو رقمها</p>
       </div>
     </div>
   </div>
 
-  <!-- تبويب: المزيد -->
-  <div class="tab-pane" id="pane-more">
-    <div style="padding:0;">
-      <div class="room-row" onclick="openSettings()">
-        <div class="room-icon" style="background:linear-gradient(135deg,#607D8B,#90A4AE)">⚙️</div>
-        <div class="room-info"><div class="room-name">الإعدادات</div></div>
+  <!-- تبويب المزيد -->
+  <div class="pane" id="pane-more">
+    <div style="padding:16px;">
+      <div style="background:var(--card);border-radius:14px;overflow:hidden;border:1px solid var(--border);">
+        <div onclick="openMarket()"   style="padding:15px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;cursor:pointer;font-size:15px;font-weight:600;">🛒 <span>WidBid Market</span></div>
+        <div onclick="openPoints()"   style="padding:15px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;cursor:pointer;font-size:15px;font-weight:600;">💎 <span>نقاطي</span></div>
+        <div onclick="openSettings()" style="padding:15px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;cursor:pointer;font-size:15px;font-weight:600;">⚙️ <span>الإعدادات</span></div>
+        <div onclick="openSupport()"  style="padding:15px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;font-size:15px;font-weight:600;">💬 <span>خدمة العملاء</span></div>
       </div>
-      <div class="room-row" onclick="openMarket()">
-        <div class="room-icon" style="background:linear-gradient(135deg,#F0A500,#F5CC50)">🛒</div>
-        <div class="room-info"><div class="room-name">WidBid Market</div><div class="room-meta"><span>شراء الباقات والخدمات</span></div></div>
+      <div style="margin-top:12px;background:var(--card);border-radius:14px;overflow:hidden;border:1px solid var(--border);">
+        <div onclick="logout()" style="padding:15px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;font-size:15px;font-weight:600;color:var(--danger);">🚪 <span>تسجيل الخروج</span></div>
       </div>
-      <div class="room-row" onclick="openPoints()">
-        <div class="room-icon" style="background:linear-gradient(135deg,#9C27B0,#CE93D8)">💎</div>
-        <div class="room-info"><div class="room-name">نقاطي</div><div class="room-meta"><span id="myPointsText">جاري التحميل...</span></div></div>
-      </div>
-      <div class="room-row" onclick="openSupport()">
-        <div class="room-icon" style="background:linear-gradient(135deg,#27AE60,#81C784)">💬</div>
-        <div class="room-info"><div class="room-name">خدمة العملاء</div></div>
-      </div>
-      <div class="room-row" onclick="reloadList()">
-        <div class="room-icon" style="background:linear-gradient(135deg,#4A90D9,#90CAF9)">🔄</div>
-        <div class="room-info"><div class="room-name">تحديث القائمة</div></div>
-      </div>
-      <div class="room-row" style="color:#E74C3C" onclick="logout()">
-        <div class="room-icon" style="background:linear-gradient(135deg,#E74C3C,#EF9A9A)">🚪</div>
-        <div class="room-info"><div class="room-name" style="color:#E74C3C">تسجيل الخروج</div></div>
-      </div>
-      <div style="padding:16px;text-align:center;color:var(--muted);font-size:12px;">
-        WidBid v1.0 — جميع الحقوق محفوظة
-      </div>
+      <div style="margin-top:20px;text-align:center;color:var(--muted);font-size:12px;">WidBid v2 — بنية S11</div>
     </div>
   </div>
+
 </div>
 
-<!-- ══ FAB ══ -->
+<!-- FAB — يظهر فقط للـ Owner (1100)+ -->
 <div class="fab" id="fab" onclick="openCreateModal()">＋</div>
 
-<!-- ══ MODAL إنشاء غرفة ══ -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-  <div class="modal-sheet">
-    <div class="modal-title">إنشاء غرفة جديدة</div>
-    <div class="form-field">
-      <label>اسم الغرفة</label>
-      <input id="newRoomName" placeholder="مثال: ديوانية النخبة" maxlength="50" />
-    </div>
-    <div class="form-field">
-      <label>نوع الغرفة</label>
-      <select id="newRoomType">
-        <option value="public">عامة 🌐</option>
-        <option value="private">خاصة 🔒</option>
-      </select>
-    </div>
-    <button class="btn-create" onclick="createRoom()">إنشاء الغرفة</button>
-    <button class="btn-cancel" onclick="closeModal()">إلغاء</button>
+<!-- MODAL إنشاء غرفة -->
+<div class="overlay" id="overlay" onclick="closeModal(event)">
+  <div class="sheet">
+    <div class="sheet-title">➕ إنشاء غرفة جديدة</div>
+    <label class="f-label">اسم الغرفة</label>
+    <input class="f-input" id="newName" type="text" placeholder="أدخل اسم الغرفة">
+    <label class="f-label">التصنيف</label>
+    <select class="f-select" id="newCat"></select>
+    <label class="f-label">النوع</label>
+    <select class="f-select" id="newType">
+      <option value="public">🌐 عامة</option>
+      <option value="private">🔒 خاصة</option>
+    </select>
+    <button class="btn-primary" onclick="createRoom()">إنشاء الغرفة</button>
+    <button class="btn-ghost" onclick="closeModal()">إلغاء</button>
   </div>
 </div>
 
-<!-- ══ Toast ══ -->
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-btn active" id="nav-rooms" onclick="showPane('rooms')">
+    <span class="nav-icon">🏠</span>الغرف
+  </div>
+  <div class="nav-btn" id="nav-fav" onclick="showPane('fav')">
+    <span class="nav-icon">❤️</span>المفضلة
+  </div>
+  <div class="nav-btn" id="nav-search" onclick="showPane('search')">
+    <span class="nav-icon">🔍</span>بحث
+  </div>
+  <div class="nav-btn" id="nav-more" onclick="showPane('more')">
+    <span class="nav-icon">···</span>المزيد
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-/* ════════════════════════════════════════
-   WidBid Rooms — Mobile First
-════════════════════════════════════════ */
-const token    = localStorage.getItem('token');
-const userId   = parseInt(localStorage.getItem('user_id')) || 0;
-const username = localStorage.getItem('username') || 'زائر';
-const userRank = parseInt(localStorage.getItem('rank')) || 100;
+/* ══════════════════════════════════
+   STATE
+══════════════════════════════════ */
+const token  = localStorage.getItem('token')  || '';
+const userId = localStorage.getItem('user_id') || '';
+const rank   = parseInt(localStorage.getItem('rank') || '0');
+if (!token) { window.location.href = '/'; }
 
-if (!token) window.location.href = '/';
+let allRooms   = [];
+let categories = [];
+let favorites  = JSON.parse(localStorage.getItem('wid_favs') || '[]');
+let currentPane = 'rooms';
 
-// إظهار FAB للـ Owner فأعلى
-if (userRank >= 1100) document.getElementById('fab').style.display = 'flex';
+const EMOJIS = ['🏠','🌟','🎯','🎮','🎵','📚','☕','🌙','🌺','🎭','🏆','💫','🔥','💡','🎪'];
+const emo = id => EMOJIS[id % EMOJIS.length];
+const esc = s  => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
-// نقاط المستخدم
-async function loadPoints() {
-  if (!userId) return;
-  try {
-    const r = await fetch(`/api/points/balance`, {
-      headers: { Authorization: token }
-    });
-    const d = await r.json();
-    if (d.balance !== undefined) {
-      document.getElementById('myPointsText').textContent = `💎 ${d.balance} نقطة`;
-    }
-  } catch {}
+/* ══ FAB visibility ══ */
+if (rank >= 1100) document.getElementById('fab').classList.add('visible');
+
+/* ══════════════════════════════════
+   PANE NAVIGATION
+══════════════════════════════════ */
+function showPane(name) {
+  ['rooms','cat','fav','search','more'].forEach(p => {
+    document.getElementById(`pane-${p}`).classList.toggle('active', p === name);
+  });
+  ['rooms','fav','search','more'].forEach(n => {
+    const el = document.getElementById(`nav-${n}`);
+    if (el) el.classList.toggle('active', n === name);
+  });
+  currentPane = name;
+  if (name === 'fav')    renderFav();
+  if (name === 'search') document.getElementById('searchInput').focus();
 }
-loadPoints();
 
-/* ── الغرف ────────────────────────────── */
-let allRooms = [];
-let favorites = JSON.parse(localStorage.getItem('wid_favorites') || '[]');
-
-const ROOM_EMOJIS = ['🏠','🌟','🎯','🎮','🎵','📚','☕','🌙','🌺','🎭','🏆','💫'];
-function getRoomEmoji(id) { return ROOM_EMOJIS[id % ROOM_EMOJIS.length]; }
-
-async function loadRooms() {
-  const list = document.getElementById('roomsList');
-  // Skeleton
-  list.innerHTML = Array(4).fill(`
+/* ══════════════════════════════════
+   LOAD CATEGORIES
+══════════════════════════════════ */
+async function loadCategories() {
+  const list = document.getElementById('catList');
+  // skeleton
+  list.innerHTML = Array(6).fill(`
     <div class="skel-row">
-      <div class="skeleton" style="width:48px;height:48px;border-radius:12px;flex-shrink:0"></div>
+      <div class="skeleton" style="width:46px;height:46px;border-radius:50%;flex-shrink:0"></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <div class="skeleton" style="height:15px;width:55%"></div>
+        <div class="skeleton" style="height:11px;width:38%"></div>
+      </div>
+    </div>`).join('');
+
+  try {
+    const r = await fetch('/api/rooms/categories/all', { headers:{ Authorization: token } });
+    const d = await r.json();
+    if (!d.success) throw new Error();
+    categories = d.categories || [];
+    renderCategories();
+    // تحميل كل الغرف للبحث والمفضلة في الخلفية
+    loadAllRooms();
+  } catch {
+    list.innerHTML = `<div class="empty-state">
+      <div class="e-icon">😕</div>
+      <p>تعذّر التحميل — اضغط للمحاولة</p>
+    </div>`;
+    list.querySelector('.empty-state').onclick = loadCategories;
+  }
+}
+
+function renderCategories() {
+  const list  = document.getElementById('catList');
+  let totalU  = 0, totalR = 0;
+  let html    = '';
+
+  categories.forEach(c => {
+    totalU += Number(c.user_count) || 0;
+    totalR += Number(c.room_count) || 0;
+    html   += `
+    <div class="cat-row" onclick="openCategory(${c.id},'${esc(c.name)}',${c.user_count},${c.room_count})">
+      <div class="cat-icon-wrap">${c.icon}</div>
+      <div class="cat-info">
+        <div class="cat-name">${esc(c.name)}</div>
+        <div class="cat-stats">
+          <span class="cat-stat">👥 ${c.user_count} مستخدم</span>
+          <span class="cat-stat">💬 ${c.room_count} غرفة</span>
+        </div>
+      </div>
+      <span class="cat-arrow">❯</span>
+    </div>`;
+  });
+
+  if (!html) html = `<div class="empty-state"><div class="e-icon">🏠</div><p>لا توجد تصنيفات بعد</p></div>`;
+  list.innerHTML = html;
+
+  document.getElementById('totalUsers').textContent = totalU;
+  document.getElementById('totalRooms').textContent = totalR;
+}
+
+/* ══════════════════════════════════
+   OPEN CATEGORY → ROOMS LIST
+══════════════════════════════════ */
+async function openCategory(catId, catName, userCount, roomCount) {
+  document.getElementById('catTitle').textContent = catName;
+  document.getElementById('catStats').textContent =
+    `${userCount} مستخدم · ${roomCount} غرفة`;
+
+  showPane('cat');
+
+  const list = document.getElementById('roomsList');
+  list.innerHTML = Array(3).fill(`
+    <div class="skel-row">
+      <div class="skeleton" style="width:46px;height:46px;border-radius:12px;flex-shrink:0"></div>
       <div style="flex:1;display:flex;flex-direction:column;gap:8px">
         <div class="skeleton" style="height:14px;width:60%"></div>
         <div class="skeleton" style="height:11px;width:40%"></div>
@@ -445,208 +501,156 @@ async function loadRooms() {
     </div>`).join('');
 
   try {
-    const r = await fetch('/api/rooms', {
-      headers: { Authorization: token }
-    });
+    const r = await fetch(`/api/rooms/by-category/${catId}`, { headers:{ Authorization: token } });
     const d = await r.json();
     if (!d.success) throw new Error();
-    allRooms = d.rooms || [];
-    renderRooms(allRooms);
-    updateStats(allRooms);
+    const rooms = d.rooms || [];
+    if (!rooms.length) {
+      list.innerHTML = `<div class="empty-state"><div class="e-icon">🏠</div><p>لا توجد غرف في هذا التصنيف</p></div>`;
+      return;
+    }
+    list.innerHTML = rooms.map(r => buildRoomRow(r)).join('');
   } catch {
-    list.innerHTML = `<div class="empty-state">
-      <div class="e-icon">😕</div>
-      <p>تعذّر تحميل الغرف، اضغط لإعادة المحاولة</p>
-    </div>`;
-    list.querySelector('.empty-state').onclick = loadRooms;
+    list.innerHTML = `<div class="empty-state"><div class="e-icon">😕</div><p>تعذّر التحميل</p></div>`;
   }
 }
 
-function renderRooms(rooms) {
-  const list = document.getElementById('roomsList');
-  if (!rooms.length) {
-    list.innerHTML = `<div class="empty-state">
-      <div class="e-icon">🏠</div><p>لا توجد غرف متاحة حالياً</p></div>`;
-    return;
-  }
-
-  // تقسيم: مميزة (عضو أكثر) + عادية
-  const sorted = [...rooms].sort((a,b) => (b.member_count||0) - (a.member_count||0));
-  const featured = sorted.slice(0, 3);
-  const regular  = sorted.slice(3);
-
-  let html = '';
-
-  if (featured.length) {
-    html += `<div class="group-header">⭐ الغرف المميزة</div>`;
-    featured.forEach(r => { html += buildRoomRow(r, true); });
-  }
-  if (regular.length) {
-    html += `<div class="group-header">🏠 جميع الغرف</div>`;
-    regular.forEach(r => { html += buildRoomRow(r, false); });
-  }
-
-  list.innerHTML = html;
-}
-
-function buildRoomRow(room, isFeatured = false) {
-  const isFav   = favorites.includes(room.id);
-  const members = room.member_count || 0;
-  const isPriv  = room.type === 'private';
-  const emoji   = getRoomEmoji(room.id);
-  const bgStyle = isFeatured
-    ? 'background:linear-gradient(135deg,#2C3E7A,#4A90D9)'
-    : 'background:linear-gradient(135deg,#4A5568,#718096)';
-
+/* ══════════════════════════════════
+   ROOM ROW BUILDER
+══════════════════════════════════ */
+function buildRoomRow(room) {
+  const isFav  = favorites.includes(room.id);
+  const isPriv = room.type === 'private';
   return `
-  <div class="room-row" onclick="enterRoom(${room.id},'${escHtml(room.name)}')">
-    <div class="room-icon" style="${bgStyle}">
-      ${emoji}
+  <div class="room-row" onclick="enterRoom(${room.id},'${esc(room.name)}')">
+    <div class="room-icon">
+      ${emo(room.id)}
       <div class="live-dot"></div>
     </div>
     <div class="room-info">
-      <div class="room-name">${escHtml(room.name)}</div>
+      <div class="room-name">${esc(room.name)}</div>
       <div class="room-meta">
-        <span>👥 ${members}</span>
-        <span class="room-badge ${isPriv ? 'badge-priv' : 'badge-pub'}">${isPriv ? '🔒 خاصة' : '🌐 عامة'}</span>
-        ${room.id ? `<span style="color:#aaa">#${room.id}</span>` : ''}
+        <span>👥 ${room.member_count || 0}</span>
+        <span class="badge ${isPriv ? 'badge-priv':'badge-pub'}">${isPriv ? '🔒 خاصة':'🌐 عامة'}</span>
+        <span style="color:#bbb">#${room.id}</span>
       </div>
     </div>
-    <span class="fav-btn ${isFav ? 'active' : ''}"
-      onclick="toggleFav(event,${room.id})">${isFav ? '⭐' : '☆'}</span>
+    <span class="fav-btn" onclick="toggleFav(event,${room.id})">${isFav ? '⭐':'☆'}</span>
   </div>`;
 }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+/* ══════════════════════════════════
+   LOAD ALL ROOMS (للبحث والمفضلة)
+══════════════════════════════════ */
+async function loadAllRooms() {
+  try {
+    const r = await fetch('/api/rooms', { headers:{ Authorization: token } });
+    const d = await r.json();
+    if (d.success) allRooms = d.rooms || [];
+    // ملء select التصنيف في modal الإنشاء
+    const sel = document.getElementById('newCat');
+    sel.innerHTML = categories.map(c =>
+      `<option value="${c.id}">${c.icon} ${esc(c.name)}</option>`
+    ).join('');
+  } catch {}
 }
 
-function updateStats(rooms) {
-  const totalUsers = rooms.reduce((s,r) => s + (r.member_count||0), 0);
-  document.getElementById('totalUsers').textContent = totalUsers;
-  document.getElementById('totalRooms').textContent = rooms.length;
+/* ══════════════════════════════════
+   FAVORITES
+══════════════════════════════════ */
+function toggleFav(e, id) {
+  e.stopPropagation();
+  const idx = favorites.indexOf(id);
+  if (idx === -1) { favorites.push(id);    showToast('⭐ أُضيفت للمفضلة'); }
+  else            { favorites.splice(idx,1); showToast('حُذفت من المفضلة'); }
+  localStorage.setItem('wid_favs', JSON.stringify(favorites));
+  const btn  = e.target;
+  const isFav = favorites.includes(id);
+  btn.textContent = isFav ? '⭐' : '☆';
+  if (currentPane === 'fav') renderFav();
 }
 
-/* ── دخول غرفة ────────────────────────── */
+function renderFav() {
+  const list     = document.getElementById('favList');
+  const favRooms = allRooms.filter(r => favorites.includes(r.id));
+  if (!favRooms.length) {
+    list.innerHTML = `<div class="empty-state"><div class="e-icon">☆</div><p>لم تضف أي غرفة للمفضلة</p></div>`;
+    return;
+  }
+  list.innerHTML = favRooms.map(r => buildRoomRow(r)).join('');
+}
+
+/* ══════════════════════════════════
+   SEARCH
+══════════════════════════════════ */
+function doSearch() {
+  const q   = document.getElementById('searchInput').value.trim();
+  document.getElementById('clearX').style.display = q ? 'block' : 'none';
+  const res = document.getElementById('searchResults');
+  if (!q) {
+    res.innerHTML = `<div class="empty-state"><div class="e-icon">🔍</div><p>اكتب اسم الغرفة أو رقمها</p></div>`;
+    return;
+  }
+  const found = allRooms.filter(r =>
+    r.name.toLowerCase().includes(q.toLowerCase()) || String(r.id).includes(q)
+  );
+  res.innerHTML = found.length
+    ? found.map(r => buildRoomRow(r)).join('')
+    : `<div class="empty-state"><div class="e-icon">🔎</div><p>لا توجد نتائج لـ "${esc(q)}"</p></div>`;
+}
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearX').style.display = 'none';
+  doSearch();
+}
+
+/* ══════════════════════════════════
+   ENTER ROOM
+══════════════════════════════════ */
 function enterRoom(id, name) {
   localStorage.setItem('room_id',   id);
   localStorage.setItem('room_name', name);
   window.location.href = '/chat.html';
 }
 
-/* ── المفضلة ─────────────────────────── */
-function toggleFav(e, id) {
-  e.stopPropagation();
-  const idx = favorites.indexOf(id);
-  if (idx === -1) {
-    favorites.push(id);
-    showToast('⭐ أُضيفت للمفضلة');
-  } else {
-    favorites.splice(idx, 1);
-    showToast('حُذفت من المفضلة');
-  }
-  localStorage.setItem('wid_favorites', JSON.stringify(favorites));
-  // تحديث الأيقونة بدون إعادة رسم
-  const btn = e.target;
-  const isFav = favorites.includes(id);
-  btn.textContent = isFav ? '⭐' : '☆';
-  btn.classList.toggle('active', isFav);
-  // تحديث تبويب المفضلة إذا كان مفتوحاً
-  if (document.getElementById('pane-fav').classList.contains('active')) renderFav();
-}
-
-function renderFav() {
-  const list = document.getElementById('favList');
-  const favRooms = allRooms.filter(r => favorites.includes(r.id));
-  if (!favRooms.length) {
-    list.innerHTML = `<div class="empty-state">
-      <div class="e-icon">☆</div>
-      <p>لم تضف أي غرفة للمفضلة بعد</p></div>`;
-    return;
-  }
-  list.innerHTML = favRooms.map(r => buildRoomRow(r)).join('');
-}
-
-/* ── البحث ───────────────────────────── */
-const searchInput = document.getElementById('searchInput');
-const clearBtn    = document.getElementById('clearBtn');
-
-searchInput.addEventListener('input', () => {
-  const q = searchInput.value.trim();
-  clearBtn.style.display = q ? 'block' : 'none';
-  if (!q) {
-    document.getElementById('searchResults').innerHTML = `
-      <div class="empty-state">
-        <div class="e-icon">🔍</div>
-        <p>اكتب اسم الغرفة أو رقمها للبحث</p></div>`;
-    return;
-  }
-  const results = allRooms.filter(r =>
-    r.name.toLowerCase().includes(q.toLowerCase()) ||
-    String(r.id).includes(q)
-  );
-  const res = document.getElementById('searchResults');
-  if (!results.length) {
-    res.innerHTML = `<div class="empty-state">
-      <div class="e-icon">🔎</div>
-      <p>لا توجد نتائج لـ "${escHtml(q)}"</p></div>`;
-  } else {
-    res.innerHTML = results.map(r => buildRoomRow(r)).join('');
-  }
-});
-
-function clearSearch() {
-  searchInput.value = '';
-  clearBtn.style.display = 'none';
-  searchInput.dispatchEvent(new Event('input'));
-  searchInput.focus();
-}
-
-/* ── التبويبات ───────────────────────── */
-function switchTab(tab) {
-  ['all','fav','search','more'].forEach(t => {
-    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
-    document.getElementById(`pane-${t}`).classList.toggle('active', t === tab);
-  });
-  if (tab === 'fav')    renderFav();
-  if (tab === 'search') searchInput.focus();
-}
-
-/* ── إنشاء غرفة ─────────────────────── */
+/* ══════════════════════════════════
+   CREATE ROOM (Owner 1100+ فقط)
+══════════════════════════════════ */
 function openCreateModal() {
-  document.getElementById('modalOverlay').classList.add('show');
+  if (rank < 1100) { showToast('🚫 يحتاج صلاحية Owner'); return; }
+  document.getElementById('overlay').classList.add('show');
 }
 function closeModal(e) {
-  if (!e || e.target === document.getElementById('modalOverlay')) {
-    document.getElementById('modalOverlay').classList.remove('show');
-  }
+  if (!e || e.target === document.getElementById('overlay'))
+    document.getElementById('overlay').classList.remove('show');
 }
 async function createRoom() {
-  const name = document.getElementById('newRoomName').value.trim();
-  const type = document.getElementById('newRoomType').value;
+  const name   = document.getElementById('newName').value.trim();
+  const cat_id = document.getElementById('newCat').value;
+  const type   = document.getElementById('newType').value;
   if (!name) { showToast('⚠️ أدخل اسم الغرفة'); return; }
-
   try {
     const r = await fetch('/api/rooms/create', {
-      method:'POST',
-      headers: { 'Content-Type':'application/json', Authorization:token },
-      body: JSON.stringify({ name, type, owner_id: userId })
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', Authorization: token },
+      body: JSON.stringify({ name, type, category_id: cat_id, owner_id: userId })
     });
     const d = await r.json();
     if (d.success) {
       closeModal();
       showToast('✅ تم إنشاء الغرفة');
-      document.getElementById('newRoomName').value = '';
-      setTimeout(loadRooms, 800);
+      document.getElementById('newName').value = '';
+      setTimeout(loadCategories, 800);
     } else { showToast('⚠️ ' + (d.message || 'خطأ')); }
-  } catch { showToast('⚠️ تعذّر إنشاء الغرفة'); }
+  } catch { showToast('⚠️ تعذّر الإنشاء'); }
 }
 
-/* ── أحداث متفرقة ───────────────────── */
-function reloadList() { switchTab('all'); loadRooms(); showToast('🔄 جاري التحديث...'); }
-function openSettings() { showToast('⚙️ الإعدادات — قريباً'); }
+/* ══════════════════════════════════
+   MISC
+══════════════════════════════════ */
 function openMarket()   { showToast('🛒 WidBid Market — قريباً'); }
 function openPoints()   { showToast('💎 نقاطي — قريباً'); }
+function openSettings() { showToast('⚙️ الإعدادات — قريباً'); }
 function openSupport()  { showToast('💬 خدمة العملاء — قريباً'); }
 function logout() {
   if (!confirm('هل تريد تسجيل الخروج؟')) return;
@@ -654,7 +658,6 @@ function logout() {
   window.location.href = '/';
 }
 
-/* ── Toast ───────────────────────────── */
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -663,8 +666,8 @@ function showToast(msg) {
   t._t = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
-/* ── تهيئة ───────────────────────────── */
-loadRooms();
+/* ══ INIT ══ */
+loadCategories();
 </script>
 </body>
 </html>

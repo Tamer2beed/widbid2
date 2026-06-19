@@ -53,14 +53,15 @@ router.get('/:id', async (req, res) => {
 
 /* ── POST /api/rooms/create — إنشاء غرفة */
 router.post('/create', verifyToken, async (req, res) => {
-  const { name, type, owner_id } = req.body;
+  const { name, type, owner_id, category_id } = req.body;
   if (!name?.trim()) return res.status(400).json({ success: false, message: 'اسم الغرفة مطلوب' });
+  if (req.user.rank < 1100) return res.status(403).json({ success: false, message: 'يحتاج صلاحية Owner' });
 
   try {
     const [result] = await db.query(
-      `INSERT INTO rooms (name, type, owner_id, welcome_message, theme, is_active)
-       VALUES (?, ?, ?, 'مرحباً بكم', 'candy', 1)`,
-      [name.trim(), type || 'public', owner_id || req.user.id]
+      `INSERT INTO rooms (name, type, owner_id, category_id, welcome_message, theme, is_active)
+       VALUES (?, ?, ?, ?, 'مرحباً بكم', 'candy', 1)`,
+      [name.trim(), type || 'public', owner_id || req.user.id, category_id || null]
     );
     // تسجيل الإجراء
     await db.query(
@@ -142,6 +143,51 @@ router.get('/owner/:user_id', verifyToken, async (req, res) => {
     );
     res.json({ success: true, rooms });
   } catch (err) {
+    res.status(500).json({ success: false, message: 'خطأ في السيرفر' });
+  }
+});
+
+/* ── GET /api/rooms/categories — كل التصنيفات مع إحصائياتها */
+router.get('/categories/all', async (req, res) => {
+  try {
+    const [cats] = await db.query(`
+      SELECT
+        c.id, c.name, c.icon, c.sort_order,
+        COUNT(DISTINCT r.id)          AS room_count,
+        COALESCE(SUM(r.member_count), 0) AS user_count
+      FROM categories c
+      LEFT JOIN rooms r ON r.category_id = c.id
+                       AND r.is_active = 1
+                       AND r.is_frozen = 0
+      WHERE c.is_active = 1
+      GROUP BY c.id
+      ORDER BY c.sort_order ASC
+    `);
+    res.json({ success: true, categories: cats });
+  } catch (err) {
+    console.error('GET /rooms/categories/all:', err.message);
+    res.status(500).json({ success: false, message: 'خطأ في السيرفر' });
+  }
+});
+
+/* ── GET /api/rooms/by-category/:cat_id — غرف تصنيف معين */
+router.get('/by-category/:cat_id', async (req, res) => {
+  try {
+    const [rooms] = await db.query(`
+      SELECT
+        r.id, r.name, r.type, r.theme, r.member_count,
+        r.max_capacity, r.is_locked, r.category_id,
+        c.name AS category_name, c.icon AS category_icon
+      FROM rooms r
+      LEFT JOIN categories c ON c.id = r.category_id
+      WHERE r.category_id = ?
+        AND r.is_active = 1
+        AND r.is_frozen = 0
+      ORDER BY r.member_count DESC
+    `, [req.params.cat_id]);
+    res.json({ success: true, rooms });
+  } catch (err) {
+    console.error('GET /rooms/by-category:', err.message);
     res.status(500).json({ success: false, message: 'خطأ في السيرفر' });
   }
 });
