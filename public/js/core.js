@@ -60,6 +60,8 @@ socket.on('connect', () => {
   socket.emit('joinRoom', {
     room_id: roomId, username, user_id: userId, rank: userRank
   });
+  /* أعلم بقية الملفات أن socket جاهز */
+  document.dispatchEvent(new Event('socketReady'));
 });
 
 socket.on('roomInfo', (data) => {

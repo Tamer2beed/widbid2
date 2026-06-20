@@ -279,29 +279,35 @@ const CameraSystem = (() => {
     reader.readAsDataURL(blob);
   }
 
-  /* ══ استقبال صورة ═════════════════════ */
-  socket.on('newImage', (d) => {
-    addImageMessage(d.username, d.image, d.caption, d.rank, d.username === username);
-  });
+  /* ══ استقبال صورة (تُربط بعد تهيئة socket) ══ */
+  function bindSocketEvents() {
+    if (typeof socket === 'undefined') return;
+    socket.on('newImage', (d) => {
+      addImageMessage(d.username, d.image, d.caption, d.rank, d.username === username);
+    });
+  }
 
   function addImageMessage(user, base64, caption, rank, isMe) {
-    const color = getRankColor(rank || 100);
-    const wrap  = document.createElement('div');
-    wrap.className = 'msg-wrap' + (isMe ? ' mine' : '');
+    const color   = getRankColor(rank || 100);
+    const initial = getInitial(user);
+
+    const wrap = document.createElement('div');
+    wrap.className = `msg-row ${isMe ? 'self' : 'other'}`;
 
     const av = document.createElement('div');
-    av.className = 'msg-avatar';
-    av.style.borderColor = color;
-    av.textContent = getInitial(user);
+    av.className = 'msg-avatar-sm';
+    av.style.setProperty('--rank-color', color);
+    av.textContent = initial;
 
     const bubble = document.createElement('div');
     bubble.className = 'msg-bubble';
 
     if (!isMe) {
-      const meta = document.createElement('div');
-      meta.className = 'msg-meta';
-      meta.innerHTML = `<span class="msg-name" style="color:${color}">${user}</span>`;
-      bubble.appendChild(meta);
+      const sender = document.createElement('div');
+      sender.className = 'msg-sender';
+      sender.style.color = color;
+      sender.textContent = user;
+      bubble.appendChild(sender);
     }
 
     const img = document.createElement('img');
@@ -320,8 +326,9 @@ const CameraSystem = (() => {
 
     wrap.appendChild(av);
     wrap.appendChild(bubble);
-    document.getElementById('messages').appendChild(wrap);
-    document.getElementById('messages').scrollTop = 9999;
+    const msgs = document.getElementById('messages');
+    msgs.appendChild(wrap);
+    msgs.scrollTop = msgs.scrollHeight;
   }
 
   /* ══ عرض الصورة الكبيرة ══════════════ */
@@ -341,6 +348,7 @@ const CameraSystem = (() => {
 
   /* ══ تصدير ═══════════════════════════ */
   return {
+    buildUI, bindSocketEvents,
     openCamera, flipCamera, capture, retake,
     sendCaptured, closeCamera,
     openGallery, showImagePreview, cancelImage, confirmSend,
@@ -348,8 +356,13 @@ const CameraSystem = (() => {
   };
 })();
 
-/* ── بناء UI ─────────────────────────── */
-CameraSystem.buildUI?.();
+/* ── بناء UI فور تحميل الملف ────────── */
+CameraSystem.buildUI();
+
+/* ── ربط socket events بعد أن يصبح socket جاهزاً ── */
+document.addEventListener('socketReady', () => {
+  CameraSystem.bindSocketEvents();
+});
 
 /* ── تحديث دوال الصورة في ui.js ────── */
 function pickImage(src) {

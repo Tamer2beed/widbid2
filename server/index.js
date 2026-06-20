@@ -501,6 +501,20 @@ io.on('connection', (socket) => {
     }
   });
 
+  /* ── إرسال صورة ─────────────────────── */
+  socket.on('sendImage', async (data) => {
+    const { room_id, username, rank, image, caption } = data;
+    if (!image || !room_id) return;
+    /* بث الصورة لجميع أعضاء الغرفة */
+    io.to(String(room_id)).emit('newImage', {
+      username: username || socket.userData?.username || 'مجهول',
+      rank:     rank     || socket.userData?.rank     || 100,
+      image,
+      caption:  caption  || '',
+      time:     new Date().toISOString(),
+    });
+  });
+
   /* ════════════════════════════════════════════════
      أحداث البث المباشر — Video Broadcast
      (UI فقط الآن — Phase 21: يُضاف WebRTC/Mediasoup)
