@@ -587,7 +587,7 @@ io.on('connection', (socket) => {
     if (!R.current) {
       _giveSpeaker(rid, { username, rank });
     } else if (R.current.username === username) {
-      showToast && null; /* هو الحالي */
+      /* هو المتحدث الحالي — لا شيء */
     } else if (!R.queue.find(u => u.username === username)) {
       R.queue.push({ username, rank });
       _broadcastState(rid);
