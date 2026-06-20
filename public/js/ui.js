@@ -98,49 +98,78 @@ function toggleMembers(forceState) {
   const layer  = document.getElementById('chatLayer');
   const isOpen = layer.classList.contains('open');
   const open   = forceState !== undefined ? forceState : !isOpen;
+  layer.classList.remove('dragging');
+  layer.style.transform = '';
   layer.classList.toggle('open', open);
-
-  // الضغط على الجزء الظاهر من الدردشة يغلق القائمة
   if (open) {
-    layer.addEventListener('click', _closeonClick);
+    layer.addEventListener('click', _closeOnClick);
   } else {
-    layer.removeEventListener('click', _closeonClick);
+    layer.removeEventListener('click', _closeOnClick);
   }
-
-  // تحديث عدد الأعضاء
   const count = document.getElementById('membersCount');
   if (count) count.textContent =
     `(${document.querySelectorAll('.member-item').length})`;
 }
-function _closeonClick() { toggleMembers(false); }
+function _closeOnClick() { toggleMembers(false); }
 
-/* ══ SWIPE — الدردشة تنزلق مثل WEVO ══ */
+/* ══ SWIPE — تتبع الإصبع لحظة بلحظة + snap للأقرب ══ */
 (function initSwipe() {
-  const layer = () => document.getElementById('chatLayer');
-  let startX = 0, startY = 0, tracking = false;
-  const MIN_SWIPE = 50;   /* أدنى مسافة أفقية */
+  const OPEN_PX   = () => window.innerWidth * 0.70;  /* 70% عرض الشاشة */
+  const MIN_DRAG  = 8;    /* بكسل قبل اعتباره سحباً */
+  const SNAP_THR  = 0.35; /* إذا تجاوز 35% يُفتح، وإلا يُغلق */
+
+  let startX = 0, startY = 0, curX = 0;
+  let isDragging = false, isOpen = false, verticalLock = false;
+
+  function getLayer() { return document.getElementById('chatLayer'); }
 
   document.addEventListener('touchstart', e => {
-    startX   = e.touches[0].clientX;
-    startY   = e.touches[0].clientY;
-    tracking = true;
+    startX = curX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    isDragging   = false;
+    verticalLock = false;
+    const l = getLayer();
+    isOpen = l?.classList.contains('open') || false;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    const x  = e.touches[0].clientX;
+    const dx = x - startX;
+    const dy = Math.abs(e.touches[0].clientY - startY);
+    curX = x;
+
+    /* تحديد اتجاه السحب أول مرة */
+    if (!isDragging && !verticalLock) {
+      if (dy > Math.abs(dx) + 5) { verticalLock = true; return; }
+      if (Math.abs(dx) > MIN_DRAG) isDragging = true;
+    }
+    if (!isDragging || verticalLock) return;
+
+    const l = getLayer();
+    if (!l) return;
+    l.classList.add('dragging');
+
+    /* حساب الإزاحة الحالية */
+    const base    = isOpen ? OPEN_PX() : 0;
+    const newTx   = Math.max(0, Math.min(OPEN_PX(), base + dx));
+    l.style.transform = `translateX(${newTx}px)`;
   }, { passive: true });
 
   document.addEventListener('touchend', e => {
-    if (!tracking) return;
-    tracking = false;
-    const dx = e.changedTouches[0].clientX - startX;
-    const dy = Math.abs(e.changedTouches[0].clientY - startY);
-    if (dy > 80) return;   /* سحب رأسي — تجاهل */
+    if (!isDragging) { isDragging = false; return; }
+    isDragging = false;
 
-    const l = layer();
+    const l = getLayer();
     if (!l) return;
 
-    if (dx > MIN_SWIPE && !l.classList.contains('open')) {
-      toggleMembers(true);    /* يسار→يمين = فتح */
-    } else if (dx < -MIN_SWIPE && l.classList.contains('open')) {
-      toggleMembers(false);   /* يمين→يسار = إغلاق */
-    }
+    const base  = isOpen ? OPEN_PX() : 0;
+    const dx    = curX - startX;
+    const newTx = Math.max(0, Math.min(OPEN_PX(), base + dx));
+    const ratio = newTx / OPEN_PX();
+
+    /* snap: إذا تجاوز 35% → افتح، وإلا أغلق */
+    l.style.transform = '';
+    toggleMembers(ratio >= SNAP_THR);
   }, { passive: true });
 })();
 

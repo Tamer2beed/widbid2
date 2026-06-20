@@ -164,41 +164,48 @@ body { background: var(--wevo-chat); }
 }
 
 /* ══ TWO-LAYER SYSTEM ══
-   طبقة 1: قائمة الأعضاء — ثابتة في الخلف
+   طبقة 1: قائمة الأعضاء — ثابتة في اليسار (70%)
    طبقة 2: الدردشة — تنزلق يميناً لتكشف الأعضاء
 ════════════════════════════════════════════ */
 
-/* الطبقة الخلفية — قائمة الأعضاء */
+/* الطبقة الخلفية — قائمة الأعضاء في اليسار */
 .members-bg {
-  position: absolute; inset: 0;
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 70%;
   background: #fff;
   display: flex; flex-direction: column;
   z-index: 1;
 }
 
-/* طبقة الدردشة — تغطي الأعضاء وتنزلق */
+/* طبقة الدردشة — تغطي الكل وتنزلق يميناً */
 .chat-layer {
   position: absolute; inset: 0;
   z-index: 2;
+  transform: translateX(0);
   transition: transform .3s cubic-bezier(.4,0,.2,1);
   will-change: transform;
   display: flex; flex-direction: column;
 }
 .chat-layer.open {
   transform: translateX(70%);
-  border-radius: 0 0 0 20px;
-  box-shadow: -8px 0 24px rgba(0,0,0,0.2);
+  box-shadow: -8px 0 28px rgba(0,0,0,0.25);
+  border-radius: 0 0 0 18px;
 }
-
-/* إغلاق بالضغط على الجزء الظاهر من الدردشة */
+/* أثناء السحب: تعطيل الحركة الناعمة */
+.chat-layer.dragging {
+  transition: none !important;
+}
+/* الضغط على الجزء الظاهر يغلق */
 .chat-layer.open::after {
   content: '';
   position: absolute; inset: 0;
   z-index: 10;
+  cursor: pointer;
 }
 
 .members-header {
-  padding: 56px 14px 12px;   /* padding-top يحسب الهيدر */
+  padding: 60px 14px 12px;
   background: var(--wevo-top);
   color: #fff;
   font-size: 15px; font-weight: 700;
