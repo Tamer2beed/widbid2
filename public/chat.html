@@ -42,25 +42,24 @@
 <!-- ══ MAIN ══ -->
 <div class="main" id="mainArea">
 
-  <!-- ══ CHAT AREA ══ -->
-  <div class="chat-area">
-    <div class="chat-bg"></div>
-    <div id="messages">
-      <div class="welcome-banner" id="welcomeBanner">مرحباً بكم</div>
-    </div>
-  </div><!-- end chat-area -->
-
-  <!-- ══ MEMBERS PANEL (يسار، يفتح بالسحب) ══ -->
-  <div class="members-panel" id="membersPanel">
+  <!-- ══ طبقة الأعضاء (الخلفية — ثابتة) ══ -->
+  <div class="members-bg" id="membersBg">
     <div class="members-header">
-      المتواجدون <span id="membersCount"></span>
-      <span class="members-close" onclick="toggleMembers()">✕</span>
+      👥 المتواجدون <span id="membersCount"></span>
     </div>
     <div class="members-list" id="membersList"></div>
   </div>
 
-  <!-- overlay لإغلاق القائمة عند الضغط خارجها -->
-  <div class="panel-overlay" id="panelOverlay" onclick="toggleMembers(false)"></div>
+  <!-- ══ طبقة الدردشة (تنزلق يميناً) ══ -->
+  <div class="chat-layer" id="chatLayer">
+
+    <!-- ══ CHAT AREA ══ -->
+    <div class="chat-area">
+      <div class="chat-bg"></div>
+      <div id="messages">
+        <div class="welcome-banner" id="welcomeBanner">مرحباً بكم</div>
+      </div>
+    </div><!-- end chat-layer -->
 
 </div><!-- end main -->
 

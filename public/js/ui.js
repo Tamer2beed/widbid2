@@ -93,47 +93,54 @@ function updateMemberStatusDot(name, status) {
   dot.className = `member-status-dot status-${status}`;
 }
 
-/* ══ MEMBERS PANEL — فتح/إغلاق ══ */
+/* ══ MEMBERS PANEL — فتح/إغلاق (نظام الطبقتين) ══ */
 function toggleMembers(forceState) {
-  const panel   = document.getElementById('membersPanel');
-  const overlay = document.getElementById('panelOverlay');
-  const isOpen  = panel.classList.contains('open');
-  const open    = forceState !== undefined ? forceState : !isOpen;
-  panel.classList.toggle('open', open);
-  overlay.classList.toggle('show', open);
-  // تحديث عدد الأعضاء في الهيدر
+  const layer  = document.getElementById('chatLayer');
+  const isOpen = layer.classList.contains('open');
+  const open   = forceState !== undefined ? forceState : !isOpen;
+  layer.classList.toggle('open', open);
+
+  // الضغط على الجزء الظاهر من الدردشة يغلق القائمة
+  if (open) {
+    layer.addEventListener('click', _closeonClick);
+  } else {
+    layer.removeEventListener('click', _closeonClick);
+  }
+
+  // تحديث عدد الأعضاء
   const count = document.getElementById('membersCount');
   if (count) count.textContent =
     `(${document.querySelectorAll('.member-item').length})`;
 }
+function _closeonClick() { toggleMembers(false); }
 
-/* ══ SWIPE للفتح والإغلاق ══ */
+/* ══ SWIPE — الدردشة تنزلق مثل WEVO ══ */
 (function initSwipe() {
-  let startX = 0, startY = 0, dragging = false;
-  const THRESHOLD = 50;   /* أقل مسافة للسحب للفتح */
-  const EDGE      = 80;   /* ~8mm من حافة اليسار */
+  const layer = () => document.getElementById('chatLayer');
+  let startX = 0, startY = 0, tracking = false;
+  const MIN_SWIPE = 50;   /* أدنى مسافة أفقية */
 
   document.addEventListener('touchstart', e => {
-    startX  = e.touches[0].clientX;
-    startY  = e.touches[0].clientY;
-    dragging = startX <= EDGE;         /* فقط من حافة اليسار */
+    startX   = e.touches[0].clientX;
+    startY   = e.touches[0].clientY;
+    tracking = true;
   }, { passive: true });
 
   document.addEventListener('touchend', e => {
-    if (!dragging) {
-      /* السحب من أي مكان للإغلاق */
-      const dx = e.changedTouches[0].clientX - startX;
-      const dy = Math.abs(e.changedTouches[0].clientY - startY);
-      if (dy < 60 && dx < -THRESHOLD) {
-        const panel = document.getElementById('membersPanel');
-        if (panel?.classList.contains('open')) toggleMembers(false);
-      }
-      return;
-    }
+    if (!tracking) return;
+    tracking = false;
     const dx = e.changedTouches[0].clientX - startX;
     const dy = Math.abs(e.changedTouches[0].clientY - startY);
-    if (dy < 100 && dx > THRESHOLD) toggleMembers(true);   /* يسار→يمين = فتح */
-    dragging = false;
+    if (dy > 80) return;   /* سحب رأسي — تجاهل */
+
+    const l = layer();
+    if (!l) return;
+
+    if (dx > MIN_SWIPE && !l.classList.contains('open')) {
+      toggleMembers(true);    /* يسار→يمين = فتح */
+    } else if (dx < -MIN_SWIPE && l.classList.contains('open')) {
+      toggleMembers(false);   /* يمين→يسار = إغلاق */
+    }
   }, { passive: true });
 })();
 
