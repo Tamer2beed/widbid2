@@ -14,13 +14,11 @@
 
 <!-- ══ HEADER ══ -->
 <div class="header">
-  <div class="header-mic" onclick="toggleMic()" id="micBtn">
-    <span class="mic-icon" id="micIcon">🔊</span>
-    <div>
-      <div class="mic-status" id="micStatus">Mic Free</div>
-      <div class="mic-time"   id="micTime">--:--</div>
-    </div>
-  </div>
+  <!-- عناصر مخفية — يُحدّثها speaker.js (micStatus/micTime) -->
+  <span id="micIcon"   style="display:none">🔊</span>
+  <span id="micStatus" style="display:none">Mic Free</span>
+  <span id="micTime"   style="display:none">--:--</span>
+
   <div class="header-title" id="roomTitle">...</div>
   <div class="header-icons">
     <span class="header-icon" id="spkAdminIcon" style="display:none" onclick="SpeakerSystem.openAdminPanel()">⚙️</span>

@@ -95,7 +95,7 @@ function _giveSpeaker(rid, user) {
   R.warnTimer = setTimeout(() => {
     if (!rooms[rid]?.current) return;
     if (rooms[rid].queue.length === 0) {
-      /* الطابور فارغ → جدّد تلقائياً 30 ثانية */
+      /* الطابور فارغ → جدّد تلقائياً 60 ثانية */
       _autoRenew(rid);
     } else {
       /* يوجد طابور → أشعر المتحدث بأن وقته ينتهي */
@@ -118,7 +118,7 @@ function _autoRenew(rid) {
   clearTimeout(R.timer);
   clearTimeout(R.warnTimer);
 
-  const RENEW_SECS = 30;
+  const RENEW_SECS = 60;
   R.current.endsAt = Date.now() + RENEW_SECS * 1000;
 
   /* إشعار التجديد */
