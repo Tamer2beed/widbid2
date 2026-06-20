@@ -93,7 +93,7 @@ function updateMemberStatusDot(name, status) {
   dot.className = `member-status-dot status-${status}`;
 }
 
-/* ══ MEMBERS PANEL — فتح/إغلاق (نظام الطبقتين) ══ */
+/* ══ MEMBERS PANEL — فتح/إغلاق (نظام الطبقتين RTL) ══ */
 function toggleMembers(forceState) {
   const layer  = document.getElementById('chatLayer');
   const isOpen = layer.classList.contains('open');
@@ -112,11 +112,11 @@ function toggleMembers(forceState) {
 }
 function _closeOnClick() { toggleMembers(false); }
 
-/* ══ SWIPE — تتبع الإصبع لحظة بلحظة + snap للأقرب ══ */
+/* ══ SWIPE RTL — السحب يساراً يكشف الأعضاء في اليمين ══ */
 (function initSwipe() {
-  const OPEN_PX   = () => window.innerWidth * 0.70;  /* 70% عرض الشاشة */
-  const MIN_DRAG  = 8;    /* بكسل قبل اعتباره سحباً */
-  const SNAP_THR  = 0.35; /* إذا تجاوز 35% يُفتح، وإلا يُغلق */
+  const OPEN_PX  = () => window.innerWidth * 0.70;
+  const MIN_DRAG = 8;
+  const SNAP_THR = 0.35;
 
   let startX = 0, startY = 0, curX = 0;
   let isDragging = false, isOpen = false, verticalLock = false;
@@ -128,17 +128,15 @@ function _closeOnClick() { toggleMembers(false); }
     startY = e.touches[0].clientY;
     isDragging   = false;
     verticalLock = false;
-    const l = getLayer();
-    isOpen = l?.classList.contains('open') || false;
+    isOpen = getLayer()?.classList.contains('open') || false;
   }, { passive: true });
 
   document.addEventListener('touchmove', e => {
     const x  = e.touches[0].clientX;
-    const dx = x - startX;
+    const dx = x - startX;   /* يسار = سالب */
     const dy = Math.abs(e.touches[0].clientY - startY);
     curX = x;
 
-    /* تحديد اتجاه السحب أول مرة */
     if (!isDragging && !verticalLock) {
       if (dy > Math.abs(dx) + 5) { verticalLock = true; return; }
       if (Math.abs(dx) > MIN_DRAG) isDragging = true;
@@ -149,26 +147,26 @@ function _closeOnClick() { toggleMembers(false); }
     if (!l) return;
     l.classList.add('dragging');
 
-    /* حساب الإزاحة الحالية */
-    const base    = isOpen ? OPEN_PX() : 0;
-    const newTx   = Math.max(0, Math.min(OPEN_PX(), base + dx));
+    /* الإزاحة: مفتوح = -OPEN_PX، مغلق = 0 */
+    const base  = isOpen ? -OPEN_PX() : 0;
+    const newTx = Math.max(-OPEN_PX(), Math.min(0, base + dx));
     l.style.transform = `translateX(${newTx}px)`;
   }, { passive: true });
 
-  document.addEventListener('touchend', e => {
-    if (!isDragging) { isDragging = false; return; }
+  document.addEventListener('touchend', () => {
+    if (!isDragging) return;
     isDragging = false;
 
     const l = getLayer();
     if (!l) return;
 
-    const base  = isOpen ? OPEN_PX() : 0;
+    const base  = isOpen ? -OPEN_PX() : 0;
     const dx    = curX - startX;
-    const newTx = Math.max(0, Math.min(OPEN_PX(), base + dx));
-    const ratio = newTx / OPEN_PX();
+    const newTx = Math.max(-OPEN_PX(), Math.min(0, base + dx));
+    const ratio = Math.abs(newTx) / OPEN_PX();
 
-    /* snap: إذا تجاوز 35% → افتح، وإلا أغلق */
     l.style.transform = '';
+    /* ratio > SNAP_THR → افتح (الدردشة انزلقت أكثر من 35%) */
     toggleMembers(ratio >= SNAP_THR);
   }, { passive: true });
 })();
