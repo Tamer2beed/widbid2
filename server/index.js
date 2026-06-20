@@ -84,17 +84,72 @@ function _giveSpeaker(rid, user) {
   const R = rooms[rid];
   if (!R) return;
   clearTimeout(R.timer);
-  const endsAt = Date.now() + (R.defaultTime || 120) * 1000;
-  R.current  = { ...user, endsAt };
-  R.queue    = R.queue.filter(u => u.username !== user.username);
-  R.timer    = setTimeout(() => _nextSpeaker(rid), R.defaultTime * 1000);
+  clearTimeout(R.warnTimer);
+
+  const duration = R.defaultTime || 120;
+  const endsAt   = Date.now() + duration * 1000;
+  R.current = { ...user, endsAt };
+  R.queue   = R.queue.filter(u => u.username !== user.username);
+
+  /* تحذير عند 5 ثوانٍ قبل الانتهاء */
+  R.warnTimer = setTimeout(() => {
+    if (!rooms[rid]?.current) return;
+    if (rooms[rid].queue.length === 0) {
+      /* الطابور فارغ → جدّد تلقائياً 30 ثانية */
+      _autoRenew(rid);
+    } else {
+      /* يوجد طابور → أشعر المتحدث بأن وقته ينتهي */
+      io.to(rid).emit('speakerWarning', {
+        username : rooms[rid].current.username,
+        remaining: 5,
+      });
+    }
+  }, Math.max(0, (duration - 5) * 1000));
+
+  /* انتهاء الوقت */
+  R.timer = setTimeout(() => _nextSpeaker(rid), duration * 1000);
+
   _broadcastState(rid);
+}
+
+function _autoRenew(rid) {
+  const R = rooms[rid];
+  if (!R?.current) return;
+  clearTimeout(R.timer);
+  clearTimeout(R.warnTimer);
+
+  const RENEW_SECS = 30;
+  R.current.endsAt = Date.now() + RENEW_SECS * 1000;
+
+  /* إشعار التجديد */
+  io.to(rid).emit('speakerRenewed', {
+    username : R.current.username,
+    seconds  : RENEW_SECS,
+  });
+  _broadcastState(rid);
+
+  /* تحذير عند 5 ثوانٍ من الوقت الجديد */
+  R.warnTimer = setTimeout(() => {
+    if (!rooms[rid]?.current) return;
+    if (rooms[rid].queue.length === 0) {
+      _autoRenew(rid);   /* جدّد مرة أخرى */
+    } else {
+      io.to(rid).emit('speakerWarning', {
+        username : rooms[rid].current.username,
+        remaining: 5,
+      });
+    }
+  }, (RENEW_SECS - 5) * 1000);
+
+  /* انتهاء الوقت الجديد */
+  R.timer = setTimeout(() => _nextSpeaker(rid), RENEW_SECS * 1000);
 }
 
 function _nextSpeaker(rid) {
   const R = rooms[rid];
   if (!R) return;
   clearTimeout(R.timer);
+  clearTimeout(R.warnTimer);
   R.current = null;
   if (R.queue.length) {
     _giveSpeaker(rid, R.queue[0]);
@@ -188,7 +243,7 @@ io.on('connection', (socket) => {
     io.to(room_id).emit('onlineUsers', users);
 
     // تهيئة غرفة السبيكر إن لم تكن موجودة + إرسال الحالة للداخل
-    if (!rooms[room_id]) rooms[room_id] = { current: null, queue: [], defaultTime: 120, timer: null };
+    if (!rooms[room_id]) rooms[room_id] = { current: null, queue: [], defaultTime: 120, timer: null, warnTimer: null };
     _sendStateTo(socket, room_id);
 
     console.log(`👤 ${username} (rank:${dbRank}) joined room ${room_id}`);

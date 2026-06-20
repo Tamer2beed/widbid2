@@ -420,6 +420,25 @@ const SpeakerSystem = (() => {
       }
     });
 
+    /* تحذير اقتراب انتهاء الوقت */
+    socket.on('speakerWarning', (data) => {
+      if (data.username === username) {
+        showToast('⚠️ باقي 5 ثوانٍ على وقتك!');
+      }
+      /* تحديث لون العداد للأحمر */
+      const timerEl = document.getElementById('spkTimer');
+      const micTime = document.getElementById('micTime');
+      if (timerEl) timerEl.className = 'spk-timer urgent';
+      if (micTime) micTime.style.color = '#E74C3C';
+    });
+
+    /* تجديد تلقائي */
+    socket.on('speakerRenewed', (data) => {
+      if (data.username === username) {
+        showToast(`🔄 تم تجديد وقتك +${data.seconds} ثانية (الطابور فارغ)`);
+      }
+    });
+
     /* وقت ممدد */
     socket.on('speakerTimeUpdated', (data) => {
       if (state.current) {
