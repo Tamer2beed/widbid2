@@ -110,6 +110,7 @@ function _broadcastState(rid) {
     current:     R.current || null,
     queue:       R.queue   || [],
     defaultTime: R.defaultTime || 120,
+    serverNow:   Date.now(),
   });
 }
 
@@ -120,6 +121,7 @@ function _sendStateTo(sock, rid) {
     current:     R.current || null,
     queue:       R.queue   || [],
     defaultTime: R.defaultTime || 120,
+    serverNow:   Date.now(),
   });
 }
 

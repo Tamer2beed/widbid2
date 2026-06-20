@@ -10,13 +10,14 @@ const SpeakerSystem = (() => {
 
   /* ══ الحالة ══ */
   const state = {
-    current:     null,   /* { username, rank, endsAt } */
-    queue:       [],     /* [{ username, rank, pos }] */
-    defaultTime: 120,    /* ثانية */
-    timer:       null,   /* setInterval */
-    isSpeaking:  false,  /* أنا الحالي؟ */
-    inQueue:     false,  /* أنا في الطابور؟ */
-    myPos:       -1,     /* موقعي في الطابور */
+    current:     null,
+    queue:       [],
+    defaultTime: 120,
+    timer:       null,
+    isSpeaking:  false,
+    inQueue:     false,
+    myPos:       -1,
+    clockOffset: 0,    /* فارق التوقيت بين السيرفر والعميل */
   };
 
   /* ══ CSS ══ */
@@ -285,21 +286,54 @@ const SpeakerSystem = (() => {
     }
   }
 
+  /* ══ تحديث هيدر الغرفة (مثل WEVO) ══ */
+  function updateHeader() {
+    const micIcon   = document.getElementById('micIcon');
+    const micStatus = document.getElementById('micStatus');
+    const micTime   = document.getElementById('micTime');
+    if (!micStatus) return;
+
+    if (state.current) {
+      if (micIcon)   micIcon.textContent   = '🎙️';
+      micStatus.textContent = state.current.username;
+      micStatus.style.color = '#27AE60';
+      if (micTime) micTime.style.display = 'block';
+    } else {
+      if (micIcon)   micIcon.textContent   = '🔊';
+      micStatus.textContent = 'Mic Free';
+      micStatus.style.color = '';
+      if (micTime) { micTime.textContent = '--:--'; micTime.style.display = 'block'; }
+    }
+  }
+
   /* ══ العداد التنازلي ══ */
   function startTimer(endsAt) {
     clearInterval(state.timer);
-    const el = document.getElementById('spkTimer');
+    const timerEl  = document.getElementById('spkTimer');
+    const micTime  = document.getElementById('micTime');
 
     state.timer = setInterval(() => {
-      const rem = Math.max(0, Math.round((endsAt - Date.now()) / 1000));
+      /* استخدم Date.now() الخاص بالعميل مع الـ endsAt القادم من السيرفر
+         + فارق التوقيت المحسوب لحظة استلام الحالة */
+      const rem = Math.max(0, Math.round((endsAt - Date.now() + state.clockOffset) / 1000));
       const m   = String(Math.floor(rem / 60)).padStart(2, '0');
       const s   = String(rem % 60).padStart(2, '0');
-      if (el) {
-        el.textContent = `${m}:${s}`;
-        el.className = 'spk-timer' +
+      const txt = `${m}:${s}`;
+
+      /* شريط الطابور */
+      if (timerEl) {
+        timerEl.textContent = txt;
+        timerEl.className   = 'spk-timer' +
           (rem <= 10 ? ' urgent' : rem <= 30 ? ' warn' : '');
       }
-      if (rem <= 0) clearInterval(state.timer);
+      /* هيدر الغرفة */
+      if (micTime) micTime.textContent = txt;
+
+      if (rem <= 0) {
+        clearInterval(state.timer);
+        if (timerEl) timerEl.textContent = '00:00';
+        if (micTime) micTime.textContent  = '00:00';
+      }
     }, 500);
   }
 
@@ -355,6 +389,9 @@ const SpeakerSystem = (() => {
 
     /* حالة الطابور الكاملة (عند الدخول أو أي تغيير) */
     socket.on('speakerState', (data) => {
+      /* احسب فارق التوقيت: serverNow - clientNow */
+      state.clockOffset = (data.serverNow || Date.now()) - Date.now();
+
       state.current     = data.current || null;
       state.queue       = data.queue   || [];
       state.isSpeaking  = state.current?.username === username;
@@ -362,15 +399,18 @@ const SpeakerSystem = (() => {
       state.myPos       = state.queue.findIndex(u => u.username === username);
       state.defaultTime = data.defaultTime || 120;
 
-      if (state.current?.endsAt) startTimer(state.current.endsAt);
-      else clearInterval(state.timer);
+      if (state.current?.endsAt) {
+        startTimer(state.current.endsAt);
+      } else {
+        clearInterval(state.timer);
+      }
 
+      updateHeader();
       render();
 
       /* إشعار صوتي عند دورك */
       if (state.isSpeaking) {
         showToast('🎙️ دورك الآن! تحدث');
-        SoundSystem?.play?.('turn');
       }
     });
 
