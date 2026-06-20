@@ -93,63 +93,72 @@ function updateMemberStatusDot(name, status) {
   dot.className = `member-status-dot status-${status}`;
 }
 
-/* ── تبديل قائمة الأعضاء ───────────────── */
-function toggleMembers() {
-  document.getElementById('membersPanel').classList.toggle('open');
+/* ══ MEMBERS PANEL — فتح/إغلاق ══ */
+function toggleMembers(forceState) {
+  const panel   = document.getElementById('membersPanel');
+  const overlay = document.getElementById('panelOverlay');
+  const isOpen  = panel.classList.contains('open');
+  const open    = forceState !== undefined ? forceState : !isOpen;
+  panel.classList.toggle('open', open);
+  overlay.classList.toggle('show', open);
+  // تحديث عدد الأعضاء في الهيدر
+  const count = document.getElementById('membersCount');
+  if (count) count.textContent =
+    `(${document.querySelectorAll('.member-item').length})`;
 }
 
-/* ── منطقة المقاعد الصوتية (WEVO Style) ── */
-const MAX_SEATS = 8;
-let seatsData   = Array(MAX_SEATS).fill(null); // null = فارغ
+/* ══ SWIPE للفتح والإغلاق ══ */
+(function initSwipe() {
+  let startX = 0, startY = 0, dragging = false;
+  const THRESHOLD = 60;   /* بكسل */
+  const EDGE      = 30;   /* منطقة حافة اليسار لبدء السحب */
 
-function renderSeats(users) {
-  const row = document.getElementById('seatsRow');
-  if (!row) return;
+  document.addEventListener('touchstart', e => {
+    startX  = e.touches[0].clientX;
+    startY  = e.touches[0].clientY;
+    dragging = startX <= EDGE;         /* فقط من حافة اليسار */
+  }, { passive: true });
 
-  // ملء المقاعد بالمستخدمين المتواجدين (أعلى رتبة أولاً)
-  const sorted = [...users]
-    .filter(u => typeof u === 'object')
-    .sort((a, b) => (b.rank||100) - (a.rank||100))
-    .slice(0, MAX_SEATS);
+  document.addEventListener('touchend', e => {
+    if (!dragging) {
+      /* السحب من أي مكان للإغلاق */
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = Math.abs(e.changedTouches[0].clientY - startY);
+      if (dy < 60 && dx < -THRESHOLD) {
+        const panel = document.getElementById('membersPanel');
+        if (panel?.classList.contains('open')) toggleMembers(false);
+      }
+      return;
+    }
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = Math.abs(e.changedTouches[0].clientY - startY);
+    if (dy < 60 && dx > THRESHOLD) toggleMembers(true);   /* يسار→يمين = فتح */
+    dragging = false;
+  }, { passive: true });
+})();
 
-  // أكمل بمقاعد فارغة
-  while (sorted.length < MAX_SEATS) sorted.push(null);
-
-  row.innerHTML = sorted.map((u, i) => {
-    if (!u) return `
-      <div class="seat" onclick="claimSeat(${i})">
-        <div class="seat-avatar">
-          <span class="seat-num">${i + 1}</span>
-        </div>
-        <div class="seat-name empty">فارغ</div>
-      </div>`;
-    const color = getRankColor(u.rank || 100);
-    const init  = getInitial(u.username);
-    const micCls = u.micOn ? 'mic-on' : '';
-    return `
-      <div class="seat" onclick="clickSeat('${u.username}',${u.rank||100})">
-        <div class="seat-avatar taken ${micCls}" style="border-color:${color}">
-          <span style="font-size:18px;font-weight:700;color:${color}">${init}</span>
-          <span class="seat-num">${i + 1}</span>
-        </div>
-        <div class="seat-name">${u.username}</div>
-      </div>`;
-  }).join('');
+/* ══ RANK COLOR HELPER ══ */
+function getRankColor(rank) {
+  const map = {
+    100:'#95A5A6', 200:'#3498DB', 300:'#9B59B6', 400:'#F1C40F',
+    500:'#E67E22', 600:'#E74C3C', 700:'#1ABC9C', 800:'#2ECC71',
+    900:'#D35400', 1000:'#C0392B', 1100:'#8E44AD', 1200:'#F0A500'
+  };
+  return map[rank] || '#95A5A6';
 }
 
-function claimSeat(idx) {
-  showToast('🎤 اضغط على المايك للتحدث');
+/* ══ AVATAR BUILDER للرسائل ══ */
+function buildMsgAvatar(user) {
+  const color  = getRankColor(user?.rank || 100);
+  const initials = getInitial(user?.username || '?');
+  const style  = `--rank-color:${color}`;
+  if (user?.avatar_url) {
+    return `<div class="msg-avatar-sm" style="${style}">
+              <img src="${user.avatar_url}" alt="${initials}" onerror="this.parentElement.innerHTML='${initials}'">
+            </div>`;
+  }
+  return `<div class="msg-avatar-sm" style="${style}">${initials}</div>`;
 }
-function clickSeat(name, rank) {
-  if (typeof showMemberMenu === 'function') showMemberMenu(name, rank);
-}
-
-// ربط المقاعد بقائمة الأعضاء
-const _origRenderMembers = renderMembers;
-window.renderMembers = function(users) {
-  _origRenderMembers(users);
-  renderSeats(users);
-};
 
 /* ── المايك ─────────────────────────────── */
 let micOn = false;

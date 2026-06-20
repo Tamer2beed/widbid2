@@ -101,37 +101,29 @@ socket.on('welcomeUpdated', (d) => {
 let msgCount = 0;
 
 function addMessage(user, text, isMe, rank = 100, time = null) {
-  const color  = getRankColor(rank);
-  const wrap   = document.createElement('div');
-  wrap.className = 'msg-wrap' + (isMe ? ' mine' : '');
+  const color   = getRankColor(rank);
+  const initial = getInitial(user);
+  const timeStr = formatTime(time);
 
-  const avatar = document.createElement('div');
-  avatar.className = 'msg-avatar';
-  avatar.style.borderColor = color;
-  avatar.textContent = getInitial(user);
+  const wrap = document.createElement('div');
+  wrap.className = `msg-row ${isMe ? 'self' : 'other'}`;
 
+  /* ── أفاتار مع إطار لون الرتبة ── */
+  const av = document.createElement('div');
+  av.className = 'msg-avatar-sm';
+  av.style.setProperty('--rank-color', color);
+  av.textContent = initial;
+
+  /* ── فقاعة الرسالة ── */
   const bubble = document.createElement('div');
   bubble.className = 'msg-bubble';
 
   if (!isMe) {
-    const meta = document.createElement('div');
-    meta.className = 'msg-meta';
-    const name = document.createElement('span');
-    name.className = 'msg-name';
-    name.style.color = color;
-    name.textContent = user;
-    const t = document.createElement('span');
-    t.className = 'msg-time';
-    t.textContent = formatTime(time);
-    meta.appendChild(name);
-    meta.appendChild(t);
-    bubble.appendChild(meta);
-  } else {
-    const t = document.createElement('div');
-    t.className = 'msg-time';
-    t.style.cssText = 'color:rgba(255,255,255,.6);font-size:10px;margin-bottom:3px;text-align:left';
-    t.textContent = formatTime(time);
-    bubble.appendChild(t);
+    const sender = document.createElement('div');
+    sender.className = 'msg-sender';
+    sender.style.color = color;
+    sender.textContent = user;
+    bubble.appendChild(sender);
   }
 
   const msgText = document.createElement('div');
@@ -139,7 +131,12 @@ function addMessage(user, text, isMe, rank = 100, time = null) {
   msgText.textContent = text;
   bubble.appendChild(msgText);
 
-  wrap.appendChild(avatar);
+  const msgTime = document.createElement('div');
+  msgTime.className = 'msg-time';
+  msgTime.textContent = timeStr;
+  bubble.appendChild(msgTime);
+
+  wrap.appendChild(av);
   wrap.appendChild(bubble);
 
   const container = document.getElementById('messages');

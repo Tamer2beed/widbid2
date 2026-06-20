@@ -64,57 +64,6 @@ body { background: var(--wevo-chat); }
 }
 .main.with-stats { top: calc(var(--header-h) + 28px); }
 
-/* ══ SEATS ZONE (منطقة المقاعد الصوتية) ══ */
-.seats-zone {
-  background: var(--wevo-seats);
-  padding: 10px 8px 8px;
-  flex-shrink: 0;
-}
-.seats-row {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.seat {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 4px; cursor: pointer;
-  width: 58px;
-}
-.seat-avatar {
-  width: 52px; height: 52px; border-radius: 50%;
-  background: var(--seat-empty);
-  border: 2px solid rgba(255,255,255,0.3);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px;
-  position: relative;
-  transition: all .2s;
-}
-.seat-avatar.taken {
-  background: var(--seat-taken);
-  border-color: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-.seat-avatar.mic-on::after {
-  content: '🎤';
-  position: absolute; bottom: -4px; right: -4px;
-  font-size: 13px;
-  background: #27AE60; border-radius: 50%;
-  width: 18px; height: 18px;
-  display: flex; align-items: center; justify-content: center;
-}
-.seat-name {
-  font-size: 10px; color: rgba(255,255,255,0.9);
-  font-weight: 600; text-align: center;
-  max-width: 56px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.seat-name.empty { color: rgba(255,255,255,0.4); }
-.seat-num {
-  font-size: 9px; color: rgba(255,255,255,0.5);
-  position: absolute; top: 2px; left: 4px;
-}
-
 /* ══ CHAT AREA ══ */
 .chat-area {
   flex: 1; overflow: hidden; position: relative;
@@ -162,11 +111,17 @@ body { background: var(--wevo-chat); }
   align-self: flex-start;
 }
 .msg-avatar-sm {
-  width: 30px; height: 30px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
   background: linear-gradient(135deg, var(--wevo-top), var(--wevo-dark));
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; font-weight: 700; color: #fff;
   flex-shrink: 0;
+  border: 2.5px solid var(--rank-color, #95A5A6);   /* إطار لون الرتبة */
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.6), 0 2px 6px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+.msg-avatar-sm img {
+  width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
 }
 .msg-bubble {
   background: var(--msg-self);
@@ -208,17 +163,26 @@ body { background: var(--wevo-chat); }
   display: block;
 }
 
-/* ══ MEMBERS PANEL (جانبي بديل) ══ */
+/* ══ MEMBERS PANEL (يسار ← swipe to open) ══ */
 .members-panel {
-  position: fixed; top: 0; bottom: 0; right: -200px;
-  width: 180px; z-index: 150;
+  position: fixed; top: 0; bottom: 0;
+  left: -280px;                          /* مخفي يساراً */
+  width: 260px; z-index: 150;
   background: #fff;
-  border-left: 1px solid #e0e0e0;
-  transition: right .25s ease;
+  border-right: 1px solid #e0e0e0;
+  transition: left .28s cubic-bezier(.4,0,.2,1);
   display: flex; flex-direction: column;
-  box-shadow: -4px 0 16px rgba(0,0,0,0.1);
+  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
 }
-.members-panel.open { right: 0; }
+.members-panel.open { left: 0; }        /* انزلاق للداخل */
+
+/* overlay شفاف خلف القائمة */
+.panel-overlay {
+  position: fixed; inset: 0; z-index: 149;
+  background: rgba(0,0,0,0.35);
+  display: none;
+}
+.panel-overlay.show { display: block; }
 .members-header {
   padding: 14px 12px 10px;
   background: var(--wevo-top);
