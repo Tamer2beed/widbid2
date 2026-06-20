@@ -110,8 +110,8 @@ function toggleMembers(forceState) {
 /* ══ SWIPE للفتح والإغلاق ══ */
 (function initSwipe() {
   let startX = 0, startY = 0, dragging = false;
-  const THRESHOLD = 60;   /* بكسل */
-  const EDGE      = 50;   /* ~5mm من حافة اليسار */
+  const THRESHOLD = 50;   /* أقل مسافة للسحب للفتح */
+  const EDGE      = 80;   /* ~8mm من حافة اليسار */
 
   document.addEventListener('touchstart', e => {
     startX  = e.touches[0].clientX;
@@ -132,7 +132,7 @@ function toggleMembers(forceState) {
     }
     const dx = e.changedTouches[0].clientX - startX;
     const dy = Math.abs(e.changedTouches[0].clientY - startY);
-    if (dy < 60 && dx > THRESHOLD) toggleMembers(true);   /* يسار→يمين = فتح */
+    if (dy < 100 && dx > THRESHOLD) toggleMembers(true);   /* يسار→يمين = فتح */
     dragging = false;
   }, { passive: true });
 })();
