@@ -197,18 +197,16 @@ function buildMsgAvatar(user) {
 /* ── المايك ─────────────────────────────── */
 let micOn = false;
 function toggleMic() {
-  micOn = !micOn;
-  const btn    = document.getElementById('micTbBtn');
-  const icon   = document.getElementById('micIcon');
-  const status = document.getElementById('micStatus');
-  if (micOn) {
-    btn.classList.add('active'); btn.textContent = '🎙️';
-    icon.textContent = '🎙️'; status.textContent = 'يتحدث';
-    socket.emit('micOn', { room_id: roomId, username });
-  } else {
-    btn.classList.remove('active'); btn.textContent = '🎤';
-    icon.textContent = '🔊'; status.textContent = 'Mic Free';
-    socket.emit('micOff', { room_id: roomId, username });
+  /* زر المايك الأسفل = طلب/إنهاء السبيكر عبر نظام الطابور */
+  if (typeof SpeakerSystem !== 'undefined') {
+    const spkState = SpeakerSystem.getState?.();
+    if (spkState?.isSpeaking) {
+      SpeakerSystem.doneSpeaking();
+    } else if (spkState?.inQueue) {
+      SpeakerSystem.leaveQueue();
+    } else {
+      SpeakerSystem.requestSpeaker();
+    }
   }
 }
 

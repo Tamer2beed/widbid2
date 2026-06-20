@@ -180,8 +180,6 @@ const SpeakerSystem = (() => {
       <span class="spk-free-label" id="spkFreeLabel">السبيكر متاح</span>
       <div class="spk-timer" id="spkTimer" style="display:none">02:00</div>
       <div class="spk-queue-pills" id="spkQueuePills"></div>
-      <button class="spk-action-btn spk-btn-request" id="spkActionBtn"
-              onclick="SpeakerSystem.requestSpeaker()">🎤 تحدث</button>
     `;
     chatLayer.insertBefore(bar, chatLayer.firstChild);
 
@@ -229,47 +227,52 @@ const SpeakerSystem = (() => {
 
   /* ══ تحديث الواجهة ══ */
   function render() {
-    const bar         = document.getElementById('speakerBar');
     const current     = document.getElementById('spkCurrent');
     const currentName = document.getElementById('spkCurrentName');
     const freeLabel   = document.getElementById('spkFreeLabel');
     const timerEl     = document.getElementById('spkTimer');
     const pillsEl     = document.getElementById('spkQueuePills');
-    const actionBtn   = document.getElementById('spkActionBtn');
-    if (!bar) return;
+    const micTbBtn    = document.getElementById('micTbBtn');   /* زر المايك الأسفل */
 
     /* ── الحالي ── */
     if (state.current) {
-      current.style.display   = 'flex';
-      freeLabel.style.display = 'none';
-      timerEl.style.display   = 'block';
-      currentName.textContent = state.current.username;
+      if (current)   { current.style.display   = 'flex'; }
+      if (freeLabel) { freeLabel.style.display  = 'none'; }
+      if (timerEl)   { timerEl.style.display    = 'block'; }
+      if (currentName) currentName.textContent  = state.current.username;
     } else {
-      current.style.display   = 'none';
-      freeLabel.style.display = 'block';
-      timerEl.style.display   = 'none';
+      if (current)   { current.style.display   = 'none'; }
+      if (freeLabel) { freeLabel.style.display  = 'block'; }
+      if (timerEl)   { timerEl.style.display    = 'none'; }
     }
 
     /* ── الطابور ── */
-    pillsEl.innerHTML = state.queue.map((u, i) => `
-      <div class="spk-pill ${u.username === username ? 'mine' : ''}">
-        <span class="spk-pill-pos">#${i + 1}</span>
-        <span>${u.username === username ? 'أنت' : u.username}</span>
-      </div>`).join('');
+    if (pillsEl) {
+      pillsEl.innerHTML = state.queue.map((u, i) => `
+        <div class="spk-pill ${u.username === username ? 'mine' : ''}">
+          <span class="spk-pill-pos">#${i + 1}</span>
+          <span>${u.username === username ? 'أنت' : u.username}</span>
+        </div>`).join('');
+    }
 
-    /* ── زر الإجراء ── */
-    if (state.isSpeaking) {
-      actionBtn.className   = 'spk-action-btn spk-btn-done';
-      actionBtn.textContent = '✅ انتهيت';
-      actionBtn.onclick     = () => SpeakerSystem.doneSpeaking();
-    } else if (state.inQueue) {
-      actionBtn.className   = 'spk-action-btn spk-btn-leave';
-      actionBtn.textContent = `#${state.myPos + 1} في الطابور — ❌`;
-      actionBtn.onclick     = () => SpeakerSystem.leaveQueue();
-    } else {
-      actionBtn.className   = state.current ? 'spk-action-btn spk-btn-queue' : 'spk-action-btn spk-btn-request';
-      actionBtn.textContent = state.current ? '🖐️ انضم للطابور' : '🎤 تحدث';
-      actionBtn.onclick     = () => SpeakerSystem.requestSpeaker();
+    /* ── زر المايك الأسفل ── */
+    if (micTbBtn) {
+      if (state.isSpeaking) {
+        /* أنا أتحدث حالياً — زر أحمر "انتهيت" */
+        micTbBtn.textContent  = '🛑';
+        micTbBtn.style.background = '#E74C3C';
+        micTbBtn.onclick = () => SpeakerSystem.doneSpeaking();
+      } else if (state.inQueue) {
+        /* أنا في الطابور — زر برتقالي رقم موقعي */
+        micTbBtn.textContent  = `#${state.myPos + 1}`;
+        micTbBtn.style.background = '#E67E22';
+        micTbBtn.onclick = () => SpeakerSystem.leaveQueue();
+      } else {
+        /* السبيكر متاح أو مشغول — زر أخضر "تحدث" */
+        micTbBtn.textContent  = '🎤';
+        micTbBtn.style.background = '';
+        micTbBtn.onclick = () => SpeakerSystem.requestSpeaker();
+      }
     }
 
     /* ── لوحة المشرف ── */
@@ -432,6 +435,7 @@ const SpeakerSystem = (() => {
     requestSpeaker, doneSpeaking, leaveQueue,
     adminExtend, adminRevoke, adminSkip, adminGiveTo,
     openAdminPanel, closeAdminPanel,
+    getState: () => ({ ...state }),
   };
 
 })();
