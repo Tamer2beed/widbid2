@@ -210,14 +210,54 @@ function toggleMic() {
   }
 }
 
-/* ── رفع اليد ───────────────────────────── */
+/* ── رفع اليد / طلب السبيكر ─────────────── */
 function sendRaiseHand() {
-  socket.emit('raiseHand', { room_id: roomId, username });
-  addSystem('🖐️ أنت تطلب الكلام');
-  showToast('تم إرسال طلب الكلام');
+  /* اضغط المايك مباشرة بدلاً من رفع يد منفصلة */
+  if (typeof SpeakerSystem !== 'undefined') {
+    SpeakerSystem.requestSpeaker();
+  } else {
+    socket.emit('raiseHand', { room_id: roomId, username });
+    showToast('🖐️ تم إرسال طلب الكلام');
+  }
 }
+
+/* ── إضافة/إزالة رمز 🖐️ في قائمة الأعضاء ── */
+function setHandBadge(targetUsername, show) {
+  const items = document.querySelectorAll('.member-item');
+  items.forEach(el => {
+    if (el.dataset.username !== targetUsername) return;
+    const existing = el.querySelector('.hand-badge');
+    if (show && !existing) {
+      const badge = document.createElement('span');
+      badge.className   = 'hand-badge';
+      badge.textContent = '🖐️';
+      badge.style.cssText = 'font-size:14px;margin-right:4px;animation:handPulse 1s infinite';
+      el.querySelector('.member-name')?.prepend(badge);
+    } else if (!show && existing) {
+      existing.remove();
+    }
+  });
+}
+
+/* pulse animation للـ hand badge */
+if (!document.getElementById('handBadgeStyle')) {
+  const s = document.createElement('style');
+  s.id = 'handBadgeStyle';
+  s.textContent = `@keyframes handPulse{0%,100%{opacity:1}50%{opacity:.3}}`;
+  document.head.appendChild(s);
+}
+
 socket.on('raiseHand', (d) => {
-  if (d.username !== username) addSystem(`🖐️ ${d.username} يطلب الكلام`);
+  setHandBadge(d.username, true);
+  /* إشعار خفيف فقط للمشرفين */
+  if ((userRank || 0) >= 500 && d.username !== username) {
+    showToast(`🖐️ ${d.username} يطلب الكلام`);
+  }
+});
+
+/* عند حصول شخص على السبيكر — أزل رمز يده */
+socket.on('speakerState', (data) => {
+  if (data.current) setHandBadge(data.current.username, false);
 });
 
 /* ── الردود السريعة ─────────────────────── */

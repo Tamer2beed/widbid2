@@ -340,17 +340,20 @@ const SpeakerSystem = (() => {
     }, 500);
   }
 
-  /* ══ إجراءات المستخدم ══ */
   function requestSpeaker() {
     socket.emit('speakerRequest', { room_id: roomId, username, rank: userRank });
+    /* أظهر 🖐️ فوراً لنفسي في قائمة الأعضاء */
+    if (typeof setHandBadge === 'function') setHandBadge(username, true);
   }
 
   function doneSpeaking() {
     socket.emit('speakerDone', { room_id: roomId, username });
+    if (typeof setHandBadge === 'function') setHandBadge(username, false);
   }
 
   function leaveQueue() {
     socket.emit('speakerLeaveQueue', { room_id: roomId, username });
+    if (typeof setHandBadge === 'function') setHandBadge(username, false);
   }
 
   /* ══ إجراءات المشرف ══ */
