@@ -111,7 +111,7 @@ function toggleMembers(forceState) {
 (function initSwipe() {
   let startX = 0, startY = 0, dragging = false;
   const THRESHOLD = 60;   /* بكسل */
-  const EDGE      = 30;   /* منطقة حافة اليسار لبدء السحب */
+  const EDGE      = 50;   /* ~5mm من حافة اليسار */
 
   document.addEventListener('touchstart', e => {
     startX  = e.touches[0].clientX;
