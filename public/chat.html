@@ -182,12 +182,69 @@
 <!-- ══ TOAST ══ -->
 <div class="toast" id="toast"></div>
 
+<!-- ══ VIDEO BROADCAST UI ══ -->
+
+<!-- نافذة البث (قابلة للسحب وتغيير الحجم) -->
+<div class="video-window" id="videoWindow" style="display:none">
+  <!-- شريط العنوان (للسحب) -->
+  <div class="video-titlebar" id="videoTitlebar">
+    <span class="video-broadcaster" id="videoBroadcasterName">🎥 البث المباشر</span>
+    <div class="video-controls">
+      <span class="vid-ctrl-btn" onclick="cycleVideoSize()" title="تغيير الحجم">⊞</span>
+      <span class="vid-ctrl-btn" onclick="closeVideoWindow()" title="إغلاق">✕</span>
+    </div>
+  </div>
+
+  <!-- منطقة الفيديو -->
+  <div class="video-screen" id="videoScreen">
+    <!-- Phase 21: يُستبدل بـ <video> WebRTC -->
+    <div class="video-placeholder">
+      <div class="vid-ph-icon">📹</div>
+      <div class="vid-ph-text">البث المباشر</div>
+      <div class="vid-ph-sub">سيُفعَّل في Phase 21 (WebRTC)</div>
+    </div>
+    <!-- مؤشر البث الحي -->
+    <div class="live-badge">🔴 LIVE</div>
+  </div>
+
+  <!-- أزرار الحجم -->
+  <div class="video-size-bar">
+    <span class="size-btn active" data-size="sm" onclick="setVideoSize('sm')">صغير</span>
+    <span class="size-btn"       data-size="md" onclick="setVideoSize('md')">وسط</span>
+    <span class="size-btn"       data-size="lg" onclick="setVideoSize('lg')">كبير</span>
+  </div>
+</div>
+
+<!-- طلب مشاهدة البث (للمشاهد) -->
+<div class="video-request-overlay" id="videoRequestOverlay" style="display:none">
+  <div class="video-request-box">
+    <div class="vreq-icon">📹</div>
+    <div class="vreq-title">طلب مشاهدة البث</div>
+    <div class="vreq-name" id="vreqBroadcasterName">اسم المُذيع</div>
+    <div class="vreq-sub">يريد <strong id="vreqViewerName"></strong> مشاهدة بثك المباشر</div>
+    <div class="vreq-actions">
+      <button class="vreq-btn accept" onclick="respondToRequest(true)">✅ قبول</button>
+      <button class="vreq-btn reject" onclick="respondToRequest(false)">❌ رفض</button>
+    </div>
+  </div>
+</div>
+
+<!-- إشعار طلب البث (للمُذيع) -->
+<div class="broadcast-request-toast" id="broadcastReqToast" style="display:none">
+  <span id="broadcastReqText"></span>
+  <div class="breq-actions">
+    <button class="breq-btn accept" onclick="answerBroadcastReq(true)">قبول</button>
+    <button class="breq-btn reject" onclick="answerBroadcastReq(false)">رفض</button>
+  </div>
+</div>
+
 <!-- ══ JS — يُحمَّل حسب الرتبة ══ -->
 <script src="/socket.io/socket.io.js"></script>
 <script src="/js/core.js"></script>
 <script src="/js/ui.js"></script>
 <script src="/js/sounds.js"></script>
 <script src="/js/camera.js"></script>
+<script src="/js/video.js"></script>
 <script>
 (async function loadRankModules() {
   const rank = parseInt(localStorage.getItem('rank')) || 100;

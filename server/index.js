@@ -502,6 +502,52 @@ io.on('connection', (socket) => {
   });
 
   /* ════════════════════════════════════════════════
+     أحداث البث المباشر — Video Broadcast
+     (UI فقط الآن — Phase 21: يُضاف WebRTC/Mediasoup)
+  ════════════════════════════════════════════════ */
+
+  socket.on('startBroadcast', (data) => {
+    const username = socket.userData?.username || data.username;
+    const room_id  = String(data.room_id);
+    socket.to(room_id).emit('broadcastStarted', { username });
+  });
+
+  socket.on('stopBroadcast', (data) => {
+    const username = socket.userData?.username || '';
+    const room_id  = String(data.room_id);
+    socket.to(room_id).emit('broadcastStopped', { username });
+  });
+
+  socket.on('requestWatch', (data) => {
+    const { room_id, broadcaster, viewer } = data;
+    /* أرسل الطلب للمُذيع فقط */
+    const roomSockets = io.sockets.adapter.rooms.get(String(room_id));
+    if (!roomSockets) return;
+    for (const sid of roomSockets) {
+      const s = io.sockets.sockets.get(sid);
+      if (s?.userData?.username === broadcaster) {
+        s.emit('watchRequest', { viewer, room_id });
+        break;
+      }
+    }
+  });
+
+  socket.on('broadcastAnswer', (data) => {
+    const { room_id, viewer, accepted } = data;
+    const roomSockets = io.sockets.adapter.rooms.get(String(room_id));
+    if (!roomSockets) return;
+    for (const sid of roomSockets) {
+      const s = io.sockets.sockets.get(sid);
+      if (s?.userData?.username === viewer) {
+        s.emit(accepted ? 'watchAccepted' : 'watchRejected', {
+          broadcaster: socket.userData?.username,
+        });
+        break;
+      }
+    }
+  });
+
+  /* ════════════════════════════════════════════════
      أحداث الرتب المتقدمة — Master → Super Owner
      (تم نقلها داخل connection بعد إصلاح خلل البنية —
       كانت معرّفة خارج نطاق socket فتسبب ReferenceError)
