@@ -23,6 +23,7 @@
   </div>
   <div class="header-title" id="roomTitle">...</div>
   <div class="header-icons">
+    <span class="header-icon" id="spkAdminIcon" style="display:none" onclick="SpeakerSystem.openAdminPanel()">⚙️</span>
     <span class="header-icon" id="adminToolBtn" style="display:none" onclick="openAdminSheet()">🛠️</span>
     <span class="header-icon" onclick="toggleMembers()">👥</span>
     <span class="header-icon">💬</span>
@@ -245,6 +246,7 @@
 <script src="/js/sounds.js"></script>
 <script src="/js/camera.js"></script>
 <script src="/js/video.js"></script>
+<script src="/js/speaker.js"></script>
 <script>
 (async function loadRankModules() {
   const rank = parseInt(localStorage.getItem('rank')) || 100;

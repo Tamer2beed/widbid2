@@ -62,6 +62,14 @@ socket.on('connect', () => {
   });
   /* أعلم بقية الملفات أن socket جاهز */
   document.dispatchEvent(new Event('socketReady'));
+
+  /* إظهار أزرار المشرفين */
+  if (userRank >= 500) {
+    const spkBtn = document.getElementById('spkAdminIcon');
+    if (spkBtn) spkBtn.style.display = 'inline';
+    const adminBtn = document.getElementById('adminToolBtn');
+    if (adminBtn) adminBtn.style.display = 'inline';
+  }
 });
 
 socket.on('roomInfo', (data) => {

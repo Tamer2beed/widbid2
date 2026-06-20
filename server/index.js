@@ -75,6 +75,54 @@ function canActOn(actorRank, targetRank, minActorRank = 500) {
 ════════════════════════════════════════════════ */
 const games = {};
 
+/* ════════════════════════════════════════════════
+   نظام الغرف في الذاكرة (طابور السبيكر)
+════════════════════════════════════════════════ */
+const rooms = {}; /* rooms[room_id] = { current, queue, defaultTime, timer } */
+
+function _giveSpeaker(rid, user) {
+  const R = rooms[rid];
+  if (!R) return;
+  clearTimeout(R.timer);
+  const endsAt = Date.now() + (R.defaultTime || 120) * 1000;
+  R.current  = { ...user, endsAt };
+  R.queue    = R.queue.filter(u => u.username !== user.username);
+  R.timer    = setTimeout(() => _nextSpeaker(rid), R.defaultTime * 1000);
+  _broadcastState(rid);
+}
+
+function _nextSpeaker(rid) {
+  const R = rooms[rid];
+  if (!R) return;
+  clearTimeout(R.timer);
+  R.current = null;
+  if (R.queue.length) {
+    _giveSpeaker(rid, R.queue[0]);
+  } else {
+    _broadcastState(rid);
+  }
+}
+
+function _broadcastState(rid) {
+  const R = rooms[rid];
+  if (!R) return;
+  io.to(rid).emit('speakerState', {
+    current:     R.current || null,
+    queue:       R.queue   || [],
+    defaultTime: R.defaultTime || 120,
+  });
+}
+
+function _sendStateTo(sock, rid) {
+  const R = rooms[rid];
+  if (!R) return;
+  sock.emit('speakerState', {
+    current:     R.current || null,
+    queue:       R.queue   || [],
+    defaultTime: R.defaultTime || 120,
+  });
+}
+
 function checkWinner(board) {
   const lines = [
     [0,1,2],[3,4,5],[6,7,8],
@@ -136,6 +184,10 @@ io.on('connection', (socket) => {
     // تحديث قائمة المتواجدين
     const users = await buildOnlineUsers(room_id);
     io.to(room_id).emit('onlineUsers', users);
+
+    // تهيئة غرفة السبيكر إن لم تكن موجودة + إرسال الحالة للداخل
+    if (!rooms[room_id]) rooms[room_id] = { current: null, queue: [], defaultTime: 120, timer: null };
+    _sendStateTo(socket, room_id);
 
     console.log(`👤 ${username} (rank:${dbRank}) joined room ${room_id}`);
   });
@@ -211,7 +263,90 @@ io.on('connection', (socket) => {
     io.to(room_id).emit('raiseHand', { username });
   });
 
-  /* ─── كتم مستخدم ──────────────────────────── */
+  /* ════════════════════════════════════════════
+     نظام طابور السبيكر
+  ════════════════════════════════════════════ */
+
+  socket.on('speakerRequest', (data) => {
+    const { room_id, username } = data;
+    const rank = socket.userData?.rank || 100;
+    if (!room_id || !username) return;
+
+    if (!speakerQueues[room_id]) {
+      speakerQueues[room_id] = { current: null, queue: [], duration: 120 };
+    }
+    const sq = speakerQueues[room_id];
+
+    if (!sq.current) {
+      _assignSpeaker(room_id, username, rank);
+    } else {
+      if (sq.current.username === username) {
+        socket.emit('speakerError', 'أنت تتكلم الآن'); return;
+      }
+      if (sq.queue.find(u => u.username === username)) {
+        socket.emit('speakerError', 'أنت بالفعل في الطابور'); return;
+      }
+      sq.queue.push({ username, rank });
+      io.to(room_id).emit('speakerQueueUpdate', _getQueueState(room_id));
+      socket.emit('speakerQueued', { position: sq.queue.length });
+    }
+  });
+
+  socket.on('speakerDone', (data) => {
+    const { room_id, username } = data;
+    const sq = speakerQueues[room_id];
+    if (!sq?.current || sq.current.username !== username) return;
+    _nextSpeaker(room_id);
+  });
+
+  socket.on('speakerRevoke', (data) => {
+    const { room_id, target } = data;
+    if ((socket.userData?.rank || 0) < 500) {
+      socket.emit('speakerError', 'ليس لديك صلاحية'); return;
+    }
+    const sq = speakerQueues[room_id];
+    if (!sq) return;
+    if (target && sq.current?.username !== target) {
+      sq.queue = sq.queue.filter(u => u.username !== target);
+      io.to(room_id).emit('speakerQueueUpdate', _getQueueState(room_id));
+    } else {
+      _nextSpeaker(room_id);
+    }
+  });
+
+  socket.on('speakerPromote', (data) => {
+    const { room_id, username } = data;
+    if ((socket.userData?.rank || 0) < 500) return;
+    const sq = speakerQueues[room_id];
+    if (!sq) return;
+    const idx = sq.queue.findIndex(u => u.username === username);
+    if (idx > 0) {
+      const [user] = sq.queue.splice(idx, 1);
+      sq.queue.unshift(user);
+      io.to(room_id).emit('speakerQueueUpdate', _getQueueState(room_id));
+    }
+  });
+
+  socket.on('speakerExtend', (data) => {
+    const { room_id, extra } = data;
+    if ((socket.userData?.rank || 0) < 500) return;
+    const sq = speakerQueues[room_id];
+    if (!sq?.current) return;
+    sq.current.duration += (parseInt(extra) || 60);
+    io.to(room_id).emit('speakerQueueUpdate', _getQueueState(room_id));
+  });
+
+  socket.on('speakerSetDuration', (data) => {
+    const { room_id, duration } = data;
+    if ((socket.userData?.rank || 0) < 500) return;
+    if (!speakerQueues[room_id]) return;
+    speakerQueues[room_id].duration = Math.max(30, parseInt(duration) || 120);
+    socket.emit('speakerDurationSet', { duration: speakerQueues[room_id].duration });
+  });
+
+  socket.on('speakerGetState', (data) => {
+    socket.emit('speakerQueueUpdate', _getQueueState(data?.room_id));
+  });
   socket.on('muteUser', async (data) => {
     const { room_id, target, by } = data;
     const actorRank = socket.userData?.rank || 100;
@@ -513,6 +648,90 @@ io.on('connection', (socket) => {
       caption:  caption  || '',
       time:     new Date().toISOString(),
     });
+  });
+
+  /* ════════════════════════════════════════════════
+     نظام طابور السبيكر — Speaker Queue System
+  ════════════════════════════════════════════════ */
+
+  socket.on('speakerRequest', (data) => {
+    const { room_id, username, rank } = data;
+    const rid = String(room_id);
+
+    if (!rooms[rid]) rooms[rid] = { current: null, queue: [], defaultTime: 120, timer: null };
+    const R = rooms[rid];
+
+    /* إذا السبيكر فارغ → أعطه فوراً */
+    if (!R.current) {
+      _giveSpeaker(rid, { username, rank });
+    } else if (R.current.username === username) {
+      showToast && null; /* هو الحالي */
+    } else if (!R.queue.find(u => u.username === username)) {
+      R.queue.push({ username, rank });
+      _broadcastState(rid);
+    }
+  });
+
+  socket.on('speakerDone', (data) => {
+    const rid = String(data.room_id);
+    const R   = rooms[rid];
+    if (!R || R.current?.username !== data.username) return;
+    _nextSpeaker(rid);
+  });
+
+  socket.on('speakerLeaveQueue', (data) => {
+    const rid = String(data.room_id);
+    const R   = rooms[rid];
+    if (!R) return;
+    R.queue = R.queue.filter(u => u.username !== data.username);
+    _broadcastState(rid);
+  });
+
+  socket.on('speakerExtend', (data) => {
+    if ((socket.userData?.rank || 0) < 500) return;
+    const rid = String(data.room_id);
+    const R   = rooms[rid];
+    if (!R?.current) return;
+    const secs = Math.min(300, Math.max(10, parseInt(data.seconds) || 60));
+    R.current.endsAt += secs * 1000;
+    clearTimeout(R.timer);
+    R.timer = setTimeout(() => _nextSpeaker(rid), R.current.endsAt - Date.now());
+    io.to(rid).emit('speakerTimeUpdated', { endsAt: R.current.endsAt });
+    _broadcastState(rid);
+  });
+
+  socket.on('speakerRevoke', (data) => {
+    if ((socket.userData?.rank || 0) < 500) return;
+    const rid = String(data.room_id);
+    _nextSpeaker(rid);
+  });
+
+  socket.on('speakerSkip', (data) => {
+    if ((socket.userData?.rank || 0) < 500) return;
+    const rid = String(data.room_id);
+    const R   = rooms[rid];
+    if (!R || !R.queue.length) return;
+    R.queue.shift(); /* احذف الأول من الطابور */
+    _broadcastState(rid);
+  });
+
+  socket.on('speakerGiveTo', (data) => {
+    if ((socket.userData?.rank || 0) < 500) return;
+    const rid    = String(data.room_id);
+    const R      = rooms[rid];
+    if (!R) return;
+    const target = R.queue.find(u => u.username === data.target);
+    if (!target) return;
+    /* انقل المستهدف لأول الطابور */
+    R.queue = [target, ...R.queue.filter(u => u.username !== data.target)];
+    _nextSpeaker(rid);
+  });
+
+  /* ══ عند دخول الغرفة — أرسل الحالة الحالية ══ */
+  const _origJoin = socket.listeners?.('joinRoom');
+  socket.on('joinRoom_speakerSync', (data) => {
+    const rid = String(data.room_id);
+    if (rooms[rid]) _sendStateTo(socket, rid);
   });
 
   /* ════════════════════════════════════════════════
