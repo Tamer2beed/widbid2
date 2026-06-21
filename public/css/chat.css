@@ -511,6 +511,13 @@ body { background: var(--wevo-chat); }
 }
 .side-menu-item:active { background: #f5f5ff; }
 .side-menu-item.danger { color: #E74C3C; }
+.side-menu-divider {
+  padding: 8px 16px 4px;
+  font-size: 11px; font-weight: 700; color: #aaa;
+  text-transform: uppercase; letter-spacing: 1px;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 4px;
+}
 .item-icon { font-size: 18px; }
 
 /* ══ STATUS POPUP ══ */

@@ -34,9 +34,10 @@
     </div>
     <div class="header-title" id="roomTitle">...</div>
     <div class="header-icons-left">
-      <span class="header-icon" id="spkAdminIcon" style="display:none" onclick="SpeakerSystem.openAdminPanel()">⚙️</span>
-      <span class="header-icon" id="adminToolBtn" style="display:none" onclick="openAdminSheet()">🛠️</span>
-      <span class="header-icon" id="bannerEditBtn" style="display:none" onclick="openBannerEditor()" title="تعديل البانر">🖼️</span>
+      <!-- أيقونات الإدارة انتقلت للقائمة الجانبية -->
+      <span id="spkAdminIcon" style="display:none"></span>
+      <span id="adminToolBtn" style="display:none"></span>
+      <span id="bannerEditBtn" style="display:none"></span>
     </div>
   </div>
 
@@ -176,6 +177,24 @@
   <div class="side-menu-item" onclick="reportRoom()">
     <span class="item-icon">🚨</span><span>تبليغ</span>
   </div>
+  <div class="side-menu-item" onclick="startBroadcast()">
+    <span class="item-icon">📹</span><span>بث مباشر</span>
+  </div>
+
+  <!-- ══ أدوات الإدارة (500+) ══ -->
+  <div id="adminMenuSection" style="display:none">
+    <div class="side-menu-divider">إدارة الغرفة</div>
+    <div class="side-menu-item" onclick="openBannerEditor(); closeSideMenu()">
+      <span class="item-icon">🖼️</span><span>تعديل البانر</span>
+    </div>
+    <div class="side-menu-item" onclick="openAdminSheet(); closeSideMenu()">
+      <span class="item-icon">🛠️</span><span>أدوات المشرف</span>
+    </div>
+    <div class="side-menu-item" onclick="SpeakerSystem.openAdminPanel(); closeSideMenu()">
+      <span class="item-icon">🎙️</span><span>إدارة السبيكر</span>
+    </div>
+  </div>
+
   <div class="side-menu-item danger" onclick="leaveRoom()">
     <span class="item-icon">🚪</span><span>خروج</span>
   </div>

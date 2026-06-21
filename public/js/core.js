@@ -65,10 +65,8 @@ socket.on('connect', () => {
 
   /* إظهار أزرار المشرفين */
   if (userRank >= 500) {
-    const spkBtn = document.getElementById('spkAdminIcon');
-    if (spkBtn) spkBtn.style.display = 'inline';
-    const adminBtn = document.getElementById('adminToolBtn');
-    if (adminBtn) adminBtn.style.display = 'inline';
+    const adminSection = document.getElementById('adminMenuSection');
+    if (adminSection) adminSection.style.display = 'block';
   }
 });
 
@@ -80,6 +78,14 @@ socket.on('roomInfo', (data) => {
 });
 
 socket.on('messageHistory', (msgs) => {
+  /* امسح الرسائل الحالية قبل تحميل التاريخ (يمنع التكرار عند إعادة الاتصال) */
+  const container = document.getElementById('messages');
+  if (container) {
+    /* احتفظ فقط بـ welcome banner */
+    const banner = document.getElementById('welcomeBanner');
+    container.innerHTML = '';
+    if (banner) container.appendChild(banner);
+  }
   msgs.forEach(m => addMessage(m.username, m.content, m.username === username, m.rank || 100, m.created_at));
 });
 
