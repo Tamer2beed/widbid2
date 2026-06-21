@@ -174,7 +174,6 @@ const SpeakerSystem = (() => {
         <span class="spk-mic-anim">🎙️</span>
         <span class="spk-name" id="spkCurrentName">—</span>
       </div>
-      <span class="spk-free-label" id="spkFreeLabel">السبيكر متاح</span>
       <div class="spk-timer" id="spkTimer" style="display:none">02:00</div>
       <div class="spk-queue-pills" id="spkQueuePills"></div>
     `;
@@ -218,21 +217,31 @@ const SpeakerSystem = (() => {
   function render() {
     const current     = document.getElementById('spkCurrent');
     const currentName = document.getElementById('spkCurrentName');
-    const freeLabel   = document.getElementById('spkFreeLabel');
     const timerEl     = document.getElementById('spkTimer');
     const pillsEl     = document.getElementById('spkQueuePills');
-    const micTbBtn    = document.getElementById('micTbBtn');   /* زر المايك الأسفل */
+    const micTbBtn    = document.getElementById('micTbBtn');
+    const speakerRow  = document.getElementById('speakerHeaderRow');
+
+    /* ── أخفِ الصف كاملاً إذا لا يوجد نشاط ── */
+    const hasActivity = !!state.current || state.queue.length > 0;
+    if (speakerRow) {
+      speakerRow.style.display = hasActivity ? 'flex' : 'none';
+      /* اضبط ارتفاع الهيدر الموحد */
+      const header = document.getElementById('roomHeader');
+      if (header) header.style.height = hasActivity ? 'var(--room-header-h)' : '54px';
+      /* اضبط top للـ main */
+      const main = document.querySelector('.main');
+      if (main) main.style.top = hasActivity ? 'var(--room-header-h)' : '54px';
+    }
 
     /* ── الحالي ── */
     if (state.current) {
-      if (current)   { current.style.display   = 'flex'; }
-      if (freeLabel) { freeLabel.style.display  = 'none'; }
-      if (timerEl)   { timerEl.style.display    = 'block'; }
-      if (currentName) currentName.textContent  = state.current.username;
+      if (current)     current.style.display  = 'flex';
+      if (timerEl)     timerEl.style.display   = 'block';
+      if (currentName) currentName.textContent = state.current.username;
     } else {
-      if (current)   { current.style.display   = 'none'; }
-      if (freeLabel) { freeLabel.style.display  = 'block'; }
-      if (timerEl)   { timerEl.style.display    = 'none'; }
+      if (current)  current.style.display = 'none';
+      if (timerEl)  timerEl.style.display  = 'none';
     }
 
     /* ── الطابور ── */

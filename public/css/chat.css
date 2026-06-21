@@ -23,10 +23,11 @@ body { background: var(--wevo-chat); }
 
 .room-header {
   position: fixed; top: 0; right: 0; left: 0; z-index: 100;
-  height: var(--room-header-h);
+  height: 54px;   /* يصبح 96px عند نشاط السبيكر */
   display: flex; flex-direction: column;
   overflow: hidden;
   box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  transition: height .2s ease;
 }
 
 /* ── البانر (خلفية) ── */
@@ -129,11 +130,12 @@ body { background: var(--wevo-chat); }
 /* ══ MAIN AREA (يبدأ بعد الهيدر الموحد) ══ */
 .main {
   position: fixed;
-  top: var(--room-header-h);
+  top: 54px;   /* يتغير لـ 96px عند نشاط السبيكر */
   bottom: calc(var(--toolbar1-h) + var(--toolbar2-h));
   right: 0; left: 0;
   display: flex; flex-direction: column;
   overflow: hidden;
+  transition: top .2s ease;
 }
 
 /* ══ BANNER EDITOR MODAL ══ */
