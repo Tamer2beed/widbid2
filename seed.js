@@ -128,10 +128,13 @@ const SAMPLE_MSGS = [
 
     /* ══ 2. حذف البيانات التجريبية القديمة ══ */
     process.stdout.write('⏳ تنظيف البيانات القديمة... ');
-    await conn.query(`DELETE FROM messages   WHERE sender_id IN (SELECT id FROM users WHERE username LIKE 'test_%')`);
+    await conn.query(`DELETE FROM messages WHERE sender_id IN (SELECT id FROM users WHERE username LIKE 'test_%')`);
     await conn.query(`DELETE FROM room_masters WHERE room_id IN (SELECT id FROM rooms WHERE name IN (${ROOMS.map(()=>'?').join(',')}) )`, ROOMS.map(r=>r.name));
-    await conn.query(`DELETE FROM rooms      WHERE name IN (${ROOMS.map(()=>'?').join(',')})`, ROOMS.map(r=>r.name));
-    await conn.query(`DELETE FROM users      WHERE username LIKE 'test_%'`);
+    await conn.query(`DELETE FROM rooms WHERE name IN (${ROOMS.map(()=>'?').join(',')})`, ROOMS.map(r=>r.name));
+    await conn.query(`DELETE FROM users WHERE username LIKE 'test_%'`);
+    /* حذف بالإيميل أيضاً (احتياط من duplicates) */
+    const emails = USERS.map(u => u.email);
+    await conn.query(`DELETE FROM users WHERE email IN (${emails.map(()=>'?').join(',')})`, emails);
     console.log('✅');
 
     /* ══ 3. إدخال المستخدمين ══ */
