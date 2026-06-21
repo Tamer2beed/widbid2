@@ -15,7 +15,10 @@ const { router: pointsRouter, addPoints, POINTS_PER_MESSAGE } = require('./route
 
 const app    = express();
 const server = http.createServer(app);
-const io     = socketio(server, { cors: { origin: '*' } });
+const io     = socketio(server, {
+  cors: { origin: '*' },
+  maxHttpBufferSize: 5 * 1024 * 1024,   /* 5MB — لدعم صور البانر */
+});
 
 app.use(cors());
 app.use(express.json());
@@ -623,15 +626,23 @@ io.on('connection', (socket) => {
 
   /* ── بانر الغرفة ──────────────────────── */
   socket.on('setBanner', async (data) => {
-    if ((socket.userData?.rank || 0) < 500) return;
+    if ((socket.userData?.rank || 0) < 500) {
+      console.log('setBanner: rejected — rank too low');
+      return;
+    }
     const { room_id, mobile, desktop } = data;
+    console.log(`setBanner: room=${room_id} mobile=${mobile?.length||0}chars desktop=${desktop?.length||0}chars`);
     try {
-      await db.query(
+      const [result] = await db.query(
         `UPDATE rooms SET banner_mobile = ?, banner_desktop = ? WHERE id = ?`,
         [mobile || null, desktop || null, room_id]
       );
+      console.log(`setBanner: updated ${result.affectedRows} rows`);
       io.to(String(room_id)).emit('bannerUpdated', { mobile, desktop });
-    } catch (e) { console.error('setBanner:', e.message); }
+    } catch (e) {
+      console.error('setBanner ERROR:', e.message);
+      socket.emit('bannerError', { message: e.message });
+    }
   });
 
   /* ── إرسال صورة ─────────────────────── */

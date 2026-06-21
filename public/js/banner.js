@@ -60,18 +60,43 @@ const BannerSystem = (() => {
     reader.readAsDataURL(file);
   }
 
+  /* ══ ضغط الصورة قبل الإرسال ══ */
+  async function compressImage(base64, maxWidth, quality = 0.82) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ratio  = Math.min(1, maxWidth / img.width);
+        canvas.width  = Math.round(img.width  * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(base64);
+      img.src = base64;
+    });
+  }
+
   /* ══ حفظ البانر ══ */
-  function saveBanner() {
+  async function saveBanner() {
     if (!pendingMobile && !pendingDesktop) {
       showToast('⚠️ اختر صورة واحدة على الأقل');
       return;
     }
-    socket.emit('setBanner', {
-      room_id : roomId,
-      mobile  : pendingMobile  || null,
-      desktop : pendingDesktop || null,
+
+    showToast('⏳ جاري الضغط والحفظ...');
+
+    /* اضغط الصور قبل الإرسال */
+    const mobile  = pendingMobile  ? await compressImage(pendingMobile,  360, 0.80) : null;
+    const desktop = pendingDesktop ? await compressImage(pendingDesktop, 1200, 0.82) : null;
+
+    console.log('saveBanner: sending', {
+      mobileSize : mobile?.length  || 0,
+      desktopSize: desktop?.length || 0,
+      roomId,
     });
-    showToast('⏳ جاري الحفظ...');
+
+    socket.emit('setBanner', { room_id: roomId, mobile, desktop });
     closeBannerEditor();
   }
 
@@ -121,6 +146,11 @@ const BannerSystem = (() => {
     socket.on('bannerUpdated', (data) => {
       applyBanner(data);
       showToast(data?.mobile || data?.desktop ? '🖼️ تم تحديث بانر الغرفة' : '🗑️ تم حذف البانر');
+    });
+
+    /* خطأ في الحفظ */
+    socket.on('bannerError', (data) => {
+      showToast('❌ خطأ في الحفظ: ' + (data?.message || 'حاول مرة أخرى'));
     });
   }
 
