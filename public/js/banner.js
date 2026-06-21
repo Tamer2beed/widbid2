@@ -15,7 +15,8 @@ const BannerSystem = (() => {
 
   /* ══ فتح / إغلاق المحرر ══ */
   function openBannerEditor() {
-    if ((userRank || 0) < 500) { showToast('⛔ للمشرفين فقط'); return; }
+    const rank = parseInt(localStorage.getItem('rank') || '0');
+    if (rank < 500) { showToast('⛔ للمشرفين فقط'); return; }
     document.getElementById('bannerEditorOverlay').style.display = 'flex';
     pendingMobile  = null;
     pendingDesktop = null;
@@ -125,7 +126,9 @@ const BannerSystem = (() => {
 
   /* ══ إظهار زر التعديل للمشرفين ══ */
   function initAdminUI() {
-    if ((userRank || 0) >= 500) {
+    /* userRank معرّف في core.js ويكون جاهزاً بعد socketReady */
+    const rank = parseInt(localStorage.getItem('rank') || '0');
+    if (rank >= 500) {
       const btn = document.getElementById('bannerEditBtn');
       if (btn) btn.style.display = 'inline';
     }

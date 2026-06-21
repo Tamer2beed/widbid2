@@ -67,7 +67,46 @@ body { background: var(--wevo-chat); }
   height: 42px;
   background: rgba(0,0,0,0.25);
   border-top: 1px solid rgba(255,255,255,0.1);
+  gap: 8px; padding: 0 10px;
+  overflow: hidden;
 }
+
+/* محتوى السبيكر داخل header-speaker */
+.header-speaker .spk-current {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(39,174,96,0.3);
+  border: 1px solid rgba(39,174,96,0.6);
+  border-radius: 16px; padding: 3px 10px; flex-shrink: 0;
+}
+.header-speaker .spk-mic-anim { font-size: 13px; animation: micPulse 1s infinite; }
+.header-speaker .spk-name {
+  font-size: 12px; font-weight: 700; color: #fff;
+  max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.header-speaker .spk-free-label {
+  font-size: 12px; color: rgba(255,255,255,.45); flex: 1; text-align: center;
+}
+.header-speaker .spk-timer {
+  font-size: 13px; font-weight: 900; color: #2ECC71;
+  font-variant-numeric: tabular-nums; min-width: 38px; flex-shrink: 0;
+}
+.header-speaker .spk-timer.warn   { color: #F39C12; }
+.header-speaker .spk-timer.urgent { color: #E74C3C; animation: timerBlink .5s infinite; }
+.header-speaker .spk-queue-pills {
+  display: flex; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none;
+}
+.header-speaker .spk-queue-pills::-webkit-scrollbar { display: none; }
+.header-speaker .spk-pill {
+  display: flex; align-items: center; gap: 3px;
+  background: rgba(255,255,255,.12); border-radius: 12px;
+  padding: 2px 7px; font-size: 11px; color: rgba(255,255,255,.8);
+  white-space: nowrap; flex-shrink: 0;
+}
+.header-speaker .spk-pill.mine {
+  background: rgba(240,165,0,.35); border: 1px solid rgba(240,165,0,.6);
+  color: #F0A500; font-weight: 700;
+}
+.header-speaker .spk-pill-pos { font-size: 10px; opacity: .6; }
 
 .header-icons-right,
 .header-icons-left {
@@ -321,7 +360,7 @@ body { background: var(--wevo-chat); }
 }
 
 .members-header {
-  padding: 60px 14px 12px;
+  padding: calc(var(--room-header-h) + 6px) 14px 12px;
   background: var(--wevo-top);
   color: #fff;
   font-size: 15px; font-weight: 700;
@@ -644,7 +683,7 @@ body { background: var(--wevo-chat); }
 /* ── نافذة البث (draggable) ── */
 .video-window {
   position: fixed;
-  top: calc(var(--header-h) + 10px);
+  top: calc(var(--room-header-h) + 10px);
   left: 10px;
   z-index: 200;
   border-radius: 14px;
@@ -764,7 +803,7 @@ body { background: var(--wevo-chat); }
 /* ── إشعار طلب البث (للمُذيع) ── */
 .broadcast-request-toast {
   position: fixed;
-  top: calc(var(--header-h) + 8px);
+  top: calc(var(--room-header-h) + 8px);
   left: 50%; transform: translateX(-50%);
   z-index: 220;
   background: rgba(0,0,0,.82);
