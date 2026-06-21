@@ -1,67 +1,74 @@
 /* ════════════════════════════════════════
-   WidBid — banner.js
-   نظام بانر الغرفة (صورة موبايل + ديسكتوب)
-   المشرف (500+) يرفع ويحذف
-   يُحفظ في قاعدة البيانات عبر Socket.io
+   WidBid — banner.js v2
+   - الصورتان إلزاميتان معاً
+   - تظهر الصور المحفوظة عند فتح المحرر
+   - الصورة القديمة تُحفظ إذا لم تتغير
 ════════════════════════════════════════ */
 
 const BannerSystem = (() => {
 
-  const MAX_MOBILE  = 500  * 1024;   /* 500 KB */
-  const MAX_DESKTOP = 1024 * 1024;   /* 1 MB   */
+  const MAX_MOBILE  = 500  * 1024;
+  const MAX_DESKTOP = 1024 * 1024;
 
-  let pendingMobile  = null;   /* base64 */
-  let pendingDesktop = null;   /* base64 */
+  let savedMobile   = null;
+  let savedDesktop  = null;
+  let pendingMobile  = null;
+  let pendingDesktop = null;
 
-  /* ══ فتح / إغلاق المحرر ══ */
+  /* ══ فتح المحرر ══ */
   function openBannerEditor() {
     const rank = parseInt(localStorage.getItem('rank') || '0');
     if (rank < 500) { showToast('⛔ للمشرفين فقط'); return; }
-    document.getElementById('bannerEditorOverlay').style.display = 'flex';
     pendingMobile  = null;
     pendingDesktop = null;
+    _loadPreview('Mobile',  savedMobile);
+    _loadPreview('Desktop', savedDesktop);
+    document.getElementById('bannerEditorOverlay').style.display = 'flex';
   }
 
+  function _loadPreview(type, src) {
+    const wrap = document.getElementById(`banner${type}Preview`);
+    if (!wrap) return;
+    if (src) {
+      wrap.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
+    } else {
+      wrap.innerHTML = `<div class="banner-preview-placeholder">${type==='Mobile'?'360 × 120':'1200 × 180'}</div>`;
+    }
+  }
+
+  /* ══ إغلاق المحرر ══ */
   function closeBannerEditor() {
     document.getElementById('bannerEditorOverlay').style.display = 'none';
-    /* إعادة تعيين الـ previews */
-    ['Mobile','Desktop'].forEach(t => {
-      const wrap = document.getElementById(`banner${t}Preview`);
-      if (wrap) wrap.innerHTML =
-        `<div class="banner-preview-placeholder">${t==='Mobile'?'360 × 120':'1200 × 180'}</div>`;
-      const input = document.getElementById(`banner${t}File`);
-      if (input) input.value = '';
+    pendingMobile  = null;
+    pendingDesktop = null;
+    ['bannerMobileFile','bannerDesktopFile'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
     });
   }
 
-  /* ══ معاينة الصورة المختارة ══ */
+  /* ══ معاينة الصورة ══ */
   function previewBanner(type, input) {
     const file = input.files[0];
     if (!file) return;
-
     const maxSize = type === 'mobile' ? MAX_MOBILE : MAX_DESKTOP;
     if (file.size > maxSize) {
       showToast(`⚠️ الصورة كبيرة — الحد ${type==='mobile'?'500KB':'1MB'}`);
-      input.value = '';
-      return;
+      input.value = ''; return;
     }
-
     const reader = new FileReader();
     reader.onload = e => {
-      const base64 = e.target.result;
-      const T = type === 'mobile' ? 'Mobile' : 'Desktop';
-      const wrap = document.getElementById(`banner${T}Preview`);
-      if (wrap) {
-        wrap.innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
-      }
-      if (type === 'mobile')  pendingMobile  = base64;
-      else                    pendingDesktop = base64;
+      const b64 = e.target.result;
+      const T   = type === 'mobile' ? 'Mobile' : 'Desktop';
+      _loadPreview(T, b64);
+      if (type === 'mobile')  pendingMobile  = b64;
+      else                    pendingDesktop = b64;
     };
     reader.readAsDataURL(file);
   }
 
-  /* ══ ضغط الصورة قبل الإرسال ══ */
-  async function compressImage(base64, maxWidth, quality = 0.82) {
+  /* ══ ضغط الصورة ══ */
+  async function compressImage(b64, maxWidth, quality = 0.82) {
     return new Promise(resolve => {
       const img = new Image();
       img.onload = () => {
@@ -72,29 +79,27 @@ const BannerSystem = (() => {
         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
-      img.onerror = () => resolve(base64);
-      img.src = base64;
+      img.onerror = () => resolve(b64);
+      img.src = b64;
     });
   }
 
-  /* ══ حفظ البانر ══ */
+  /* ══ حفظ البانر — الصورتان إلزاميتان ══ */
   async function saveBanner() {
-    if (!pendingMobile && !pendingDesktop) {
-      showToast('⚠️ اختر صورة واحدة على الأقل');
-      return;
+    const finalMobile  = pendingMobile  || savedMobile;
+    const finalDesktop = pendingDesktop || savedDesktop;
+
+    if (!finalMobile) {
+      showToast('⚠️ يجب رفع صورة الموبايل (360×120)'); return;
+    }
+    if (!finalDesktop) {
+      showToast('⚠️ يجب رفع صورة الديسكتوب (1200×180)'); return;
     }
 
-    showToast('⏳ جاري الضغط والحفظ...');
+    showToast('⏳ جاري الحفظ...');
 
-    /* اضغط الصور قبل الإرسال */
-    const mobile  = pendingMobile  ? await compressImage(pendingMobile,  360, 0.80) : null;
-    const desktop = pendingDesktop ? await compressImage(pendingDesktop, 1200, 0.82) : null;
-
-    console.log('saveBanner: sending', {
-      mobileSize : mobile?.length  || 0,
-      desktopSize: desktop?.length || 0,
-      roomId,
-    });
+    const mobile  = pendingMobile  ? await compressImage(pendingMobile,  360,  0.80) : finalMobile;
+    const desktop = pendingDesktop ? await compressImage(pendingDesktop, 1200, 0.82) : finalDesktop;
 
     socket.emit('setBanner', { room_id: roomId, mobile, desktop });
     closeBannerEditor();
@@ -102,83 +107,48 @@ const BannerSystem = (() => {
 
   /* ══ حذف البانر ══ */
   function removeBanner() {
-    if (!confirm('حذف بانر الغرفة؟')) return;
+    if (!confirm('حذف بانر الغرفة نهائياً؟')) return;
+    savedMobile  = null;
+    savedDesktop = null;
     socket.emit('setBanner', { room_id: roomId, mobile: null, desktop: null });
     closeBannerEditor();
   }
 
-  /* ══ تطبيق البانر على الواجهة ══ */
+  /* ══ تطبيق البانر ══ */
   function applyBanner(data) {
-    const mobile  = document.getElementById('bannerMobile');
-    const desktop = document.getElementById('bannerDesktop');
-    const banner  = document.getElementById('roomBanner');
-
-    if (data?.mobile) {
-      mobile.src = data.mobile;
-      mobile.style.display = '';
-    } else {
-      mobile.style.display = 'none';
-    }
-
-    if (data?.desktop) {
-      desktop.src = data.desktop;
-      desktop.style.display = '';
-    } else {
-      desktop.style.display = 'none';
-    }
-
-    /* إذا لا يوجد بانر → اللون الافتراضي */
-    if (!data?.mobile && !data?.desktop) {
-      if (banner) banner.style.background = '';
-    }
+    const mEl = document.getElementById('bannerMobile');
+    const dEl = document.getElementById('bannerDesktop');
+    if (data?.mobile)  { savedMobile  = data.mobile;  if (mEl) { mEl.src = data.mobile;  mEl.style.display = ''; } }
+    else               { savedMobile  = null;          if (mEl) mEl.style.display = 'none'; }
+    if (data?.desktop) { savedDesktop = data.desktop; if (dEl) { dEl.src = data.desktop; dEl.style.display = ''; } }
+    else               { savedDesktop = null;          if (dEl) dEl.style.display = 'none'; }
   }
 
   /* ══ Socket Events ══ */
   function bindSocketEvents() {
     if (typeof socket === 'undefined') return;
-
-    /* استقبال البانر عند الدخول للغرفة */
-    socket.on('roomBanner', (data) => {
-      applyBanner(data);
-    });
-
-    /* تحديث البانر (للجميع في الغرفة) */
-    socket.on('bannerUpdated', (data) => {
-      applyBanner(data);
-      showToast(data?.mobile || data?.desktop ? '🖼️ تم تحديث بانر الغرفة' : '🗑️ تم حذف البانر');
-    });
-
-    /* خطأ في الحفظ */
-    socket.on('bannerError', (data) => {
-      showToast('❌ خطأ في الحفظ: ' + (data?.message || 'حاول مرة أخرى'));
-    });
+    socket.on('roomBanner',    (d) => applyBanner(d));
+    socket.on('bannerUpdated', (d) => { applyBanner(d); showToast(d?.mobile ? '🖼️ تم تحديث البانر' : '🗑️ تم حذف البانر'); });
+    socket.on('bannerError',   (d) => showToast('❌ ' + (d?.message || 'خطأ في الحفظ')));
   }
 
-  /* ══ إظهار زر التعديل للمشرفين ══ */
+  /* ══ INIT ══ */
   function initAdminUI() {
-    /* userRank معرّف في core.js ويكون جاهزاً بعد socketReady */
-    const rank = parseInt(localStorage.getItem('rank') || '0');
-    if (rank >= 500) {
+    if (parseInt(localStorage.getItem('rank') || '0') >= 500) {
       const btn = document.getElementById('bannerEditBtn');
       if (btn) btn.style.display = 'inline';
     }
   }
 
-  /* ══ INIT ══ */
-  document.addEventListener('socketReady', () => {
-    bindSocketEvents();
-    initAdminUI();
-  });
+  document.addEventListener('socketReady', () => { bindSocketEvents(); initAdminUI(); });
 
   return { openBannerEditor, closeBannerEditor, previewBanner, saveBanner, removeBanner };
 
 })();
 
 window.BannerSystem = BannerSystem;
-
-/* دوال عامة تستدعيها الـ HTML */
-function openBannerEditor()           { BannerSystem.openBannerEditor(); }
-function closeBannerEditor()          { BannerSystem.closeBannerEditor(); }
-function previewBanner(type, input)   { BannerSystem.previewBanner(type, input); }
-function saveBanner()                 { BannerSystem.saveBanner(); }
-function removeBanner()               { BannerSystem.removeBanner(); }
+function openBannerEditor()         { BannerSystem.openBannerEditor(); }
+function closeBannerEditor()        { BannerSystem.closeBannerEditor(); }
+function previewBanner(type, input) { BannerSystem.previewBanner(type, input); }
+function saveBanner()               { BannerSystem.saveBanner(); }
+function removeBanner()             { BannerSystem.removeBanner(); }
