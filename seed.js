@@ -21,18 +21,18 @@ const TEST_PASS = '123456';
 
 /* ══ الحسابات التجريبية — رتبة واحدة لكل مستوى ══ */
 const USERS = [
-  { username: 'test_guest',       rank: 100,  avatar: '👤', country: 'العراق' },
-  { username: 'test_member',      rank: 200,  avatar: '😊', country: 'سوريا' },
-  { username: 'test_protected',   rank: 300,  avatar: '🛡️', country: 'الأردن' },
-  { username: 'test_royal',       rank: 400,  avatar: '👑', country: 'السعودية' },
-  { username: 'test_admin',       rank: 500,  avatar: '⚙️', country: 'مصر' },
-  { username: 'test_superadmin',  rank: 600,  avatar: '🔧', country: 'الإمارات' },
-  { username: 'test_master',      rank: 700,  avatar: '⭐', country: 'الكويت' },
-  { username: 'test_supermaster', rank: 800,  avatar: '🌟', country: 'لبنان' },
-  { username: 'test_root',        rank: 900,  avatar: '🔑', country: 'فلسطين' },
-  { username: 'test_superroot',   rank: 1000, avatar: '💎', country: 'اليمن' },
-  { username: 'test_owner',       rank: 1100, avatar: '🏆', country: 'تركيا',  max_rooms: 10 },
-  { username: 'test_superowner',  rank: 1200, avatar: '🚀', country: 'العراق', max_rooms: 50 },
+  { username: 'test_guest',       rank: 100,  avatar: '👤', country: 'العراق',   email: 'guest@widbid.com' },
+  { username: 'test_member',      rank: 200,  avatar: '😊', country: 'سوريا',    email: 'member@widbid.com' },
+  { username: 'test_protected',   rank: 300,  avatar: '🛡️', country: 'الأردن',   email: 'protected@widbid.com' },
+  { username: 'test_royal',       rank: 400,  avatar: '👑', country: 'السعودية', email: 'royal@widbid.com' },
+  { username: 'test_admin',       rank: 500,  avatar: '⚙️', country: 'مصر',      email: 'admin@widbid.com' },
+  { username: 'test_superadmin',  rank: 600,  avatar: '🔧', country: 'الإمارات', email: 'superadmin@widbid.com' },
+  { username: 'test_master',      rank: 700,  avatar: '⭐', country: 'الكويت',   email: 'master@widbid.com' },
+  { username: 'test_supermaster', rank: 800,  avatar: '🌟', country: 'لبنان',    email: 'supermaster@widbid.com' },
+  { username: 'test_root',        rank: 900,  avatar: '🔑', country: 'فلسطين',   email: 'root@widbid.com' },
+  { username: 'test_superroot',   rank: 1000, avatar: '💎', country: 'اليمن',    email: 'superroot@widbid.com' },
+  { username: 'test_owner',       rank: 1100, avatar: '🏆', country: 'تركيا',    email: 'owner@widbid.com',      max_rooms: 10 },
+  { username: 'test_superowner',  rank: 1200, avatar: '🚀', country: 'العراق',   email: 'superowner@widbid.com', max_rooms: 50 },
 ];
 
 /* ══ الغرف التجريبية ══ */
@@ -139,9 +139,9 @@ const SAMPLE_MSGS = [
     const userMap = {};
     for (const u of USERS) {
       const [r] = await conn.query(
-        `INSERT INTO users (username, password_hash, rank, avatar, country, max_rooms, is_active)
-         VALUES (?, ?, ?, ?, ?, ?, 1)`,
-        [u.username, hash, u.rank, u.avatar, u.country, u.max_rooms || 0]
+        `INSERT INTO users (username, email, password_hash, rank, avatar, country, max_rooms, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+        [u.username, u.email, hash, u.rank, u.avatar, u.country, u.max_rooms || 0]
       );
       userMap[u.username] = r.insertId;
     }
@@ -180,21 +180,21 @@ const SAMPLE_MSGS = [
     const [[{rc}]] = await conn.query('SELECT COUNT(*) AS rc FROM rooms');
     const [[{cc}]] = await conn.query('SELECT COUNT(*) AS cc FROM categories');
 
-    console.log('\n╔══════════════════════════════════════╗');
-    console.log('║         🎉 Seed مكتمل بنجاح          ║');
-    console.log('╠══════════════════════════════════════╣');
-    console.log(`║  👤 حسابات تجريبية : ${String(uc).padEnd(15)}║`);
-    console.log(`║  🏠 غرف            : ${String(rc).padEnd(15)}║`);
-    console.log(`║  📂 تصنيفات        : ${String(cc).padEnd(15)}║`);
-    console.log('╠══════════════════════════════════════╣');
-    console.log('║  🔑 كلمة المرور لكل الحسابات: 123456 ║');
-    console.log('╠══════════════════════════════════════╣');
-    console.log('║  الحسابات:                           ║');
+    console.log('\n╔════════════════════════════════════════════════╗');
+    console.log('║          🎉 Seed مكتمل بنجاح                  ║');
+    console.log('╠════════════════════════════════════════════════╣');
+    console.log(`║  👤 حسابات : ${String(uc).padEnd(33)}║`);
+    console.log(`║  🏠 غرف    : ${String(rc).padEnd(33)}║`);
+    console.log(`║  📂 تصنيفات: ${String(cc).padEnd(33)}║`);
+    console.log('╠════════════════════════════════════════════════╣');
+    console.log('║  🔑 كلمة المرور الموحدة: 123456               ║');
+    console.log('╠════════════════════════════════════════════════╣');
+    console.log('║  الإيميل                       الرتبة         ║');
     USERS.forEach(u => {
-      const line = `  ${u.avatar} ${u.username} (${u.rank})`;
-      console.log(`║${line.padEnd(38)}║`);
+      const line = `  ${u.email.padEnd(30)} ${u.rank}`;
+      console.log(`║${line.padEnd(48)}║`);
     });
-    console.log('╚══════════════════════════════════════╝');
+    console.log('╚════════════════════════════════════════════════╝');
 
   } catch (err) {
     console.error('\n❌ خطأ:', err.message);

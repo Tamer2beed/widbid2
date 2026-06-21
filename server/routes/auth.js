@@ -63,19 +63,19 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'البريد وكلمة المرور مطلوبان' });
+    return res.status(400).json({ success: false, message: 'أدخل الإيميل أو اسم المستخدم وكلمة المرور' });
   }
 
   try {
     const [rows] = await db.query(
       `SELECT id, username, email, password_hash, rank,
               points, avatar, is_active, is_banned
-       FROM users WHERE email = ?`,
-      [email.trim().toLowerCase()]
+       FROM users WHERE email = ? OR username = ?`,
+      [email.trim().toLowerCase(), email.trim()]
     );
 
     if (!rows.length) {
-      return res.status(401).json({ success: false, message: 'Email not found' });
+      return res.status(401).json({ success: false, message: 'الإيميل أو اسم المستخدم غير موجود' });
     }
 
     const user = rows[0];
