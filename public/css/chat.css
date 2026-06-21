@@ -18,51 +18,167 @@
 
 body { background: var(--wevo-chat); }
 
-/* ══ HEADER ══ */
-.header {
+/* ══ UNIFIED ROOM HEADER ══ */
+:root { --room-header-h: 96px; }   /* هيدر + سبيكر بار = 54+42 */
+
+.room-header {
   position: fixed; top: 0; right: 0; left: 0; z-index: 100;
-  height: var(--header-h);
-  background: var(--wevo-top);
-  display: flex; align-items: center; justify-content: space-between;
+  height: var(--room-header-h);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+}
+
+/* ── البانر (خلفية) ── */
+.room-banner {
+  position: absolute; inset: 0; z-index: 0;
+  background: var(--wevo-top);   /* لون افتراضي عند عدم وجود صورة */
+}
+.banner-img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+}
+.banner-mobile  { display: block; }
+.banner-desktop { display: none; }
+@media (min-width: 769px) {
+  .banner-mobile  { display: none; }
+  .banner-desktop { display: block; }
+}
+.banner-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.35) 0%,
+    rgba(0,0,0,0.55) 100%
+  );
+}
+
+/* ── الصفوف فوق البانر ── */
+.header-row {
+  position: relative; z-index: 1;
+  display: flex; align-items: center;
   padding: 0 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
-.header-mic {
-  display: flex; align-items: center; gap: 6px;
-  background: rgba(255,255,255,0.95);
-  padding: 5px 10px; border-radius: 8px;
-  cursor: pointer; min-width: 100px;
+.header-top {
+  height: 54px;
+  justify-content: space-between;
 }
-.header-mic .mic-icon   { font-size: 18px; }
-.header-mic .mic-status { font-size: 12px; font-weight: 700; color: #333; }
-.header-mic .mic-time   { font-size: 10px; color: #888; }
-.header-title { color: #fff; font-size: 15px; font-weight: 700; flex: 1; text-align: center; padding: 0 8px; }
-.header-icons { display: flex; gap: 14px; }
-.header-icon  { color: #fff; font-size: 22px; cursor: pointer; opacity: .9; }
+.header-speaker {
+  height: 42px;
+  background: rgba(0,0,0,0.25);
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.header-icons-right,
+.header-icons-left {
+  display: flex; gap: 10px; align-items: center; min-width: 80px;
+}
+.header-icons-left { justify-content: flex-end; }
+
+.header-title {
+  color: #fff; font-size: 15px; font-weight: 700;
+  flex: 1; text-align: center; padding: 0 6px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.header-icon {
+  color: #fff; font-size: 21px; cursor: pointer; opacity: .9;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+}
 .header-icon:active { opacity: .5; }
 
-/* ══ STATS BAR ══ */
-.stats-bar {
-  position: fixed; top: var(--header-h); right: 0; left: 0; z-index: 90;
-  height: 0; overflow: hidden;
-  background: rgba(0,0,0,0.3);
-  display: flex; align-items: center; justify-content: space-around;
-  transition: height .2s;
-}
-.stats-bar.visible { height: 28px; }
-.stats-bar .stat { font-size: 11px; color: rgba(255,255,255,.9); }
-.stats-bar .stat strong { color: #fff; }
-
-/* ══ MAIN AREA ══ */
+/* ══ MAIN AREA (يبدأ بعد الهيدر الموحد) ══ */
 .main {
   position: fixed;
-  top: var(--header-h);
+  top: var(--room-header-h);
   bottom: calc(var(--toolbar1-h) + var(--toolbar2-h));
   right: 0; left: 0;
   display: flex; flex-direction: column;
   overflow: hidden;
 }
-.main.with-stats { top: calc(var(--header-h) + 28px); }
+
+/* ══ BANNER EDITOR MODAL ══ */
+.banner-editor-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.6);
+  display: flex; align-items: flex-end;
+}
+.banner-editor-box {
+  width: 100%; background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 16px 36px;
+  max-height: 85vh; overflow-y: auto;
+  animation: slideUp .25s ease;
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+.banner-editor-title {
+  font-size: 16px; font-weight: 700; text-align: center;
+  margin-bottom: 16px; color: #222;
+  padding-bottom: 12px; border-bottom: 1px solid #eee;
+}
+
+/* مرجع الدقة */
+.banner-specs {
+  display: flex; gap: 10px; margin-bottom: 16px;
+}
+.spec-card {
+  flex: 1; background: #f8f9ff; border-radius: 12px;
+  padding: 12px 8px; text-align: center;
+  border: 1.5px dashed #c5cff0;
+}
+.spec-icon  { font-size: 22px; margin-bottom: 4px; }
+.spec-label { font-size: 12px; font-weight: 700; color: #444; margin-bottom: 2px; }
+.spec-size  { font-size: 13px; font-weight: 900; color: var(--wevo-top); margin-bottom: 2px; }
+.spec-note  { font-size: 10px; color: #999; }
+
+/* رفع الصور */
+.banner-upload-row { margin-bottom: 14px; }
+.banner-upload-label {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  cursor: pointer; font-size: 13px; font-weight: 600; color: #444;
+}
+.banner-preview-wrap {
+  width: 100%; height: 80px; border-radius: 10px;
+  border: 2px dashed #c5cff0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: #f5f7ff; position: relative;
+}
+.banner-preview-wrap.wide { height: 60px; }
+.banner-preview-wrap img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.banner-preview-placeholder {
+  font-size: 12px; color: #bbb; font-weight: 700; letter-spacing: 1px;
+}
+.banner-choose-btn {
+  background: var(--wevo-top); color: #fff;
+  padding: 6px 18px; border-radius: 20px;
+  font-size: 12px; font-weight: 700;
+}
+
+/* أزرار الحفظ */
+.banner-editor-actions {
+  display: flex; flex-direction: column; gap: 8px; margin-top: 6px;
+}
+.banner-btn-save {
+  height: 48px; background: var(--wevo-top); color: #fff;
+  border: none; border-radius: 12px;
+  font-family: 'Tajawal',sans-serif; font-size: 15px; font-weight: 700;
+  cursor: pointer;
+}
+.banner-btn-remove {
+  height: 44px; background: #FFF0F0; color: #E74C3C;
+  border: 1.5px solid #FFCDD2; border-radius: 12px;
+  font-family: 'Tajawal',sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer;
+}
+.banner-btn-cancel {
+  height: 40px; background: #f5f5f5; color: #888;
+  border: none; border-radius: 12px;
+  font-family: 'Tajawal',sans-serif; font-size: 14px;
+  cursor: pointer;
+}
 
 /* ══ CHAT AREA ══ */
 .chat-area {

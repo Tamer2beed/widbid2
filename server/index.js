@@ -48,7 +48,7 @@ async function getUserRank(userId) {
 async function getRoomInfo(roomId) {
   try {
     const [rows] = await db.query(
-      'SELECT welcome_message, theme FROM rooms WHERE id = ?', [roomId]
+      'SELECT welcome_message, theme, banner_mobile, banner_desktop FROM rooms WHERE id = ?', [roomId]
     );
     return rows.length ? rows[0] : { welcome_message: 'مرحباً بكم', theme: 'candy' };
   } catch { return { welcome_message: 'مرحباً بكم', theme: 'candy' }; }
@@ -224,6 +224,14 @@ io.on('connection', (socket) => {
     // إرسال إعدادات الغرفة (بانر + ثيم)
     const roomInfo = await getRoomInfo(room_id);
     socket.emit('roomInfo', roomInfo);
+
+    /* إرسال البانر للداخل */
+    if (roomInfo.banner_mobile || roomInfo.banner_desktop) {
+      socket.emit('roomBanner', {
+        mobile : roomInfo.banner_mobile  || null,
+        desktop: roomInfo.banner_desktop || null,
+      });
+    }
 
     // سجل الرسائل (آخر 50 رسالة مع الرتبة)
     const [messages] = await db.query(`
@@ -611,6 +619,19 @@ io.on('connection', (socket) => {
       io.to(socket.gameRoom).emit('playerLeft');
       delete games[socket.gameRoom];
     }
+  });
+
+  /* ── بانر الغرفة ──────────────────────── */
+  socket.on('setBanner', async (data) => {
+    if ((socket.userData?.rank || 0) < 500) return;
+    const { room_id, mobile, desktop } = data;
+    try {
+      await db.query(
+        `UPDATE rooms SET banner_mobile = ?, banner_desktop = ? WHERE id = ?`,
+        [mobile || null, desktop || null, room_id]
+      );
+      io.to(String(room_id)).emit('bannerUpdated', { mobile, desktop });
+    } catch (e) { console.error('setBanner:', e.message); }
   });
 
   /* ── إرسال صورة ─────────────────────── */

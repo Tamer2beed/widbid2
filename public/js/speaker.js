@@ -165,14 +165,11 @@ const SpeakerSystem = (() => {
 
   /* ══ بناء UI ══ */
   function buildUI() {
-    /* شريط الطابور داخل chat-layer قبل chat-area */
-    const chatLayer = document.getElementById('chatLayer');
-    if (!chatLayer) return;
+    /* نملأ header-speaker الموجود في chat.html */
+    const speakerRow = document.getElementById('speakerHeaderRow');
+    if (!speakerRow) return;
 
-    const bar = document.createElement('div');
-    bar.id = 'speakerBar';
-    bar.className = 'speaker-bar';
-    bar.innerHTML = `
+    speakerRow.innerHTML = `
       <div class="spk-current" id="spkCurrent" style="display:none">
         <span class="spk-mic-anim">🎙️</span>
         <span class="spk-name" id="spkCurrentName">—</span>
@@ -181,7 +178,6 @@ const SpeakerSystem = (() => {
       <div class="spk-timer" id="spkTimer" style="display:none">02:00</div>
       <div class="spk-queue-pills" id="spkQueuePills"></div>
     `;
-    chatLayer.insertBefore(bar, chatLayer.firstChild);
 
     /* لوحة المشرف */
     const adminPanel = document.createElement('div');
@@ -189,34 +185,27 @@ const SpeakerSystem = (() => {
     adminPanel.className = 'spk-admin-panel';
     adminPanel.innerHTML = `
       <div class="spk-admin-title">⚙️ إدارة السبيكر</div>
-
       <div class="spk-admin-row">
         <span class="spk-admin-label">تمديد الوقت (ثانية)</span>
         <input class="spk-time-input" id="spkExtendVal" type="number" value="60" min="10" max="300">
         <button class="spk-admin-btn btn-extend" onclick="SpeakerSystem.adminExtend()">+ تمديد</button>
       </div>
-
       <div class="spk-admin-row">
         <span class="spk-admin-label">سحب السبيكر الآن</span>
         <button class="spk-admin-btn btn-revoke" onclick="SpeakerSystem.adminRevoke()">✂️ سحب</button>
       </div>
-
       <div class="spk-admin-row">
-        <span class="spk-admin-label">إعطاء السبيكر لـ:</span>
-        <button class="spk-admin-btn btn-skip" onclick="SpeakerSystem.adminSkip()">⏭️ تخطي الأول</button>
+        <span class="spk-admin-label">تخطي الأول في الطابور</span>
+        <button class="spk-admin-btn btn-skip" onclick="SpeakerSystem.adminSkip()">⏭️ تخطي</button>
       </div>
-
       <div class="spk-queue-list" id="spkAdminQueueList"></div>
-
       <div class="spk-admin-row" style="justify-content:center">
         <span style="font-size:11px;color:rgba(255,255,255,.3)">
           الوقت الافتراضي:
-          <input class="spk-time-input" id="spkDefaultTime" type="number"
-                 value="120" min="30" max="600" style="width:50px">
+          <input class="spk-time-input" id="spkDefaultTime" type="number" value="120" min="30" max="600" style="width:50px">
           ثانية
         </span>
       </div>
-
       <button onclick="SpeakerSystem.closeAdminPanel()"
         style="border:none;background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);
                border-radius:8px;padding:6px;font-family:'Tajawal',sans-serif;

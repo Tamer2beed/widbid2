@@ -12,29 +12,101 @@
 </head>
 <body>
 
-<!-- ══ HEADER ══ -->
-<div class="header">
-  <!-- عناصر مخفية — يُحدّثها speaker.js (micStatus/micTime) -->
-  <span id="micIcon"   style="display:none">🔊</span>
-  <span id="micStatus" style="display:none">Mic Free</span>
-  <span id="micTime"   style="display:none">--:--</span>
+<!-- ══ UNIFIED HEADER + BANNER ══ -->
+<div class="room-header" id="roomHeader">
 
-  <div class="header-title" id="roomTitle">...</div>
-  <div class="header-icons">
-    <span class="header-icon" id="spkAdminIcon" style="display:none" onclick="SpeakerSystem.openAdminPanel()">⚙️</span>
-    <span class="header-icon" id="adminToolBtn" style="display:none" onclick="openAdminSheet()">🛠️</span>
-    <span class="header-icon" onclick="toggleMembers()">👥</span>
-    <span class="header-icon">💬</span>
-    <span class="header-icon" onclick="openSideMenu()">☰</span>
+  <!-- البانر (خلفية الهيدر) -->
+  <div class="room-banner" id="roomBanner">
+    <!-- صورة موبايل (≤768px) -->
+    <img class="banner-img banner-mobile" id="bannerMobile" src="" alt="" style="display:none">
+    <!-- صورة ديسكتوب (>768px) -->
+    <img class="banner-img banner-desktop" id="bannerDesktop" src="" alt="" style="display:none">
+    <!-- overlay لضمان قراءة النص -->
+    <div class="banner-overlay"></div>
   </div>
+
+  <!-- الشريط العلوي: أيقونات + اسم الغرفة -->
+  <div class="header-row header-top">
+    <div class="header-icons-right">
+      <span class="header-icon" onclick="openSideMenu()">☰</span>
+      <span class="header-icon">💬</span>
+      <span class="header-icon" onclick="toggleMembers()">👥</span>
+    </div>
+    <div class="header-title" id="roomTitle">...</div>
+    <div class="header-icons-left">
+      <span class="header-icon" id="spkAdminIcon" style="display:none" onclick="SpeakerSystem.openAdminPanel()">⚙️</span>
+      <span class="header-icon" id="adminToolBtn" style="display:none" onclick="openAdminSheet()">🛠️</span>
+      <span class="header-icon" id="bannerEditBtn" style="display:none" onclick="openBannerEditor()" title="تعديل البانر">🖼️</span>
+    </div>
+  </div>
+
+  <!-- الشريط السفلي: السبيكر + الطابور -->
+  <div class="header-row header-speaker" id="speakerHeaderRow">
+    <!-- يُملأ بـ speaker.js -->
+    <!-- عناصر مخفية للتوافق مع speaker.js -->
+    <span id="micIcon"   style="display:none">🔊</span>
+    <span id="micStatus" style="display:none">Mic Free</span>
+    <span id="micTime"   style="display:none">--:--</span>
+    <span id="statOnline" style="display:none">0</span>
+    <span id="statMsgs"   style="display:none">0</span>
+    <span id="statRankWrap" style="display:none"></span>
+    <span id="statRankName" style="display:none"></span>
+  </div>
+
 </div>
 
-<!-- ══ STATS BAR (Admin+) ══ -->
-<div class="stats-bar" id="statsBar">
-  <div class="stat">👥 <strong id="statOnline">0</strong> متواجد</div>
-  <div class="stat">💬 <strong id="statMsgs">0</strong> رسالة</div>
-  <div class="stat" id="statRankWrap" style="display:none">
-    🔰 <strong id="statRankName"></strong>
+<!-- Banner Editor Modal — للمشرف فقط -->
+<div class="banner-editor-overlay" id="bannerEditorOverlay" style="display:none">
+  <div class="banner-editor-box">
+    <div class="banner-editor-title">🖼️ تخصيص بانر الغرفة</div>
+
+    <!-- مرجع الدقة -->
+    <div class="banner-specs">
+      <div class="spec-card">
+        <div class="spec-icon">📱</div>
+        <div class="spec-label">موبايل</div>
+        <div class="spec-size">360 × 120 px</div>
+        <div class="spec-note">JPG/PNG/WebP • أقل من 500KB</div>
+      </div>
+      <div class="spec-card">
+        <div class="spec-icon">🖥️</div>
+        <div class="spec-label">ديسكتوب</div>
+        <div class="spec-size">1200 × 180 px</div>
+        <div class="spec-note">JPG/PNG/WebP • أقل من 1MB</div>
+      </div>
+    </div>
+
+    <!-- رفع موبايل -->
+    <div class="banner-upload-row">
+      <label class="banner-upload-label" for="bannerMobileFile">
+        📱 صورة الموبايل
+        <div class="banner-preview-wrap" id="bannerMobilePreview">
+          <div class="banner-preview-placeholder">360 × 120</div>
+        </div>
+        <input type="file" id="bannerMobileFile" accept="image/*" style="display:none"
+               onchange="previewBanner('mobile', this)">
+        <span class="banner-choose-btn">اختر صورة</span>
+      </label>
+    </div>
+
+    <!-- رفع ديسكتوب -->
+    <div class="banner-upload-row">
+      <label class="banner-upload-label" for="bannerDesktopFile">
+        🖥️ صورة الديسكتوب
+        <div class="banner-preview-wrap wide" id="bannerDesktopPreview">
+          <div class="banner-preview-placeholder">1200 × 180</div>
+        </div>
+        <input type="file" id="bannerDesktopFile" accept="image/*" style="display:none"
+               onchange="previewBanner('desktop', this)">
+        <span class="banner-choose-btn">اختر صورة</span>
+      </label>
+    </div>
+
+    <div class="banner-editor-actions">
+      <button class="banner-btn-save"   onclick="saveBanner()">✅ حفظ وتطبيق</button>
+      <button class="banner-btn-remove" onclick="removeBanner()">🗑️ حذف البانر</button>
+      <button class="banner-btn-cancel" onclick="closeBannerEditor()">إلغاء</button>
+    </div>
   </div>
 </div>
 
@@ -245,6 +317,7 @@
 <script src="/js/camera.js"></script>
 <script src="/js/video.js"></script>
 <script src="/js/speaker.js"></script>
+<script src="/js/banner.js"></script>
 <script>
 (async function loadRankModules() {
   const rank = parseInt(localStorage.getItem('rank')) || 100;
