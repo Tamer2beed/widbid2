@@ -279,7 +279,7 @@ function openSideMenu() {
 function closeAll() {
   document.getElementById('sideMenu').classList.remove('open');
   document.getElementById('overlay').classList.remove('show');
-  document.getElementById('statusPopup').classList.remove('open');
+  document.getElementById('statusPopup').classList.remove('show');
   closeEmoji();
   document.getElementById('imagePicker').classList.remove('open');
   const adminSheet = document.getElementById('adminSheet');
@@ -288,14 +288,13 @@ function closeAll() {
 
 /* ── قائمة الحالات ──────────────────────── */
 function openStatusMenu() {
-  document.getElementById('sideMenu').classList.remove('open');
-  document.getElementById('statusPopup').classList.toggle('open');
+  closeSideMenu();
+  document.getElementById('statusPopup').classList.toggle('show');
 }
 
 function setStatus(key, icon, label) {
   socket.emit('setStatus', { room_id: roomId, username, status: key });
-  document.getElementById('statusPopup').classList.remove('open');
-  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('statusPopup').classList.remove('show');
   showToast(`${icon} الحالة: ${label}`);
 }
 
