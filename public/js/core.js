@@ -95,14 +95,15 @@ socket.on('newMessage', (d) => {
   if (el) el.textContent = msgCount;
 });
 
-/* مسح رسالة (من المشرف) */
-socket.on('messageDeleted', (data) => {
-  const el = document.querySelector(`.msg-row[data-msg-id="${data.msg_id}"]`);
-  if (el) {
-    el.style.opacity = '0.4';
-    const bubble = el.querySelector('.msg-bubble');
-    if (bubble) bubble.innerHTML = '<div class="msg-text" style="color:#aaa;font-style:italic">🗑️ تم مسح هذه الرسالة</div>';
+/* مسح الشات للجميع (من المشرف) */
+socket.on('chatCleared', (data) => {
+  const container = document.getElementById('messages');
+  if (container) {
+    const banner = document.getElementById('welcomeBanner');
+    container.innerHTML = '';
+    if (banner) container.appendChild(banner);
   }
+  addSystem(`🗑️ تم مسح الشات بواسطة ${data?.by || 'المشرف'}`);
 });
 
 socket.on('userJoined', (d) => {

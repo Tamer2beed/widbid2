@@ -297,14 +297,14 @@ io.on('connection', (socket) => {
     }
   });
 
-  /* ── مسح رسالة (المشرف 500+) ──────────────── */
-  socket.on('deleteMessage', async (data) => {
+  /* ── مسح شات الغرفة كاملاً (المشرف 500+) ── */
+  socket.on('clearRoomChat', async (data) => {
     if ((socket.userData?.rank || 0) < 500) return;
-    const { room_id, msg_id } = data;
+    const { room_id } = data;
     try {
-      await db.query('DELETE FROM messages WHERE id = ? AND room_id = ?', [msg_id, room_id]);
-      io.to(String(room_id)).emit('messageDeleted', { msg_id });
-    } catch (e) { console.error('deleteMessage:', e.message); }
+      await db.query('DELETE FROM messages WHERE room_id = ?', [room_id]);
+      io.to(String(room_id)).emit('chatCleared', { by: socket.userData?.username });
+    } catch (e) { console.error('clearRoomChat:', e.message); }
   });
 
   /* ─── مغادرة الغرفة ───────────────────────── */

@@ -398,10 +398,8 @@ function openPrivateChat(name) {
 }
 
 /* ════════════════════════════════════════
-   قائمة سياق الرسالة (ضغط طويل)
+   قائمة سياق الرسالة (نقرة واحدة)
 ════════════════════════════════════════ */
-
-let _ctxTimer = null;
 
 function initMessageContextMenu() {
   const style = document.createElement('style');
@@ -409,7 +407,7 @@ function initMessageContextMenu() {
   .ctx-menu {
     position: fixed; z-index: 250;
     background: #1a1a2e; border-radius: 12px;
-    overflow: hidden; min-width: 160px;
+    overflow: hidden; min-width: 180px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     animation: ctxIn .15s ease;
   }
@@ -422,26 +420,20 @@ function initMessageContextMenu() {
   .ctx-item:last-child { border-bottom: none; }
   .ctx-item:active { background: rgba(255,255,255,.1); }
   .ctx-item.danger { color: #E74C3C; }
-  .ctx-overlay {
-    position: fixed; inset: 0; z-index: 249;
-  }
+  .ctx-overlay { position: fixed; inset: 0; z-index: 249; }
   `;
   document.head.appendChild(style);
 
-  /* ضغط طويل على الرسائل */
-  document.getElementById('messages')?.addEventListener('touchstart', e => {
+  /* نقرة واحدة على الرسالة */
+  document.getElementById('messages')?.addEventListener('click', e => {
     const bubble = e.target.closest('.msg-bubble');
     if (!bubble) return;
-    const row = bubble.closest('.msg-row');
-    _ctxTimer = setTimeout(() => {
-      const text = bubble.querySelector('.msg-text')?.textContent || '';
-      const msgId = row?.dataset.msgId || null;
-      showMessageMenu(e.touches[0].clientX, e.touches[0].clientY, text, msgId);
-    }, 500);
-  }, { passive: true });
-
-  document.getElementById('messages')?.addEventListener('touchend',   () => clearTimeout(_ctxTimer), { passive: true });
-  document.getElementById('messages')?.addEventListener('touchmove',  () => clearTimeout(_ctxTimer), { passive: true });
+    e.stopPropagation();
+    const row    = bubble.closest('.msg-row');
+    const text   = bubble.querySelector('.msg-text')?.textContent || '';
+    const msgId  = row?.dataset.msgId || null;
+    showMessageMenu(e.clientX, e.clientY, text, msgId);
+  });
 }
 
 function showMessageMenu(x, y, text, msgId) {
@@ -449,16 +441,30 @@ function showMessageMenu(x, y, text, msgId) {
   const rank = parseInt(localStorage.getItem('rank') || '0');
 
   const items = [
-    { icon: '📋', label: 'نسخ', fn: () => { navigator.clipboard?.writeText(text); showToast('✅ تم النسخ'); } },
+    {
+      icon: '📋', label: 'نسخ',
+      fn: () => { navigator.clipboard?.writeText(text); showToast('✅ تم النسخ'); }
+    },
+    {
+      icon: '↩️', label: 'ردّ',
+      fn: () => {
+        const inp = document.getElementById('msgInput');
+        if (inp) { inp.value = `«${text.slice(0,30)}» `; inp.focus(); }
+      }
+    },
+    {
+      icon: '🚨', label: 'تبليغ عن الرسالة',
+      fn: () => { socket.emit('reportMessage', { room_id: roomId, msg_id: msgId, by: username }); showToast('✅ تم إرسال البلاغ'); }
+    },
   ];
 
-  /* مسح النص للجميع — للمشرف فقط */
-  if (rank >= 500 && msgId) {
+  /* مسح الشات للجميع — للمشرف فقط */
+  if (rank >= 500) {
     items.push({
-      icon: '🗑️', label: 'مسح للجميع', danger: true,
+      icon: '🗑️', label: 'مسح الشات للجميع', danger: true,
       fn: () => {
-        if (confirm('مسح هذه الرسالة للجميع؟')) {
-          socket.emit('deleteMessage', { room_id: roomId, msg_id: msgId });
+        if (confirm('مسح جميع رسائل الشات للجميع؟')) {
+          socket.emit('clearRoomChat', { room_id: roomId, by: username });
         }
       }
     });
