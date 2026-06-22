@@ -289,7 +289,18 @@ function closeAll() {
 /* ── قائمة الحالات ──────────────────────── */
 function openStatusMenu() {
   closeSideMenu();
-  document.getElementById('statusPopup').classList.toggle('show');
+  const popup = document.getElementById('statusPopup');
+  popup.classList.toggle('show');
+  /* إغلاق عند الضغط خارجه */
+  if (popup.classList.contains('show')) {
+    setTimeout(() => {
+      document.addEventListener('click', _closeStatus, { once: true });
+    }, 50);
+  }
+}
+function _closeStatus(e) {
+  const popup = document.getElementById('statusPopup');
+  if (!popup?.contains(e.target)) popup?.classList.remove('show');
 }
 
 function setStatus(key, icon, label) {

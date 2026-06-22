@@ -272,5 +272,5 @@ function addBroadcastMenuItem() {
 /* ══ INIT ══ */
 document.addEventListener('DOMContentLoaded', () => {
   bindVideoSocketEvents();
-  addBroadcastMenuItem();
+  /* addBroadcastMenuItem — محذوف: البث في Phase 21 */
 });
