@@ -78,23 +78,31 @@ socket.on('roomInfo', (data) => {
 });
 
 socket.on('messageHistory', (msgs) => {
-  /* امسح الرسائل الحالية قبل تحميل التاريخ (يمنع التكرار عند إعادة الاتصال) */
   const container = document.getElementById('messages');
   if (container) {
-    /* احتفظ فقط بـ welcome banner */
     const banner = document.getElementById('welcomeBanner');
     container.innerHTML = '';
     if (banner) container.appendChild(banner);
   }
-  msgs.forEach(m => addMessage(m.username, m.content, m.username === username, m.rank || 100, m.created_at));
+  msgs.forEach(m => addMessage(m.username, m.content, m.username === username, m.rank || 100, m.created_at, m.id));
 });
 
 socket.on('newMessage', (d) => {
-  addMessage(d.username, d.message, d.username === username, d.rank || 100);
+  addMessage(d.username, d.message, d.username === username, d.rank || 100, null, d.id);
   if (d.username !== username) playNotif();
   msgCount++;
   const el = document.getElementById('statMsgs');
   if (el) el.textContent = msgCount;
+});
+
+/* مسح رسالة (من المشرف) */
+socket.on('messageDeleted', (data) => {
+  const el = document.querySelector(`.msg-row[data-msg-id="${data.msg_id}"]`);
+  if (el) {
+    el.style.opacity = '0.4';
+    const bubble = el.querySelector('.msg-bubble');
+    if (bubble) bubble.innerHTML = '<div class="msg-text" style="color:#aaa;font-style:italic">🗑️ تم مسح هذه الرسالة</div>';
+  }
 });
 
 socket.on('userJoined', (d) => {
@@ -116,13 +124,14 @@ socket.on('welcomeUpdated', (d) => {
 /* ── الرسائل ────────────────────────────── */
 let msgCount = 0;
 
-function addMessage(user, text, isMe, rank = 100, time = null) {
+function addMessage(user, text, isMe, rank = 100, time = null, msgId = null) {
   const color   = getRankColor(rank);
   const initial = getInitial(user);
   const timeStr = formatTime(time);
 
   const wrap = document.createElement('div');
   wrap.className = `msg-row ${isMe ? 'self' : 'other'}`;
+  if (msgId) wrap.dataset.msgId = msgId;
 
   /* ── أفاتار مع إطار لون الرتبة ── */
   const av = document.createElement('div');

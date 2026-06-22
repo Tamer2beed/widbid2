@@ -238,7 +238,7 @@ io.on('connection', (socket) => {
 
     // سجل الرسائل (آخر 50 رسالة مع الرتبة)
     const [messages] = await db.query(`
-      SELECT m.content, m.created_at, u.username, u.rank
+      SELECT m.id, m.content, m.created_at, u.username, u.rank
       FROM messages m
       JOIN users u ON m.sender_id = u.id
       WHERE m.room_id = ?
@@ -274,15 +274,18 @@ io.on('connection', (socket) => {
     const senderRank = socket.userData?.rank || rank || 100;
 
     try {
+      let msgId = null;
       if (user_id) {
-        await db.query(
+        const [res] = await db.query(
           'INSERT INTO messages (room_id, sender_id, content) VALUES (?, ?, ?)',
           [room_id, user_id, message]
         );
+        msgId = res.insertId;
         await addPoints(user_id, POINTS_PER_MESSAGE, 'Message sent');
       }
 
       io.to(room_id).emit('newMessage', {
+        id: msgId,
         username: username || socket.userData?.username,
         message,
         rank: senderRank,
@@ -292,6 +295,16 @@ io.on('connection', (socket) => {
     } catch (err) {
       console.error('❌ sendMessage:', err.message);
     }
+  });
+
+  /* ── مسح رسالة (المشرف 500+) ──────────────── */
+  socket.on('deleteMessage', async (data) => {
+    if ((socket.userData?.rank || 0) < 500) return;
+    const { room_id, msg_id } = data;
+    try {
+      await db.query('DELETE FROM messages WHERE id = ? AND room_id = ?', [msg_id, room_id]);
+      io.to(String(room_id)).emit('messageDeleted', { msg_id });
+    } catch (e) { console.error('deleteMessage:', e.message); }
   });
 
   /* ─── مغادرة الغرفة ───────────────────────── */

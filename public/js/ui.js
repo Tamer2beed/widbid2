@@ -396,3 +396,164 @@ function leaveRoom() {
 function openPrivateChat(name) {
   showToast(`💬 رسالة خاصة لـ ${name} — قريباً`);
 }
+
+/* ════════════════════════════════════════
+   قائمة سياق الرسالة (ضغط طويل)
+════════════════════════════════════════ */
+
+let _ctxTimer = null;
+
+function initMessageContextMenu() {
+  const style = document.createElement('style');
+  style.textContent = `
+  .ctx-menu {
+    position: fixed; z-index: 250;
+    background: #1a1a2e; border-radius: 12px;
+    overflow: hidden; min-width: 160px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: ctxIn .15s ease;
+  }
+  @keyframes ctxIn { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:scale(1)} }
+  .ctx-item {
+    padding: 13px 18px; font-size: 14px; font-weight: 600;
+    color: #fff; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,.08);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .ctx-item:last-child { border-bottom: none; }
+  .ctx-item:active { background: rgba(255,255,255,.1); }
+  .ctx-item.danger { color: #E74C3C; }
+  .ctx-overlay {
+    position: fixed; inset: 0; z-index: 249;
+  }
+  `;
+  document.head.appendChild(style);
+
+  /* ضغط طويل على الرسائل */
+  document.getElementById('messages')?.addEventListener('touchstart', e => {
+    const bubble = e.target.closest('.msg-bubble');
+    if (!bubble) return;
+    const row = bubble.closest('.msg-row');
+    _ctxTimer = setTimeout(() => {
+      const text = bubble.querySelector('.msg-text')?.textContent || '';
+      const msgId = row?.dataset.msgId || null;
+      showMessageMenu(e.touches[0].clientX, e.touches[0].clientY, text, msgId);
+    }, 500);
+  }, { passive: true });
+
+  document.getElementById('messages')?.addEventListener('touchend',   () => clearTimeout(_ctxTimer), { passive: true });
+  document.getElementById('messages')?.addEventListener('touchmove',  () => clearTimeout(_ctxTimer), { passive: true });
+}
+
+function showMessageMenu(x, y, text, msgId) {
+  closeCtxMenu();
+  const rank = parseInt(localStorage.getItem('rank') || '0');
+
+  const items = [
+    { icon: '📋', label: 'نسخ', fn: () => { navigator.clipboard?.writeText(text); showToast('✅ تم النسخ'); } },
+  ];
+
+  /* مسح النص للجميع — للمشرف فقط */
+  if (rank >= 500 && msgId) {
+    items.push({
+      icon: '🗑️', label: 'مسح للجميع', danger: true,
+      fn: () => {
+        if (confirm('مسح هذه الرسالة للجميع؟')) {
+          socket.emit('deleteMessage', { room_id: roomId, msg_id: msgId });
+        }
+      }
+    });
+  }
+
+  _showCtxMenu(x, y, items);
+}
+
+/* ════════════════════════════════════════
+   قائمة سياق العضو (ضغط على اسمه)
+════════════════════════════════════════ */
+
+function showMemberMenu(targetUsername, targetRank) {
+  /* موضع وسط الشاشة */
+  const x = window.innerWidth  / 2;
+  const y = window.innerHeight / 2;
+
+  const rank = parseInt(localStorage.getItem('rank') || '0');
+  const self = targetUsername === username;
+
+  const items = [];
+
+  if (!self) {
+    items.push({
+      icon: '💬', label: 'محادثة خاصة',
+      fn: () => showToast('💬 الخاص — قريباً')
+    });
+    items.push({
+      icon: '@', label: `@${targetUsername}`,
+      fn: () => {
+        const inp = document.getElementById('msgInput');
+        if (inp) { inp.value = `@${targetUsername} `; inp.focus(); }
+      }
+    });
+    items.push({
+      icon: '🚫', label: 'تجاهل',
+      fn: () => { socket.emit('ignoreUser', { target: targetUsername }); showToast(`🚫 تم تجاهل ${targetUsername}`); }
+    });
+    items.push({
+      icon: '🚨', label: 'تبليغ',
+      fn: () => { socket.emit('reportUser', { target: targetUsername, room_id: roomId }); showToast('✅ تم إرسال البلاغ'); }
+    });
+  }
+
+  /* أدوات المشرف */
+  if (!self && rank >= 500 && rank > targetRank) {
+    items.push({ icon: '🔇', label: 'كتم', danger: false,
+      fn: () => { socket.emit('muteUser',    { room_id: roomId, target: targetUsername, by: username }); showToast(`🔇 تم كتم ${targetUsername}`); }
+    });
+    items.push({ icon: '👢', label: 'طرد',  danger: true,
+      fn: () => { if(confirm(`طرد ${targetUsername}؟`)) socket.emit('kickUser', { room_id: roomId, target: targetUsername, by: username }); }
+    });
+  }
+
+  if (items.length) _showCtxMenu(x, y, items);
+}
+
+/* ══ بناء وعرض القائمة ══ */
+function _showCtxMenu(x, y, items) {
+  closeCtxMenu();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'ctx-overlay';
+  overlay.onclick = closeCtxMenu;
+
+  const menu = document.createElement('div');
+  menu.className = 'ctx-menu';
+  menu.id = 'ctxMenu';
+
+  items.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'ctx-item' + (item.danger ? ' danger' : '');
+    el.innerHTML = `<span>${item.icon}</span><span>${item.label}</span>`;
+    el.onclick = () => { closeCtxMenu(); item.fn(); };
+    menu.appendChild(el);
+  });
+
+  /* ضبط الموضع داخل الشاشة */
+  document.body.appendChild(overlay);
+  document.body.appendChild(menu);
+
+  const mw = 180, mh = items.length * 46;
+  let left = Math.min(x, window.innerWidth  - mw - 8);
+  let top  = Math.min(y, window.innerHeight - mh - 8);
+  left = Math.max(8, left);
+  top  = Math.max(8, top);
+
+  menu.style.left = left + 'px';
+  menu.style.top  = top  + 'px';
+}
+
+function closeCtxMenu() {
+  document.getElementById('ctxMenu')?.remove();
+  document.querySelector('.ctx-overlay')?.remove();
+}
+
+/* ══ INIT ══ */
+document.addEventListener('DOMContentLoaded', initMessageContextMenu);
