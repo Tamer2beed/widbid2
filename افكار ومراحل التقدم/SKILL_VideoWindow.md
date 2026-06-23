@@ -230,3 +230,42 @@ videoScreen.appendChild(video);
        عند الإغلاق: localStorage.setItem('videoPos', JSON.stringify({left, top}))
        عند الفتح: استرجع وطبّق الموضع
 ```
+
+---
+
+## 🔄 تحديث مهم — الفيديو بدون صوت
+
+**القرار المعماري (2026-06-22):**
+
+```
+نافذة الفيديو = صورة فقط (video track)
+الصوت = حصري للسبيكر — لا علاقة له بنافذة الفيديو
+```
+
+### التأثير على video.js:
+
+```javascript
+// [SKILL-VIDEO] getUserMedia — فيديو فقط، لا صوت
+const stream = await navigator.mediaDevices.getUserMedia({
+  video: true,
+  audio: false   // ← صريح، الصوت للسبيكر فقط
+});
+
+// [SKILL-VIDEO] عند تفعيل <video> في Phase 21:
+const videoEl = document.createElement('video');
+videoEl.srcObject = stream;
+videoEl.muted     = true;    // ← دائماً مكتوم
+videoEl.autoplay  = true;
+videoEl.playsInline = true;
+```
+
+### من يمكنه بث الفيديو؟
+- **أي مستخدم** يضغط زر الكاميرا (بغض النظر عن السبيكر)
+- يمكن أن يكون شخص يبث فيديو بينما شخص آخر يتحدث بالصوت
+
+### الفصل الكامل:
+```
+المستخدم أ: يتحدث بالصوت (السبيكر) — بدون فيديو
+المستخدم ب: يبث فيديو (نافذة منبثقة) — بدون صوت
+المستخدم ج: يسمع المستخدم أ + يرى المستخدم ب
+```
