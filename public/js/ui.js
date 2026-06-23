@@ -279,7 +279,7 @@ function openSideMenu() {
 function closeAll() {
   document.getElementById('sideMenu').classList.remove('open');
   document.getElementById('overlay').classList.remove('show');
-  document.getElementById('statusPopup').classList.remove('show');
+  closeStatusMenu();
   closeEmoji();
   document.getElementById('imagePicker').classList.remove('open');
   const adminSheet = document.getElementById('adminSheet');
@@ -289,23 +289,20 @@ function closeAll() {
 /* ── قائمة الحالات ──────────────────────── */
 function openStatusMenu() {
   closeSideMenu();
-  const popup = document.getElementById('statusPopup');
-  popup.classList.toggle('show');
-  /* إغلاق عند الضغط خارجه */
-  if (popup.classList.contains('show')) {
-    setTimeout(() => {
-      document.addEventListener('click', _closeStatus, { once: true });
-    }, 50);
-  }
+  const popup   = document.getElementById('statusPopup');
+  const overlay = document.getElementById('statusOverlay');
+  popup.classList.add('show');
+  overlay.classList.add('show');
 }
-function _closeStatus(e) {
-  const popup = document.getElementById('statusPopup');
-  if (!popup?.contains(e.target)) popup?.classList.remove('show');
+
+function closeStatusMenu() {
+  document.getElementById('statusPopup')?.classList.remove('show');
+  document.getElementById('statusOverlay')?.classList.remove('show');
 }
 
 function setStatus(key, icon, label) {
   socket.emit('setStatus', { room_id: roomId, username, status: key });
-  document.getElementById('statusPopup').classList.remove('show');
+  closeStatusMenu();
   showToast(`${icon} الحالة: ${label}`);
 }
 

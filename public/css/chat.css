@@ -524,24 +524,28 @@ body { background: var(--wevo-chat); }
 .status-popup {
   position: fixed;
   top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(0.9);
   z-index: 160;
   background: #fff; border-radius: 16px;
   padding: 14px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.25);
   display: none;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px; width: 260px;
+  gap: 8px; width: 280px;
+  transition: transform .15s ease, opacity .15s ease;
+  opacity: 0;
 }
-.status-popup.show { display: grid; }
-/* overlay خلف status popup */
-.status-popup.show::before {
-  content: '';
-  position: fixed; inset: 0;
+.status-popup.show {
+  display: grid;
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+.status-overlay {
+  position: fixed; inset: 0; z-index: 159;
   background: rgba(0,0,0,0.4);
-  z-index: -1;
-  border-radius: 0;
+  display: none;
 }
+.status-overlay.show { display: block; }
 .status-item {
   display: flex; flex-direction: column; align-items: center;
   gap: 4px; cursor: pointer; padding: 6px 4px; border-radius: 10px;
