@@ -276,9 +276,18 @@ function openSideMenu() {
   if (clearBtn) clearBtn.style.display = userRank >= 500 ? 'flex' : 'none';
 }
 
-function closeAll() {
+function closeSideMenu() {
   document.getElementById('sideMenu').classList.remove('open');
   document.getElementById('overlay').classList.remove('show');
+}
+
+function openSettings() {
+  closeSideMenu();
+  showToast('⚙️ الإعدادات — قريباً');
+}
+
+function closeAll() {
+  closeSideMenu();
   closeStatusMenu();
   closeEmoji();
   document.getElementById('imagePicker').classList.remove('open');
