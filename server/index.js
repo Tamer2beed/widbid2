@@ -5,6 +5,9 @@ const cors     = require('cors');
 const jwt      = require('jsonwebtoken');
 require('dotenv').config();
 
+// [SKILL-AUDIO][server/index.js:~9] — استيراد SFU
+// تاريخ: 2026-06-25
+const { initWorker, getOrCreateRoom, createTransport, sfuRooms, cleanupRoom } = require('./mediasoup');
 const db          = require('./db');
 const authRoutes  = require('./routes/auth');
 const roomRoutes  = require('./routes/rooms');
@@ -635,6 +638,22 @@ io.on('connection', (socket) => {
       io.to(socket.gameRoom).emit('playerLeft');
       delete games[socket.gameRoom];
     }
+
+    // [SKILL-AUDIO] تنظيف SFU عند قطع الاتصال
+    if (room_id) {
+      const sfuRoom = sfuRooms.get(String(room_id));
+      if (sfuRoom) {
+        /* أغلق producers هذا المستخدم */
+        for (const [pid, { producer, username: pUser }] of sfuRoom.producers) {
+          if (pUser === username) {
+            producer.close();
+            sfuRoom.producers.delete(pid);
+            socket.to(String(room_id)).emit('audio:producerClosed', { producerId: pid });
+          }
+        }
+        cleanupRoom(String(room_id));
+      }
+    }
   });
 
   /* ── بانر الغرفة ──────────────────────── */
@@ -1203,6 +1222,151 @@ io.on('connection', (socket) => {
     io.emit('emergencyAlert', { message: d.message, by: d.by });
   });
 
+
+  /* ════════════════════════════════════════════════
+     [SKILL-AUDIO] أحداث Mediasoup SFU — الصوت
+     تاريخ: 2026-06-25
+  ════════════════════════════════════════════════ */
+
+  /* ── RTP Capabilities ─────────────────────────── */
+  socket.on('audio:getCapabilities', async ({ room_id }) => {
+    try {
+      const room = await getOrCreateRoom(String(room_id));
+      socket.emit('audio:capabilities', room.router.rtpCapabilities);
+    } catch (err) {
+      console.error('audio:getCapabilities:', err.message);
+      socket.emit('audio:error', { message: err.message });
+    }
+  });
+
+  /* ── إنشاء Send Transport (للمتحدث) ──────────── */
+  socket.on('audio:createSendTransport', async ({ room_id }) => {
+    try {
+      const room      = await getOrCreateRoom(String(room_id));
+      const transport = await createTransport(room.router);
+      room.sendTransports.set(transport.id, transport);
+      socket.emit('audio:sendTransportCreated', {
+        id             : transport.id,
+        iceParameters  : transport.iceParameters,
+        iceCandidates  : transport.iceCandidates,
+        dtlsParameters : transport.dtlsParameters,
+      });
+    } catch (err) {
+      console.error('audio:createSendTransport:', err.message);
+      socket.emit('audio:error', { message: err.message });
+    }
+  });
+
+  /* ── إنشاء Recv Transport (للمستمع) ──────────── */
+  socket.on('audio:createRecvTransport', async ({ room_id }) => {
+    try {
+      const room      = await getOrCreateRoom(String(room_id));
+      const transport = await createTransport(room.router);
+      room.recvTransports.set(transport.id, transport);
+      socket.emit('audio:recvTransportCreated', {
+        id             : transport.id,
+        iceParameters  : transport.iceParameters,
+        iceCandidates  : transport.iceCandidates,
+        dtlsParameters : transport.dtlsParameters,
+      });
+    } catch (err) {
+      console.error('audio:createRecvTransport:', err.message);
+      socket.emit('audio:error', { message: err.message });
+    }
+  });
+
+  /* ── Connect Transport ────────────────────────── */
+  socket.on('audio:connectTransport', async ({ transportId, dtlsParameters }) => {
+    try {
+      const room = sfuRooms.get(String(socket.userData?.room_id));
+      if (!room) return;
+      const transport =
+        room.sendTransports.get(transportId) ||
+        room.recvTransports.get(transportId);
+      if (!transport) return;
+      await transport.connect({ dtlsParameters });
+      socket.emit('audio:transportConnected');
+    } catch (err) {
+      console.error('audio:connectTransport:', err.message);
+    }
+  });
+
+  /* ── Produce — بدء البث من المتحدث ───────────── */
+  socket.on('audio:produce', async ({ transportId, kind, rtpParameters, room_id }) => {
+    try {
+      const rid  = String(room_id || socket.userData?.room_id);
+      const room = sfuRooms.get(rid);
+      if (!room) return;
+      const transport = room.sendTransports.get(transportId);
+      if (!transport) return;
+
+      const producer = await transport.produce({ kind, rtpParameters });
+      const uname    = socket.userData?.username || 'unknown';
+
+      room.producers.set(producer.id, { producer, username: uname });
+
+      producer.on('transportclose', () => {
+        room.producers.delete(producer.id);
+        socket.to(rid).emit('audio:producerClosed', { producerId: producer.id });
+      });
+
+      socket.emit('audio:produced', { producerId: producer.id });
+
+      /* أبلغ بقية الغرفة بالمنتج الجديد */
+      socket.to(rid).emit('audio:newProducer', {
+        producerId : producer.id,
+        username   : uname,
+      });
+
+      console.log(`🎙️ [SFU] ${uname} بدأ البث في ${rid}`);
+    } catch (err) {
+      console.error('audio:produce:', err.message);
+    }
+  });
+
+  /* ── Consume — استقبال بث متحدث آخر ─────────── */
+  socket.on('audio:consume', async ({ room_id, producerId, rtpCapabilities }) => {
+    try {
+      const rid  = String(room_id || socket.userData?.room_id);
+      const room = sfuRooms.get(rid);
+      if (!room) { socket.emit('audio:consumed', { error: 'الغرفة غير موجودة' }); return; }
+
+      if (!room.router.canConsume({ producerId, rtpCapabilities })) {
+        socket.emit('audio:consumed', { error: 'لا يمكن الاستقبال' });
+        return;
+      }
+
+      /* ابحث عن Recv Transport لهذا المستمع */
+      let transport = null;
+      for (const [, t] of room.recvTransports) {
+        transport = t;
+        break;
+      }
+      if (!transport) { socket.emit('audio:consumed', { error: 'لا يوجد Recv Transport' }); return; }
+
+      const consumer = await transport.consume({
+        producerId,
+        rtpCapabilities,
+        paused: false,
+      });
+
+      socket.emit('audio:consumed', {
+        id            : consumer.id,
+        producerId,
+        kind          : consumer.kind,
+        rtpParameters : consumer.rtpParameters,
+      });
+    } catch (err) {
+      console.error('audio:consume:', err.message);
+      socket.emit('audio:consumed', { error: err.message });
+    }
+  });
+
+  /* ── تنظيف عند قطع الاتصال ──────────────────── */
+  // (يُنفَّذ داخل disconnect handler الموجود — انظر أدناه)
+
+/* ════ نهاية أحداث [SKILL-AUDIO] ════ */
+
 /* ════════ نهاية أحداث الرتب المتقدمة ════════ */
 });
 
@@ -1210,8 +1374,16 @@ io.on('connection', (socket) => {
    تشغيل السيرفر
 ════════════════════════════════════════════════ */
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`\n🚀 WidBid Server on port ${PORT}`);
   console.log(`📡 Socket.io ready`);
   console.log(`🗄️  Database: ${process.env.DB_NAME}`);
+  // [SKILL-AUDIO][server/index.js] — تشغيل Mediasoup Worker عند بدء السيرفر
+  try {
+    await initWorker();
+    console.log('🎙️ Mediasoup SFU جاهز');
+  } catch (err) {
+    console.error('❌ فشل تشغيل Mediasoup:', err.message);
+    console.warn('⚠️ الخادم يعمل بدون SFU — نفّذ: npm install mediasoup');
+  }
 });
