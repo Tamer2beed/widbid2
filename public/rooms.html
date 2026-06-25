@@ -328,6 +328,48 @@ html,body { height:100%; font-family:'Tajawal',sans-serif; background:var(--bg);
   <!-- تبويب المزيد -->
   <div class="pane" id="pane-more">
     <div style="padding:16px;">
+
+      <!-- ═══ بطاقة الملف الشخصي ═══ -->
+      <div style="background:var(--card);border-radius:16px;padding:18px 16px;margin-bottom:14px;border:1px solid var(--border);display:flex;align-items:center;gap:14px;">
+        <!-- الأفاتار -->
+        <div id="myAvatarWrap" style="position:relative;width:64px;height:64px;border-radius:12px;border:3px solid #6C63FF;overflow:hidden;flex-shrink:0;cursor:pointer;" onclick="openAvatarPickerRooms()">
+          <img id="myAvatarImg" src="/avatars/av1.svg" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.src='/avatars/av1.svg'">
+          <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.4);text-align:center;font-size:10px;color:#fff;padding:2px 0;">تغيير</div>
+        </div>
+        <!-- الاسم -->
+        <div>
+          <div id="profileUsername" style="font-size:17px;font-weight:700;color:var(--text);">—</div>
+          <div id="profileRankLabel" style="font-size:12px;color:var(--muted);margin-top:2px;"></div>
+        </div>
+      </div>
+
+      <!-- ═══ Avatar Picker (داخل rooms.html) ═══ -->
+      <div id="avatarPickerRooms" style="display:none;background:var(--card);border-radius:16px;padding:16px;margin-bottom:14px;border:1px solid var(--border);">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;text-align:center;">🖼️ اختر صورتك</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
+          <img src="/avatars/av1.svg" class="av-opt" data-av="av1.svg" onclick="pickAvatar(this)" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:3px solid transparent;cursor:pointer;">
+          <img src="/avatars/av2.svg" class="av-opt" data-av="av2.svg" onclick="pickAvatar(this)" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:3px solid transparent;cursor:pointer;">
+          <img src="/avatars/av3.svg" class="av-opt" data-av="av3.svg" onclick="pickAvatar(this)" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:3px solid transparent;cursor:pointer;">
+          <img src="/avatars/av4.svg" class="av-opt" data-av="av4.svg" onclick="pickAvatar(this)" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:3px solid transparent;cursor:pointer;">
+          <img src="/avatars/av5.svg" class="av-opt" data-av="av5.svg" onclick="pickAvatar(this)" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:3px solid transparent;cursor:pointer;">
+          <img src="/avatars/av6.svg" class="av-opt" data-av="av6.svg" onclick="pickAvatar(this)" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:3px solid transparent;cursor:pointer;">
+          <img src="/avatars/av7.svg" class="av-opt" data-av="av7.svg" onclick="pickAvatar(this)" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:3px solid transparent;cursor:pointer;">
+          <img src="/avatars/av8.svg" class="av-opt" data-av="av8.svg" onclick="pickAvatar(this)" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:3px solid transparent;cursor:pointer;">
+        </div>
+        <!-- زر رفع صورة — للمشتركين في باقة البروفايل فقط -->
+        <div id="uploadAvatarSection" style="display:none;">
+          <button onclick="document.getElementById('avatarFileRooms').click()"
+                  style="width:100%;padding:11px;border-radius:10px;border:none;background:#6C63FF;color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;">
+            📷 رفع صورة مخصصة
+          </button>
+          <input type="file" id="avatarFileRooms" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="uploadAvatarRooms(event)">
+        </div>
+        <button onclick="document.getElementById('avatarPickerRooms').style.display='none'"
+                style="width:100%;padding:9px;background:none;border:1px solid #ddd;border-radius:10px;color:#666;font-size:13px;cursor:pointer;">
+          إغلاق
+        </button>
+      </div>
+
       <div style="background:var(--card);border-radius:14px;overflow:hidden;border:1px solid var(--border);">
         <div onclick="openMarket()"   style="padding:15px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;cursor:pointer;font-size:15px;font-weight:600;">🛒 <span>WidBid Market</span></div>
         <div onclick="openPoints()"   style="padding:15px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;cursor:pointer;font-size:15px;font-weight:600;">💎 <span>نقاطي</span></div>
@@ -669,5 +711,114 @@ function showToast(msg) {
 /* ══ INIT ══ */
 loadCategories();
 </script>
+
+<script>
+/* ══ Avatar في rooms.html ══ */
+(function initRoomsAvatar() {
+  const token    = localStorage.getItem('token');
+  const username = localStorage.getItem('username') || '—';
+  const RANKS    = {100:'زائر',200:'عضو',300:'اسم محمي',400:'اسم ملكي',
+                    500:'مشرف',600:'مشرف عام',700:'ماستر',800:'سوبر ماستر',
+                    900:'روت',1000:'سوبر روت',1100:'أونر',1200:'سوبر أونر'};
+
+  /* اعرض الاسم فوراً */
+  const uEl = document.getElementById('profileUsername');
+  if (uEl) uEl.textContent = username;
+
+  if (!token) return;
+
+  /* جلب بيانات المستخدم */
+  fetch('/api/users/me', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) return;
+      const u = d.user;
+
+      /* الاسم والرتبة */
+      if (uEl) uEl.textContent = u.username || username;
+      const rEl = document.getElementById('profileRankLabel');
+      const steps = [1200,1100,1000,900,800,700,600,500,400,300,200,100];
+      let rLabel = 'زائر';
+      for (const s of steps) { if ((u.rank||100) >= s) { rLabel = RANKS[s]; break; } }
+      if (rEl) rEl.textContent = rLabel;
+
+      /* الأفاتار */
+      const src = u.avatar
+        ? (u.avatar.startsWith('data:image') ? u.avatar : '/avatars/' + u.avatar)
+        : '/avatars/av1.svg';
+      const img = document.getElementById('myAvatarImg');
+      if (img) img.src = src;
+
+      /* زر رفع الصورة للمشتركين */
+      if (u.has_paid_profile) {
+        const sec = document.getElementById('uploadAvatarSection');
+        if (sec) sec.style.display = 'block';
+      }
+    })
+    .catch(() => {});
+})();
+
+function openAvatarPickerRooms() {
+  const picker = document.getElementById('avatarPickerRooms');
+  picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+}
+
+function pickAvatar(el) {
+  /* تحديد بصري */
+  document.querySelectorAll('.av-opt').forEach(i => i.style.borderColor = 'transparent');
+  el.style.borderColor = '#6C63FF';
+
+  const av    = el.dataset.av;
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  fetch('/api/users/avatar/default', {
+    method : 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body   : JSON.stringify({ avatar: av }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success) {
+      /* حدّث الصورة في البطاقة */
+      const img = document.getElementById('myAvatarImg');
+      if (img) img.src = '/avatars/' + av;
+      /* اغلق الـ picker بعد ثانية */
+      setTimeout(() => {
+        document.getElementById('avatarPickerRooms').style.display = 'none';
+      }, 600);
+    }
+  })
+  .catch(() => {});
+}
+
+function uploadAvatarRooms(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 500 * 1024) { alert('الصورة أكبر من 500KB'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const base64 = ev.target.result;
+    const token  = localStorage.getItem('token');
+    fetch('/api/users/avatar/upload', {
+      method : 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body   : JSON.stringify({ imageData: base64 }),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        const img = document.getElementById('myAvatarImg');
+        if (img) img.src = base64;
+        document.getElementById('avatarPickerRooms').style.display = 'none';
+      } else {
+        alert(d.message || 'فشل الرفع');
+      }
+    });
+  };
+  reader.readAsDataURL(file);
+}
+</script>
+
 </body>
 </html>
