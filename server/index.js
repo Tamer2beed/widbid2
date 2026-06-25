@@ -639,6 +639,13 @@ io.on('connection', (socket) => {
       delete games[socket.gameRoom];
     }
 
+    // [VIDEO-WEBRTC] تنظيف البث عند قطع الاتصال
+    if (socket.userData?.isBroadcasting && room_id) {
+      const rid = String(room_id);
+      if (global.broadcasters?.[rid]) delete global.broadcasters[rid][username];
+      io.to(rid).emit('broadcastStopped', { username });
+    }
+
     // [SKILL-AUDIO] تنظيف SFU عند قطع الاتصال
     if (room_id) {
       const sfuRoom = sfuRooms.get(String(room_id));
@@ -780,46 +787,115 @@ io.on('connection', (socket) => {
      (UI فقط الآن — Phase 21: يُضاف WebRTC/Mediasoup)
   ════════════════════════════════════════════════ */
 
+  /* ════════════════════════════════════════════════
+     [VIDEO-WEBRTC] أحداث البث المباشر — WebRTC P2P
+     الحد الأقصى: 20 مشاهد لكل مُذيع
+     السيرفر = Signaling فقط (لا يمر الفيديو منه)
+     تاريخ: 2026-06-25
+  ════════════════════════════════════════════════ */
+
+  const VIDEO_MAX_VIEWERS = 20;
+
+  /* يتتبع المُذيعين وعدد مشاهديهم في الذاكرة */
+  /* broadcasters[room_id][username] = viewerCount  */
+  if (!global.broadcasters) global.broadcasters = {};
+
   socket.on('startBroadcast', (data) => {
-    const username = socket.userData?.username || data.username;
-    const room_id  = String(data.room_id);
-    socket.to(room_id).emit('broadcastStarted', { username });
+    const uname   = socket.userData?.username || data.username;
+    const room_id = String(data.room_id);
+    if (!global.broadcasters[room_id]) global.broadcasters[room_id] = {};
+    global.broadcasters[room_id][uname] = 0;
+    socket.userData.isBroadcasting = true;
+    socket.to(room_id).emit('broadcastStarted', { username: uname });
+    console.log(`📹 ${uname} بدأ البث في ${room_id}`);
   });
 
   socket.on('stopBroadcast', (data) => {
-    const username = socket.userData?.username || '';
-    const room_id  = String(data.room_id);
-    socket.to(room_id).emit('broadcastStopped', { username });
+    const uname   = socket.userData?.username || '';
+    const room_id = String(data.room_id);
+    if (global.broadcasters[room_id]) delete global.broadcasters[room_id][uname];
+    socket.userData.isBroadcasting = false;
+    socket.to(room_id).emit('broadcastStopped', { username: uname });
+    console.log(`📹 ${uname} أوقف البث في ${room_id}`);
   });
 
-  socket.on('requestWatch', (data) => {
-    const { room_id, broadcaster, viewer } = data;
+  /* المشاهد → طلب مشاهدة → نُمرره للمُذيع */
+  socket.on('requestWatch', ({ room_id, broadcaster, viewer }) => {
+    const rid = String(room_id);
+    /* فحص الحد الأقصى */
+    const count = global.broadcasters[rid]?.[broadcaster] ?? 0;
+    if (count >= VIDEO_MAX_VIEWERS) {
+      socket.emit('watchRejected', { reason: 'full' });
+      return;
+    }
     /* أرسل الطلب للمُذيع فقط */
-    const roomSockets = io.sockets.adapter.rooms.get(String(room_id));
-    if (!roomSockets) return;
+    const roomSockets = io.sockets.adapter.rooms.get(rid);
+    if (!roomSockets) { socket.emit('watchRejected', { reason: 'offline' }); return; }
     for (const sid of roomSockets) {
       const s = io.sockets.sockets.get(sid);
       if (s?.userData?.username === broadcaster) {
-        s.emit('watchRequest', { viewer, room_id });
+        s.emit('watchRequest', { viewer, room_id: rid });
         break;
       }
     }
   });
 
-  socket.on('broadcastAnswer', (data) => {
-    const { room_id, viewer, accepted } = data;
-    const roomSockets = io.sockets.adapter.rooms.get(String(room_id));
+  /* المُذيع → يرد (قبول + Offer WebRTC / رفض) → للمشاهد */
+  socket.on('broadcastAnswer', ({ room_id, viewer, accepted, offer, reason }) => {
+    const rid     = String(room_id);
+    const bname   = socket.userData?.username;
+    const roomSockets = io.sockets.adapter.rooms.get(rid);
     if (!roomSockets) return;
     for (const sid of roomSockets) {
       const s = io.sockets.sockets.get(sid);
       if (s?.userData?.username === viewer) {
-        s.emit(accepted ? 'watchAccepted' : 'watchRejected', {
-          broadcaster: socket.userData?.username,
-        });
+        if (accepted) {
+          /* زِد عداد المشاهدين */
+          if (global.broadcasters[rid]?.[bname] !== undefined) {
+            global.broadcasters[rid][bname]++;
+            io.to(rid).emit('viewerCount', {
+              username: bname,
+              count   : global.broadcasters[rid][bname],
+            });
+          }
+          s.emit('watchAccepted', { broadcaster: bname, offer });
+        } else {
+          s.emit('watchRejected', { reason: reason || 'rejected' });
+        }
         break;
       }
     }
   });
+
+  /* [VIDEO-WEBRTC] Answer من المشاهد → للمُذيع */
+  socket.on('webrtc:answer', ({ room_id, broadcaster, viewer, answer }) => {
+    const rid = String(room_id);
+    const roomSockets = io.sockets.adapter.rooms.get(rid);
+    if (!roomSockets) return;
+    for (const sid of roomSockets) {
+      const s = io.sockets.sockets.get(sid);
+      if (s?.userData?.username === broadcaster) {
+        s.emit('webrtc:answer', { viewer, answer });
+        break;
+      }
+    }
+  });
+
+  /* [VIDEO-WEBRTC] ICE candidate — مُمرَّر بين الطرفين */
+  socket.on('webrtc:ice', ({ room_id, to, from, candidate }) => {
+    const rid = String(room_id);
+    const roomSockets = io.sockets.adapter.rooms.get(rid);
+    if (!roomSockets) return;
+    for (const sid of roomSockets) {
+      const s = io.sockets.sockets.get(sid);
+      if (s?.userData?.username === to) {
+        s.emit('webrtc:ice', { from, candidate });
+        break;
+      }
+    }
+  });
+
+  /* [VIDEO-WEBRTC] تنظيف عند قطع الاتصال — في disconnect handler أدناه */
 
   /* ════════════════════════════════════════════════
      أحداث الرتب المتقدمة — Master → Super Owner
