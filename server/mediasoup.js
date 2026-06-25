@@ -1,99 +1,46 @@
 // server/mediasoup.js
-// [SKILL-AUDIO][server/mediasoup.js:1] — Worker + Router + Transport factory
-// المشكلة التي يحلها: إنشاء SFU كامل لبث الصوت عبر Mediasoup
-// تاريخ: 2026-06-25
-
-const mediasoup = require('mediasoup');
-
-/* ══ إعدادات الصوت ══ */
-const MEDIA_CODECS = [
-  {
-    kind      : 'audio',
-    mimeType  : 'audio/opus',
-    clockRate : 48000,
-    channels  : 2,
-  }
-];
-
-/* ══ إعدادات الشبكة ══
-   announcedIp = null يعني "استخدم IP الاتصال الفعلي"
-   مناسب لشبكة WiFi المحلية (Termux).
-   للإنترنت العام: غيّر null لـ IP هاتفك العام */
-const LISTEN_IPS = [
-  { ip: '0.0.0.0', announcedIp: null }
-];
-
-/* ══ إعدادات WebRtcTransport ══ */
-const TRANSPORT_OPTIONS = {
-  listenIps              : LISTEN_IPS,
-  enableUdp              : true,
-  enableTcp              : true,
-  preferUdp              : true,
-  initialAvailableOutgoingBitrate: 800000,
-};
+// مُعطَّل مؤقتاً — يتطلب تثبيت mediasoup على Windows
+// السيرفر يعمل بشكل طبيعي بدونه (الصوت فقط هو المعطَّل)
 
 let worker = null;
-
-/* الغرف: Map<roomId, { router, producers: Map, consumerTransports: Map, sendTransports: Map }> */
 const sfuRooms = new Map();
 
-/* ══ تهيئة Worker ══ */
 async function initWorker() {
-  worker = await mediasoup.createWorker({
-    rtcMinPort : 40000,
-    rtcMaxPort : 49999,
-    logLevel   : 'warn',
-  });
-
-  worker.on('died', (error) => {
-    console.error('❌ Mediasoup Worker مات — سيُعاد تشغيله:', error);
-    setTimeout(() => initWorker(), 2000);
-  });
-
-  console.log('🎙️ Mediasoup Worker جاهز (PID:', worker.pid, ')');
+  try {
+    const mediasoup = require('mediasoup');
+    worker = await mediasoup.createWorker({ rtcMinPort: 40000, rtcMaxPort: 49999, logLevel: 'warn' });
+    worker.on('died', () => setTimeout(() => initWorker(), 2000));
+    console.log('🎙️ Mediasoup Worker جاهز (PID:', worker.pid, ')');
+  } catch (err) {
+    console.warn('⚠️ Mediasoup غير مثبت — الصوت معطَّل (npm install mediasoup لتفعيله)');
+  }
 }
 
-/* ══ إنشاء غرفة SFU (أو إعادة الموجودة) ══ */
 async function getOrCreateRoom(roomId) {
-  if (sfuRooms.has(roomId)) {
-    return sfuRooms.get(roomId);
-  }
-
-  if (!worker) throw new Error('Mediasoup Worker غير جاهز');
-
-  const router = await worker.createRouter({ mediaCodecs: MEDIA_CODECS });
-
-  const room = {
-    router,
-    producers       : new Map(), /* producerId → { producer, username } */
-    sendTransports  : new Map(), /* transportId → transport */
-    recvTransports  : new Map(), /* transportId → transport */
-  };
-
+  if (!worker) throw new Error('Mediasoup غير مثبت');
+  if (sfuRooms.has(roomId)) return sfuRooms.get(roomId);
+  const mediasoup = require('mediasoup');
+  const router = await worker.createRouter({ mediaCodecs: [{ kind: 'audio', mimeType: 'audio/opus', clockRate: 48000, channels: 2 }] });
+  const room = { router, producers: new Map(), sendTransports: new Map(), recvTransports: new Map() };
   sfuRooms.set(roomId, room);
-  console.log(`🏠 SFU Room أُنشئت: ${roomId}`);
   return room;
 }
 
-/* ══ إنشاء WebRtcTransport ══ */
 async function createTransport(router) {
-  const transport = await router.createWebRtcTransport(TRANSPORT_OPTIONS);
-
-  transport.on('dtlsstatechange', (state) => {
-    if (state === 'closed') transport.close();
+  const transport = await router.createWebRtcTransport({
+    listenIps: [{ ip: '0.0.0.0', announcedIp: null }],
+    enableUdp: true, enableTcp: true, preferUdp: true,
   });
-
+  transport.on('dtlsstatechange', s => { if (s === 'closed') transport.close(); });
   return transport;
 }
 
-/* ══ تنظيف الغرفة عند فراغها ══ */
 function cleanupRoom(roomId) {
   const room = sfuRooms.get(roomId);
   if (!room) return;
   if (room.producers.size === 0 && room.sendTransports.size === 0) {
     room.router.close();
     sfuRooms.delete(roomId);
-    console.log(`🗑️ SFU Room حُذفت: ${roomId}`);
   }
 }
 
