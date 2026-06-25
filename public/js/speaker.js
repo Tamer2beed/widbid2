@@ -342,11 +342,17 @@ const SpeakerSystem = (() => {
     socket.emit('speakerRequest', { room_id: roomId, username, rank: userRank });
     /* أظهر 🖐️ فوراً لنفسي في قائمة الأعضاء */
     if (typeof setHandBadge === 'function') setHandBadge(username, true);
+    // [SKILL-AUDIO] جهّز الجهاز الصوتي لحظة الطلب (لا يفتح المايك بعد)
+    if (typeof AudioSystem !== 'undefined') {
+      AudioSystem.initDevice(roomId).catch(e => console.warn('AudioSystem init:', e.message));
+    }
   }
 
   function doneSpeaking() {
     socket.emit('speakerDone', { room_id: roomId, username });
     if (typeof setHandBadge === 'function') setHandBadge(username, false);
+    // [SKILL-AUDIO] أوقف البث الصوتي
+    if (typeof AudioSystem !== 'undefined') AudioSystem.stopSpeaking();
   }
 
   function leaveQueue() {
@@ -396,6 +402,7 @@ const SpeakerSystem = (() => {
       /* احسب فارق التوقيت: serverNow - clientNow */
       state.clockOffset = (data.serverNow || Date.now()) - Date.now();
 
+      const wasSpeaking  = state.isSpeaking;
       state.current     = data.current || null;
       state.queue       = data.queue   || [];
       state.isSpeaking  = state.current?.username === username;
@@ -413,8 +420,15 @@ const SpeakerSystem = (() => {
       render();
 
       /* إشعار صوتي عند دورك */
-      if (state.isSpeaking) {
+      if (state.isSpeaking && !wasSpeaking) {
         showToast('🎙️ دورك الآن! تحدث');
+        // [SKILL-AUDIO] فعّل البث الصوتي تلقائياً عند الحصول على السبيكر
+        if (typeof AudioSystem !== 'undefined') {
+          AudioSystem.startSpeaking().catch(e => console.warn('AudioSystem start:', e.message));
+        }
+      } else if (!state.isSpeaking && wasSpeaking) {
+        // [SKILL-AUDIO] أوقف البث عند انتهاء السبيكر
+        if (typeof AudioSystem !== 'undefined') AudioSystem.stopSpeaking();
       }
     });
 
