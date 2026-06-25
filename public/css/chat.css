@@ -392,6 +392,12 @@ body { background: var(--wevo-chat); }
 }
 .mic-active.on { display: block; animation: pulse 1s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.member-status-emoji {
+  font-size: 13px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-right: 2px;
+}
 .member-status-dot {
   position: absolute; bottom: -1px; right: -1px;
   width: 10px; height: 10px; border-radius: 50%;
@@ -521,38 +527,59 @@ body { background: var(--wevo-chat); }
 .item-icon { font-size: 18px; }
 
 /* ══ STATUS POPUP ══ */
-.status-popup {
-  position: fixed;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
-  z-index: 160;
-  background: #fff; border-radius: 16px;
-  padding: 14px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-  display: none;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px; width: 280px;
-  transition: transform .15s ease, opacity .15s ease;
-  opacity: 0;
-}
-.status-popup.show {
-  display: grid;
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 1;
-}
+/* ══ STATUS DROPDOWN ══ */
 .status-overlay {
   position: fixed; inset: 0; z-index: 159;
-  background: rgba(0,0,0,0.4);
+  background: transparent;
   display: none;
 }
 .status-overlay.show { display: block; }
-.status-item {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 4px; cursor: pointer; padding: 6px 4px; border-radius: 10px;
+
+.status-dropdown {
+  position: fixed;
+  /* تظهر أسفل زر الحالة في القائمة الجانبية */
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) translateY(-8px);
+  z-index: 160;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 6px 28px rgba(0,0,0,0.18);
+  width: 200px;
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+  transition: transform .15s ease, opacity .15s ease;
+  opacity: 0;
 }
-.status-item:active { background: #f5f5ff; }
-.status-icon { font-size: 22px; }
-.status-name { font-size: 9px; color: #666; text-align: center; }
+.status-dropdown.show {
+  display: flex;
+  transform: translate(-50%, -50%);
+  opacity: 1;
+}
+.status-dropdown-header {
+  padding: 10px 16px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #888;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: right;
+}
+.status-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  cursor: pointer;
+  direction: rtl;
+  transition: background .1s;
+}
+.status-dropdown-item:active,
+.status-dropdown-item:hover { background: #f7f7ff; }
+.status-dropdown-item + .status-dropdown-item {
+  border-top: 1px solid #f5f5f5;
+}
+.sd-icon { font-size: 20px; flex-shrink: 0; }
+.sd-label { font-size: 14px; color: #333; font-weight: 500; }
 
 /* ══ EMOJI PANEL ══ */
 .emoji-panel {
