@@ -195,32 +195,35 @@
   </div>
 </div>
 
-<!-- ══ STATUS POPUP ══ -->
+<!-- ══ STATUS DROPDOWN ══ -->
 <div class="status-overlay" id="statusOverlay" onclick="closeStatusMenu()"></div>
-<div class="status-popup" id="statusPopup">
-  <div class="status-item" onclick="setStatus('available','🟢','متاح')">
-    <div class="status-icon" style="background:#27AE6020">🟢</div><span class="status-name">متاح</span>
+<div class="status-dropdown" id="statusPopup">
+  <div class="status-dropdown-header">الحالة</div>
+  <div class="status-dropdown-item" onclick="setStatus('available','🟢','متاح')">
+    <span class="sd-icon">🟢</span><span class="sd-label">متاح</span>
   </div>
-  <div class="status-item" onclick="setStatus('away','⏰','بالخارج')">
-    <div class="status-icon" style="background:#F39C1220">⏰</div><span class="status-name">بالخارج</span>
+  <div class="status-dropdown-item" onclick="setStatus('away','⏰','بالخارج')">
+    <span class="sd-icon">⏰</span><span class="sd-label">بالخارج</span>
   </div>
-  <div class="status-item" onclick="setStatus('busy','🔴','مشغول')">
-    <div class="status-icon" style="background:#E74C3C20">🔴</div><span class="status-name">مشغول</span>
+  <div class="status-dropdown-item" onclick="setStatus('busy','🔴','مشغول')">
+    <span class="sd-icon">🔴</span><span class="sd-label">مشغول</span>
   </div>
-  <div class="status-item" onclick="setStatus('phone','📞','هاتف')">
-    <div class="status-icon" style="background:#2196F320">📞</div><span class="status-name">هاتف</span>
+  <div class="status-dropdown-item" onclick="setStatus('phone','📞','هاتف')">
+    <span class="sd-icon">📞</span><span class="sd-label">هاتف</span>
   </div>
-  <div class="status-item" onclick="setStatus('food','🍴','طعام')">
-    <div class="status-icon" style="background:#8BC34A20">🍴</div><span class="status-name">طعام</span>
+  <div class="status-dropdown-item" onclick="setStatus('food','🍴','طعام')">
+    <span class="sd-icon">🍴</span><span class="sd-label">طعام</span>
   </div>
-  <div class="status-item" onclick="setStatus('sleep','💤','نائم')">
-    <div class="status-icon" style="background:#9C27B020">💤</div><span class="status-name">نائم</span>
+  <div class="status-dropdown-item" onclick="setStatus('pray','🕌','صلاة')">
+    <span class="sd-icon">🕌</span><span class="sd-label">صلاة</span>
   </div>
-  <div class="status-item" onclick="setStatus('car','🚗','سيارة')">
-    <div class="status-icon" style="background:#60708020">🚗</div><span class="status-name">سيارة</span>
+  <div class="status-dropdown-item" onclick="setStatus('sleep','💤','نائم')">
+    <span class="sd-icon">💤</span><span class="sd-label">نائم</span>
+  </div>
+  <div class="status-dropdown-item" onclick="setStatus('car','🚗','سيارة')">
+    <span class="sd-icon">🚗</span><span class="sd-label">سيارة</span>
   </div>
 </div>
-
 <!-- ══ EMOJI PANEL ══ -->
 <div class="emoji-panel" id="emojiPanel">
   <div class="emoji-tabs">
