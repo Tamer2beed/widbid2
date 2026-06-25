@@ -14,12 +14,6 @@ socket.on('micOn',  (d) => updateMemberMic(d.username, true));
 socket.on('micOff', (d) => updateMemberMic(d.username, false));
 socket.on('statusChanged', (d) => updateMemberStatusDot(d.username, d.status));
 
-function renderMembers(users) {
-  const list = document.getElementById('membersList');
-  list.innerHTML = '';
-
-  // ترتيب حسب الرتبة (الأعلى أولاً)
-
 /* ══ خريطة رموز الحالات ══ */
 const STATUS_EMOJI = {
   available : '🟢',
@@ -32,21 +26,20 @@ const STATUS_EMOJI = {
   car       : '🚗',
 };
 
-
 /* ══ لون إطار الأفاتار حسب الرتبة ══ */
 const RANK_BORDER_COLOR = {
-  100  : '#9E9E9E',  /* Guest       — رمادي   */
-  200  : '#4CAF50',  /* Member      — أخضر    */
-  300  : '#2196F3',  /* Protected   — أزرق    */
-  400  : '#9C27B0',  /* Royal       — بنفسجي  */
-  500  : '#FF5722',  /* Admin       — برتقالي */
-  600  : '#F44336',  /* SuperAdmin  — أحمر    */
-  700  : '#FF9800',  /* Master      — ذهبي    */
-  800  : '#FFC107',  /* SuperMaster — ذهبي فاتح */
-  900  : '#00BCD4',  /* Root        — سماوي   */
-  1000 : '#00BCD4',  /* SuperRoot   — سماوي   */
-  1100 : '#E91E63',  /* Owner       — وردي    */
-  1200 : '#E91E63',  /* SuperOwner  — وردي    */
+  100  : '#9E9E9E',
+  200  : '#4CAF50',
+  300  : '#2196F3',
+  400  : '#9C27B0',
+  500  : '#FF5722',
+  600  : '#F44336',
+  700  : '#FF9800',
+  800  : '#FFC107',
+  900  : '#00BCD4',
+  1000 : '#00BCD4',
+  1100 : '#E91E63',
+  1200 : '#E91E63',
 };
 function getRankBorder(rank) {
   const steps = [1200,1100,1000,900,800,700,600,500,400,300,200,100];
@@ -54,13 +47,17 @@ function getRankBorder(rank) {
   return '#9E9E9E';
 }
 
-/* ══ بناء src الأفاتار ══ */
+/* ══ src الأفاتار ══ */
 function getAvatarSrc(avatar) {
   if (!avatar) return '/avatars/av1.svg';
-  if (avatar.startsWith('data:image')) return avatar;   /* صورة مرفوعة base64 */
+  if (avatar.startsWith('data:image')) return avatar;
   if (avatar.endsWith('.svg'))         return '/avatars/' + avatar;
   return '/avatars/av1.svg';
 }
+
+function renderMembers(users) {
+  const list = document.getElementById('membersList');
+  list.innerHTML = '';
 
   const sorted = [...users].sort((a, b) => {
     const ra = typeof a === 'object' ? (a.rank||100) : 100;
@@ -70,59 +67,61 @@ function getAvatarSrc(avatar) {
 
   sorted.forEach(u => {
     const name    = typeof u === 'string' ? u : u.username;
-    const rank    = typeof u === 'object' ? (u.rank||100)   : 100;
+    const rank    = typeof u === 'object' ? (u.rank||100)       : 100;
     const status  = typeof u === 'object' ? (u.status||'available') : 'available';
-    const isMuted = typeof u === 'object' ? (u.isMuted||false) : false;
+    const avatar  = typeof u === 'object' ? (u.avatar||'av1.svg')   : 'av1.svg';
+    const isMuted = typeof u === 'object' ? (u.isMuted||false)      : false;
     const color   = getRankColor(rank);
     const isMe    = name === username;
 
     const item = document.createElement('div');
-    item.className = 'member-item';
+    item.className        = 'member-item';
     item.dataset.username = name;
-    item.dataset.rank = rank;
+    item.dataset.rank     = rank;
 
-    // أفاتار
-    const av = document.createElement('div');
-    av.className = 'member-avatar';
-    av.style.borderColor = color;
-    av.style.opacity = isMuted ? '0.5' : '1';
-    av.textContent = getInitial(name);
+    /* ── صورة الأفاتار مع إطار الرتبة ── */
+    const avatarWrap = document.createElement('div');
+    avatarWrap.className        = 'member-avatar-wrap';
+    avatarWrap.style.borderColor = getRankBorder(rank);
+    avatarWrap.style.opacity     = isMuted ? '0.55' : '1';
 
-    const statusDot = document.createElement('span');
-    statusDot.className = `member-status-dot status-${status}`;
+    const avatarImg = document.createElement('img');
+    avatarImg.className = 'member-avatar-img';
+    avatarImg.src       = getAvatarSrc(avatar);
+    avatarImg.alt       = name;
+    avatarImg.onerror   = () => { avatarImg.src = '/avatars/av1.svg'; };
+    avatarWrap.appendChild(avatarImg);
+
+    /* badge الحالة — زاوية سفلى يسار */
+    const sBadge = document.createElement('span');
+    sBadge.className         = 'avatar-status-badge';
+    sBadge.textContent       = STATUS_EMOJI[status] || '🟢';
+    sBadge.dataset.statusBadge = name;
+    avatarWrap.appendChild(sBadge);
+
+    /* mic dot */
     const micDot = document.createElement('span');
     micDot.className = 'mic-active';
-    av.appendChild(statusDot);
-    av.appendChild(micDot);
+    avatarWrap.appendChild(micDot);
 
-    // معلومات
+    item.appendChild(avatarWrap);
+
+    /* ── معلومات ── */
     const info = document.createElement('div');
     info.className = 'member-info';
 
     const nm = document.createElement('div');
-    nm.className = 'member-name';
+    nm.className   = 'member-name';
     nm.style.color = color;
-
-    /* رمز الحالة جانب الاسم */
-    const statusEmoji = document.createElement('span');
-    statusEmoji.className = 'member-status-emoji';
-    statusEmoji.textContent = STATUS_EMOJI[status] || '🟢';
-    statusEmoji.dataset.statusEmoji = 'true';
-    nm.appendChild(statusEmoji);
-
-    const nameText = document.createTextNode(
-      ' ' + name + (isMe ? ' (أنا)' : '') + (isMuted ? ' 🔇' : '')
-    );
-    nm.appendChild(nameText);
+    nm.textContent = name + (isMe ? ' (أنا)' : '') + (isMuted ? ' 🔇' : '');
 
     const badge = document.createElement('span');
-    badge.className = 'member-badge';
+    badge.className    = 'member-badge';
     badge.style.cssText = `background:${color}22;color:${color}`;
-    badge.textContent = getRankBadge(rank);
+    badge.textContent  = getRankBadge(rank);
 
     info.appendChild(nm);
     info.appendChild(badge);
-    item.appendChild(av);
     item.appendChild(info);
 
     item.addEventListener('click', () => {
@@ -142,13 +141,7 @@ function updateMemberMic(name, on) {
 function updateMemberStatusDot(name, status) {
   const item = document.querySelector(`.member-item[data-username="${name}"]`);
   if (!item) return;
-  /* تحديث النقطة الملوّنة */
-  const dot = item.querySelector('.member-status-dot');
-  if (dot) dot.className = `member-status-dot status-${status}`;
-  /* تحديث رمز الحالة جانب الاسم */
-  const emoji = item.querySelector('[data-status-emoji]');
-  if (emoji) emoji.textContent = STATUS_EMOJI[status] || '🟢';
-  /* تحديث badge زاوية الصورة */
+  /* badge زاوية الصورة */
   const badge = item.querySelector('[data-status-badge]');
   if (badge) badge.textContent = STATUS_EMOJI[status] || '🟢';
 }
