@@ -9,6 +9,92 @@
 <link rel="stylesheet" href="/css/base.css">
 <link rel="stylesheet" href="/css/chat.css">
 <link rel="stylesheet" href="/css/admin.css">
+<style>
+/* ══ SETTINGS PANEL ══ */
+.settings-overlay {
+  position:fixed; inset:0; z-index:190;
+  background:rgba(0,0,0,.45); display:none;
+}
+.settings-overlay.show { display:block; }
+
+.settings-panel {
+  position:fixed; bottom:0; left:0; right:0;
+  z-index:191;
+  background:#fff;
+  border-radius:20px 20px 0 0;
+  padding:0 0 30px;
+  max-height:85vh;
+  overflow-y:auto;
+  transform:translateY(100%);
+  transition:transform .25s ease;
+}
+.settings-panel.show { transform:translateY(0); }
+
+.settings-header {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:16px 20px 12px;
+  border-bottom:1px solid #f0f0f0;
+  font-size:16px; font-weight:700; color:#333;
+}
+.settings-close {
+  font-size:18px; color:#999; cursor:pointer; padding:4px 8px;
+}
+.settings-section {
+  padding:14px 20px;
+  border-bottom:1px solid #f5f5f5;
+}
+.settings-label {
+  font-size:12px; color:#999; font-weight:600;
+  margin-bottom:10px; text-transform:uppercase; letter-spacing:.5px;
+}
+.settings-profile-row {
+  display:flex; align-items:center; gap:14px;
+}
+.settings-avatar-wrap {
+  position:relative; cursor:pointer;
+  width:64px; height:64px; flex-shrink:0;
+}
+.settings-avatar-img {
+  width:64px; height:64px;
+  border-radius:12px;
+  border:3px solid #6C63FF;
+  object-fit:cover;
+}
+.settings-avatar-edit {
+  position:absolute; bottom:-4px; right:-4px;
+  background:#6C63FF; color:#fff;
+  border-radius:50%; width:22px; height:22px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px;
+}
+.settings-profile-info { flex:1; }
+.settings-username {
+  font-size:16px; font-weight:700; color:#222; margin-bottom:8px;
+}
+.settings-btn-avatar {
+  background:#6C63FF22; color:#6C63FF;
+  border:none; border-radius:8px;
+  padding:7px 14px; font-size:13px; font-weight:600;
+  cursor:pointer;
+}
+.settings-status-grid {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+}
+.ssg-item {
+  background:#f7f7ff; border-radius:10px;
+  padding:8px 4px; text-align:center;
+  font-size:12px; cursor:pointer;
+  transition:background .1s;
+}
+.ssg-item:active { background:#e8e8ff; }
+.settings-btn-danger {
+  width:100%; padding:12px;
+  background:#fff0f0; color:#e53935;
+  border:1px solid #ffcdd2; border-radius:10px;
+  font-size:14px; font-weight:600; cursor:pointer;
+}
+</style>
+
 </head>
 <body>
 
@@ -387,6 +473,61 @@
 
   console.log(`✅ WidBid جاهز — الرتبة: ${rank} (${getRankName?.(rank)||'Guest'})`);
 })();
+</script>
+
+
+<!-- ══ SETTINGS PANEL ══ -->
+<div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
+<div class="settings-panel" id="settingsPanel">
+
+  <div class="settings-header">
+    <span>⚙️ الإعدادات</span>
+    <span class="settings-close" onclick="closeSettings()">✕</span>
+  </div>
+
+  <!-- الملف الشخصي -->
+  <div class="settings-section">
+    <div class="settings-profile-row">
+      <div class="settings-avatar-wrap" onclick="closeSettings(); openAvatarPicker()">
+        <img id="settingsAvatarImg" src="/avatars/av1.svg" class="settings-avatar-img" alt="avatar">
+        <div class="settings-avatar-edit">✏️</div>
+      </div>
+      <div class="settings-profile-info">
+        <div class="settings-username" id="settingsUsername">—</div>
+        <button class="settings-btn-avatar" id="settingsChangeAvatar">
+          تغيير الصورة
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- الحالة -->
+  <div class="settings-section">
+    <div class="settings-label">الحالة</div>
+    <div class="settings-status-grid">
+      <div class="ssg-item" onclick="setStatusFromSettings('available','🟢','متاح')">🟢 متاح</div>
+      <div class="ssg-item" onclick="setStatusFromSettings('away','⏰','بالخارج')">⏰ بالخارج</div>
+      <div class="ssg-item" onclick="setStatusFromSettings('busy','🔴','مشغول')">🔴 مشغول</div>
+      <div class="ssg-item" onclick="setStatusFromSettings('phone','📞','هاتف')">📞 هاتف</div>
+      <div class="ssg-item" onclick="setStatusFromSettings('food','🍴','طعام')">🍴 طعام</div>
+      <div class="ssg-item" onclick="setStatusFromSettings('pray','🕌','صلاة')">🕌 صلاة</div>
+      <div class="ssg-item" onclick="setStatusFromSettings('sleep','💤','نائم')">💤 نائم</div>
+      <div class="ssg-item" onclick="setStatusFromSettings('car','🚗','سيارة')">🚗 سيارة</div>
+    </div>
+  </div>
+
+  <!-- خروج -->
+  <div class="settings-section">
+    <button class="settings-btn-danger" onclick="leaveRoom()">🚪 خروج من الغرفة</button>
+  </div>
+
+</div>
+
+<script>
+function setStatusFromSettings(key, icon, label) {
+  if (typeof setStatus === 'function') setStatus(key, icon, label);
+  closeSettings();
+}
 </script>
 
 <!-- ══ AVATAR PICKER ══ -->
