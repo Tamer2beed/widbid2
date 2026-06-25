@@ -388,5 +388,114 @@
   console.log(`✅ WidBid جاهز — الرتبة: ${rank} (${getRankName?.(rank)||'Guest'})`);
 })();
 </script>
+
+<!-- ══ AVATAR PICKER ══ -->
+<div class="avatar-picker-overlay" id="avatarPickerOverlay">
+  <div class="avatar-picker-box">
+    <div class="avatar-picker-title">🖼️ اختر صورتك</div>
+    <div class="avatar-grid" id="avatarGrid">
+      <img src="/avatars/av1.svg" class="avatar-option" data-av="av1.svg" onclick="selectAvatar(this)">
+      <img src="/avatars/av2.svg" class="avatar-option" data-av="av2.svg" onclick="selectAvatar(this)">
+      <img src="/avatars/av3.svg" class="avatar-option" data-av="av3.svg" onclick="selectAvatar(this)">
+      <img src="/avatars/av4.svg" class="avatar-option" data-av="av4.svg" onclick="selectAvatar(this)">
+      <img src="/avatars/av5.svg" class="avatar-option" data-av="av5.svg" onclick="selectAvatar(this)">
+      <img src="/avatars/av6.svg" class="avatar-option" data-av="av6.svg" onclick="selectAvatar(this)">
+      <img src="/avatars/av7.svg" class="avatar-option" data-av="av7.svg" onclick="selectAvatar(this)">
+      <img src="/avatars/av8.svg" class="avatar-option" data-av="av8.svg" onclick="selectAvatar(this)">
+    </div>
+    <!-- زر رفع صورة — يظهر فقط للحسابات المدفوعة -->
+    <button class="avatar-upload-btn" id="avatarUploadBtn"
+            onclick="triggerAvatarUpload()" style="display:none">
+      📷 رفع صورة مخصصة
+    </button>
+    <input type="file" id="avatarFileInput" accept="image/jpeg,image/png,image/webp"
+           style="display:none" onchange="handleAvatarFile(event)">
+    <button class="avatar-picker-close" onclick="closeAvatarPicker()">إغلاق</button>
+  </div>
+</div>
+
+<script>
+/* ══ AVATAR PICKER ══ */
+let _selectedAv = null;
+
+function openAvatarPicker() {
+  const overlay = document.getElementById('avatarPickerOverlay');
+  overlay.classList.add('show');
+  /* أظهر زر الرفع للحسابات المدفوعة */
+  const hasPaid = window._userHasPaidProfile || false;
+  document.getElementById('avatarUploadBtn').style.display = hasPaid ? 'block' : 'none';
+}
+
+function closeAvatarPicker() {
+  document.getElementById('avatarPickerOverlay').classList.remove('show');
+}
+
+function selectAvatar(el) {
+  document.querySelectorAll('.avatar-option').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  _selectedAv = el.dataset.av;
+  /* حفظ مباشرة */
+  fetch('/api/users/avatar/default', {
+    method : 'PUT',
+    headers: { 'Content-Type':'application/json',
+               'Authorization':'Bearer ' + localStorage.getItem('token') },
+    body   : JSON.stringify({ avatar: _selectedAv }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success) {
+      showToast('✅ تم تغيير الصورة');
+      /* حدّث صورتك في القائمة فوراً */
+      if (typeof updateMemberStatusDot === 'function') {
+        document.querySelectorAll(
+          `.member-avatar-img`
+        ).forEach(img => {
+          const item = img.closest('.member-item');
+          if (item?.dataset.username === localStorage.getItem('username'))
+            img.src = '/avatars/' + _selectedAv;
+        });
+      }
+      closeAvatarPicker();
+    }
+  })
+  .catch(() => showToast('❌ فشل تغيير الصورة'));
+}
+
+function triggerAvatarUpload() {
+  document.getElementById('avatarFileInput').click();
+}
+
+function handleAvatarFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 500 * 1024) { showToast('⛔ الصورة أكبر من 500KB'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const base64 = ev.target.result;
+    fetch('/api/users/avatar/upload', {
+      method : 'PUT',
+      headers: { 'Content-Type':'application/json',
+                 'Authorization':'Bearer ' + localStorage.getItem('token') },
+      body   : JSON.stringify({ imageData: base64 }),
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        showToast('✅ تم رفع الصورة');
+        document.querySelectorAll('.member-avatar-img').forEach(img => {
+          const item = img.closest('.member-item');
+          if (item?.dataset.username === localStorage.getItem('username'))
+            img.src = base64;
+        });
+        closeAvatarPicker();
+      } else {
+        showToast(d.message || '❌ فشل الرفع');
+      }
+    });
+  };
+  reader.readAsDataURL(file);
+}
+</script>
+
 </body>
 </html>
