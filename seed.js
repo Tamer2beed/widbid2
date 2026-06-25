@@ -20,19 +20,33 @@ const DB = {
 const TEST_PASS = '123456';
 
 /* ══ الحسابات التجريبية — رتبة واحدة لكل مستوى ══ */
+/* ══ الحسابات التجريبية — رتبة واحدة لكل مستوى ══
+   الأفاتار: av1-av8.svg (افتراضي للجميع)
+   has_paid_profile: 1 = يمكنه رفع صورة مخصصة
+══════════════════════════════════════════════ */
 const USERS = [
-  { username: 'test_guest',       rank: 100,  avatar: '👤', country: 'العراق',   email: 'guest@widbid.com' },
-  { username: 'test_member',      rank: 200,  avatar: '😊', country: 'سوريا',    email: 'member@widbid.com' },
-  { username: 'test_protected',   rank: 300,  avatar: '🛡️', country: 'الأردن',   email: 'protected@widbid.com' },
-  { username: 'test_royal',       rank: 400,  avatar: '👑', country: 'السعودية', email: 'royal@widbid.com' },
-  { username: 'test_admin',       rank: 500,  avatar: '⚙️', country: 'مصر',      email: 'admin@widbid.com' },
-  { username: 'test_superadmin',  rank: 600,  avatar: '🔧', country: 'الإمارات', email: 'superadmin@widbid.com' },
-  { username: 'test_master',      rank: 700,  avatar: '⭐', country: 'الكويت',   email: 'master@widbid.com' },
-  { username: 'test_supermaster', rank: 800,  avatar: '🌟', country: 'لبنان',    email: 'supermaster@widbid.com' },
-  { username: 'test_root',        rank: 900,  avatar: '🔑', country: 'فلسطين',   email: 'root@widbid.com' },
-  { username: 'test_superroot',   rank: 1000, avatar: '💎', country: 'اليمن',    email: 'superroot@widbid.com' },
-  { username: 'test_owner',       rank: 1100, avatar: '🏆', country: 'تركيا',    email: 'owner@widbid.com',      max_rooms: 10 },
-  { username: 'test_superowner',  rank: 1200, avatar: '🚀', country: 'العراق',   email: 'superowner@widbid.com', max_rooms: 50 },
+  /* رتب أساسية */
+  { username: 'زائر_تجريبي',      rank: 100,  avatar: 'av1.svg', has_paid_profile: 0, country: 'العراق',   email: 'guest@widbid.com' },
+  { username: 'أحمد_العراقي',      rank: 200,  avatar: 'av2.svg', has_paid_profile: 0, country: 'العراق',   email: 'member@widbid.com' },
+  { username: 'سارة_الأردن',       rank: 200,  avatar: 'av4.svg', has_paid_profile: 0, country: 'الأردن',   email: 'member2@widbid.com' },
+  { username: 'محمد_السعودية',     rank: 200,  avatar: 'av3.svg', has_paid_profile: 0, country: 'السعودية', email: 'member3@widbid.com' },
+  { username: 'نورا_الكويت',       rank: 200,  avatar: 'av7.svg', has_paid_profile: 0, country: 'الكويت',   email: 'member4@widbid.com' },
+
+  /* رتب متوسطة */
+  { username: 'ProtectedUser',     rank: 300,  avatar: 'av5.svg', has_paid_profile: 1, country: 'الإمارات', email: 'protected@widbid.com' },
+  { username: 'RoyalKing',         rank: 400,  avatar: 'av6.svg', has_paid_profile: 1, country: 'السعودية', email: 'royal@widbid.com' },
+  { username: 'أبو_فهد_المدير',    rank: 500,  avatar: 'av8.svg', has_paid_profile: 1, country: 'السعودية', email: 'admin@widbid.com' },
+  { username: 'SuperAdmin_Test',   rank: 600,  avatar: 'av2.svg', has_paid_profile: 1, country: 'مصر',      email: 'superadmin@widbid.com' },
+
+  /* رتب عليا */
+  { username: 'Master_لبنان',      rank: 700,  avatar: 'av3.svg', has_paid_profile: 1, country: 'لبنان',    email: 'master@widbid.com' },
+  { username: 'SuperMaster_X',     rank: 800,  avatar: 'av1.svg', has_paid_profile: 1, country: 'الكويت',   email: 'supermaster@widbid.com' },
+  { username: 'Root_System',       rank: 900,  avatar: 'av6.svg', has_paid_profile: 1, country: 'العراق',   email: 'root@widbid.com' },
+  { username: 'SuperRoot_Admin',   rank: 1000, avatar: 'av5.svg', has_paid_profile: 1, country: 'العراق',   email: 'superroot@widbid.com' },
+
+  /* أصحاب الغرف */
+  { username: 'Owner_بغداد',       rank: 1100, avatar: 'av7.svg', has_paid_profile: 1, country: 'العراق',   email: 'owner@widbid.com',      max_rooms: 10 },
+  { username: 'SuperOwner_WidBid', rank: 1200, avatar: 'av8.svg', has_paid_profile: 1, country: 'العراق',   email: 'superowner@widbid.com', max_rooms: 50 },
 ];
 
 /* ══ الغرف التجريبية ══ */
