@@ -68,6 +68,22 @@ socket.on('connect', () => {
     const adminSection = document.getElementById('adminMenuSection');
     if (adminSection) adminSection.style.display = 'block';
   }
+
+  /* جلب بيانات المستخدم (avatar, has_paid_profile) */
+  fetch('/api/users/me', {
+    headers: { 'Authorization': 'Bearer ' + token }
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success && d.user) {
+      window._myAvatar           = d.user.avatar || 'av1.svg';
+      window._userHasPaidProfile = d.user.has_paid_profile || 0;
+      /* حدّث صورة المستخدم في قائمة الأعضاء عند أول render */
+      const uploadBtn = document.getElementById('avatarUploadBtn');
+      if (uploadBtn) uploadBtn.style.display = window._userHasPaidProfile ? 'block' : 'none';
+    }
+  })
+  .catch(() => {});
 });
 
 socket.on('roomInfo', (data) => {
