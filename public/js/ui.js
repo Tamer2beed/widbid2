@@ -32,6 +32,36 @@ const STATUS_EMOJI = {
   car       : '🚗',
 };
 
+
+/* ══ لون إطار الأفاتار حسب الرتبة ══ */
+const RANK_BORDER_COLOR = {
+  100  : '#9E9E9E',  /* Guest       — رمادي   */
+  200  : '#4CAF50',  /* Member      — أخضر    */
+  300  : '#2196F3',  /* Protected   — أزرق    */
+  400  : '#9C27B0',  /* Royal       — بنفسجي  */
+  500  : '#FF5722',  /* Admin       — برتقالي */
+  600  : '#F44336',  /* SuperAdmin  — أحمر    */
+  700  : '#FF9800',  /* Master      — ذهبي    */
+  800  : '#FFC107',  /* SuperMaster — ذهبي فاتح */
+  900  : '#00BCD4',  /* Root        — سماوي   */
+  1000 : '#00BCD4',  /* SuperRoot   — سماوي   */
+  1100 : '#E91E63',  /* Owner       — وردي    */
+  1200 : '#E91E63',  /* SuperOwner  — وردي    */
+};
+function getRankBorder(rank) {
+  const steps = [1200,1100,1000,900,800,700,600,500,400,300,200,100];
+  for (const s of steps) { if (rank >= s) return RANK_BORDER_COLOR[s]; }
+  return '#9E9E9E';
+}
+
+/* ══ بناء src الأفاتار ══ */
+function getAvatarSrc(avatar) {
+  if (!avatar) return '/avatars/av1.svg';
+  if (avatar.startsWith('data:image')) return avatar;   /* صورة مرفوعة base64 */
+  if (avatar.endsWith('.svg'))         return '/avatars/' + avatar;
+  return '/avatars/av1.svg';
+}
+
   const sorted = [...users].sort((a, b) => {
     const ra = typeof a === 'object' ? (a.rank||100) : 100;
     const rb = typeof b === 'object' ? (b.rank||100) : 100;
@@ -118,6 +148,9 @@ function updateMemberStatusDot(name, status) {
   /* تحديث رمز الحالة جانب الاسم */
   const emoji = item.querySelector('[data-status-emoji]');
   if (emoji) emoji.textContent = STATUS_EMOJI[status] || '🟢';
+  /* تحديث badge زاوية الصورة */
+  const badge = item.querySelector('[data-status-badge]');
+  if (badge) badge.textContent = STATUS_EMOJI[status] || '🟢';
 }
 
 /* ══ MEMBERS PANEL — فتح/إغلاق (نظام الطبقتين RTL) ══ */
