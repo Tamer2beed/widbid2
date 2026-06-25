@@ -13,7 +13,7 @@ router.get('/me', verifyToken, checkBanned, async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT id, username, email, rank, points,
-              avatar, country, is_active, created_at
+              avatar, has_paid_profile, country, is_active, created_at
        FROM users WHERE id = ?`,
       [req.user.id]
     );
@@ -141,6 +141,68 @@ router.get('/all/list', verifyToken, isSuperOwner, async (req, res) => {
     );
     res.json({ success: true, users: rows, total: rows.length });
   } catch (err) {
+    res.status(500).json({ success: false, message: 'خطأ في السيرفر' });
+  }
+});
+
+
+/* ══════════════════════════════════════════════
+   [AVATAR] تغيير الأفاتار الافتراضي (للجميع)
+   PUT /api/users/avatar/default
+══════════════════════════════════════════════ */
+router.put('/avatar/default', verifyToken, checkBanned, async (req, res) => {
+  const { avatar } = req.body;
+  const VALID = ['av1.svg','av2.svg','av3.svg','av4.svg','av5.svg','av6.svg','av7.svg','av8.svg'];
+  if (!VALID.includes(avatar)) {
+    return res.status(400).json({ success: false, message: 'أفاتار غير صالح' });
+  }
+  try {
+    await db.query('UPDATE users SET avatar = ? WHERE id = ?', [avatar, req.user.id]);
+    res.json({ success: true, avatar });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'خطأ في السيرفر' });
+  }
+});
+
+/* ══════════════════════════════════════════════
+   [AVATAR] رفع صورة مخصصة (للحسابات المدفوعة)
+   PUT /api/users/avatar/upload
+   الصورة: base64 في body.imageData (حد أقصى 500KB)
+══════════════════════════════════════════════ */
+router.put('/avatar/upload', verifyToken, checkBanned, async (req, res) => {
+  try {
+    /* فحص الحساب المدفوع */
+    const [rows] = await db.query(
+      'SELECT has_paid_profile FROM users WHERE id = ?', [req.user.id]
+    );
+    if (!rows.length || !rows[0].has_paid_profile) {
+      return res.status(403).json({
+        success : false,
+        message : '⛔ رفع الصورة المخصصة متاح للحسابات المدفوعة فقط',
+        upgrade : true,
+      });
+    }
+
+    const { imageData } = req.body; /* base64: data:image/jpeg;base64,... */
+    if (!imageData) return res.status(400).json({ success: false, message: 'لا توجد صورة' });
+
+    /* فحص الحجم (base64 → ~75% من الحجم الحقيقي) */
+    const sizeBytes = Math.round((imageData.length * 3) / 4);
+    if (sizeBytes > 500 * 1024) {
+      return res.status(400).json({ success: false, message: 'الصورة كبيرة جداً (حد أقصى 500KB)' });
+    }
+
+    /* فحص النوع */
+    if (!/^data:image\/(jpeg|jpg|png|webp);base64,/.test(imageData)) {
+      return res.status(400).json({ success: false, message: 'نوع الصورة غير مدعوم (JPEG/PNG/WebP)' });
+    }
+
+    /* نحفظ الصورة كـ base64 مباشرة في قاعدة البيانات */
+    await db.query('UPDATE users SET avatar = ? WHERE id = ?', [imageData, req.user.id]);
+    res.json({ success: true, avatar: imageData });
+
+  } catch (err) {
+    console.error('avatar upload:', err.message);
     res.status(500).json({ success: false, message: 'خطأ في السيرفر' });
   }
 });
