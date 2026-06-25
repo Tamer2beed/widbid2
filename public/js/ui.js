@@ -336,7 +336,25 @@ function closeSideMenu() {
 
 function openSettings() {
   closeSideMenu();
-  showToast('⚙️ الإعدادات — قريباً');
+  /* حدّث بيانات الشاشة قبل الفتح */
+  const uname = localStorage.getItem('username') || '—';
+  document.getElementById('settingsUsername').textContent  = uname;
+  document.getElementById('settingsAvatarImg').src =
+    getAvatarSrc(window._myAvatar || 'av1.svg');
+
+  /* زر تغيير الصورة — يفتح picker مباشرة */
+  document.getElementById('settingsChangeAvatar').onclick = () => {
+    closeSettings();
+    openAvatarPicker();
+  };
+
+  document.getElementById('settingsPanel').classList.add('show');
+  document.getElementById('settingsOverlay').classList.add('show');
+}
+
+function closeSettings() {
+  document.getElementById('settingsPanel')?.classList.remove('show');
+  document.getElementById('settingsOverlay')?.classList.remove('show');
 }
 
 function closeAll() {
