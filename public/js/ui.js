@@ -19,6 +19,19 @@ function renderMembers(users) {
   list.innerHTML = '';
 
   // ترتيب حسب الرتبة (الأعلى أولاً)
+
+/* ══ خريطة رموز الحالات ══ */
+const STATUS_EMOJI = {
+  available : '🟢',
+  away      : '⏰',
+  busy      : '🔴',
+  phone     : '📞',
+  food      : '🍴',
+  pray      : '🕌',
+  sleep     : '💤',
+  car       : '🚗',
+};
+
   const sorted = [...users].sort((a, b) => {
     const ra = typeof a === 'object' ? (a.rank||100) : 100;
     const rb = typeof b === 'object' ? (b.rank||100) : 100;
@@ -59,7 +72,18 @@ function renderMembers(users) {
     const nm = document.createElement('div');
     nm.className = 'member-name';
     nm.style.color = color;
-    nm.textContent = name + (isMe ? ' (أنا)' : '') + (isMuted ? ' 🔇' : '');
+
+    /* رمز الحالة جانب الاسم */
+    const statusEmoji = document.createElement('span');
+    statusEmoji.className = 'member-status-emoji';
+    statusEmoji.textContent = STATUS_EMOJI[status] || '🟢';
+    statusEmoji.dataset.statusEmoji = 'true';
+    nm.appendChild(statusEmoji);
+
+    const nameText = document.createTextNode(
+      ' ' + name + (isMe ? ' (أنا)' : '') + (isMuted ? ' 🔇' : '')
+    );
+    nm.appendChild(nameText);
 
     const badge = document.createElement('span');
     badge.className = 'member-badge';
@@ -88,9 +112,12 @@ function updateMemberMic(name, on) {
 function updateMemberStatusDot(name, status) {
   const item = document.querySelector(`.member-item[data-username="${name}"]`);
   if (!item) return;
+  /* تحديث النقطة الملوّنة */
   const dot = item.querySelector('.member-status-dot');
-  if (!dot) return;
-  dot.className = `member-status-dot status-${status}`;
+  if (dot) dot.className = `member-status-dot status-${status}`;
+  /* تحديث رمز الحالة جانب الاسم */
+  const emoji = item.querySelector('[data-status-emoji]');
+  if (emoji) emoji.textContent = STATUS_EMOJI[status] || '🟢';
 }
 
 /* ══ MEMBERS PANEL — فتح/إغلاق (نظام الطبقتين RTL) ══ */
@@ -298,9 +325,9 @@ function closeAll() {
 /* ── قائمة الحالات ──────────────────────── */
 function openStatusMenu() {
   closeSideMenu();
-  const popup   = document.getElementById('statusPopup');
-  const overlay = document.getElementById('statusOverlay');
-  popup.classList.add('show');
+  const dropdown = document.getElementById('statusPopup');
+  const overlay  = document.getElementById('statusOverlay');
+  dropdown.classList.add('show');
   overlay.classList.add('show');
 }
 
@@ -312,6 +339,8 @@ function closeStatusMenu() {
 function setStatus(key, icon, label) {
   socket.emit('setStatus', { room_id: roomId, username, status: key });
   closeStatusMenu();
+  /* حدّث رمز المستخدم الحالي فوراً بدون انتظار السيرفر */
+  updateMemberStatusDot(username, key);
   showToast(`${icon} الحالة: ${label}`);
 }
 
