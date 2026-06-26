@@ -203,4 +203,56 @@ router.post('/refresh', verifyToken, async (req, res) => {
   }
 });
 
+
+/* ══════════════════════════════════════════════
+   [GUEST] دخول كزائر — بدون حساب
+   POST /api/auth/guest
+   body: { username, room_id }
+   يُنشئ token مؤقت برتبة Guest(100)
+══════════════════════════════════════════════ */
+router.post('/guest', async (req, res) => {
+  const { username, room_id } = req.body;
+
+  if (!username || username.trim().length < 2) {
+    return res.status(400).json({ success: false, message: 'الاسم قصير جداً (2 أحرف على الأقل)' });
+  }
+  if (username.trim().length > 20) {
+    return res.status(400).json({ success: false, message: 'الاسم طويل جداً (20 حرفاً كحد أقصى)' });
+  }
+
+  const cleanName = username.trim();
+
+  try {
+    /* تحقق من أن الاسم غير محجوز بحساب حقيقي */
+    const [existing] = await db.query(
+      'SELECT id, rank FROM users WHERE username = ? AND password_hash IS NOT NULL',
+      [cleanName]
+    );
+    if (existing.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: '⛔ هذا الاسم محجوز — استخدم تبويب عضو وأدخل كلمة المرور',
+      });
+    }
+
+    /* أنشئ token مؤقت بدون حفظ في DB */
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign(
+      { id: 0, username: cleanName, rank: 100, isGuest: true },
+      process.env.JWT_SECRET || 'widbid_secret',
+      { expiresIn: '12h' }
+    );
+
+    res.json({
+      success: true,
+      token,
+      user: { id: 0, username: cleanName, rank: 100, avatar: 'av1.svg', isGuest: true },
+    });
+
+  } catch (err) {
+    console.error('guest login:', err.message);
+    res.status(500).json({ success: false, message: 'خطأ في السيرفر' });
+  }
+});
+
 module.exports = router;
