@@ -260,13 +260,7 @@ html,body {
       </div>
 
       <div class="field">
-        <label>الدولة</label>
-        <div class="country-select" onclick="openCountryPicker()">
-          <span class="flag" id="selFlag">🌍</span>
-          <span class="country-name" id="selCountry">اختر دولتك</span>
-          <span class="arrow">▼</span>
         </div>
-      </div>
 
       <div class="avatar-section">
         <div class="avatar-label">اختر صورتك</div>
@@ -348,13 +342,7 @@ html,body {
 </div>
 
 <!-- ════ COUNTRY DROPDOWN ════ -->
-<div class="country-dropdown" id="countryDropdown" onclick="closeCountryPicker(event)">
-  <div class="country-sheet">
-    <div class="country-search">
-      <input id="countrySearch" placeholder="ابحث عن دولة..." oninput="filterCountries()" />
-    </div>
-    <div class="country-list" id="countryList"></div>
-  </div>
+</div>
 </div>
 
 <script>
@@ -440,11 +428,7 @@ let selectedCountry = null;
 
 function renderCountries(list = COUNTRIES) {
   document.getElementById('countryList').innerHTML = list.map(c => `
-    <div class="country-item" onclick="selectCountry('${c.flag}','${c.name}')">
-      <span class="flag">${c.flag}</span>
-      <span class="name">${c.name}</span>
-    </div>
-  `).join('');
+    `).join('');
 }
 renderCountries();
 
