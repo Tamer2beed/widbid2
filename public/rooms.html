@@ -522,53 +522,45 @@ html,body { height:100%; font-family:'Tajawal',sans-serif; background:var(--bg);
 </div>
 
 
-<!-- ══ LOGIN SHEET — يظهر عند الضغط على غرفة ══ -->
+<!-- ══ LOGIN SHEET ══ -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-sheet">
 
-    <!-- اسم الغرفة -->
     <div class="login-room-title">
       <span>🏠</span>
       <span id="loginRoomName">الغرفة</span>
     </div>
 
-    <!-- التبويبات -->
     <div class="login-tabs">
       <div class="login-tab active" id="tab-guest"  onclick="switchLoginTab('guest')">زائر</div>
       <div class="login-tab"        id="tab-member" onclick="switchLoginTab('member')">عضو</div>
       <div class="login-tab"        id="tab-super"  onclick="switchLoginTab('super')">عضو خارق</div>
     </div>
 
-    <!-- حقول زائر -->
+    <!-- ═══ زائر: اسم فقط ═══ -->
     <div id="fields-guest">
-      <input class="login-input" id="loginUsername" type="text"
+      <input class="login-input" id="guestName" type="text"
              placeholder="اسم المستخدم" autocomplete="off" dir="auto">
     </div>
 
-    <!-- حقول عضو -->
+    <!-- ═══ عضو: اسم/إيميل + كلمة مرور الغرفة ═══ -->
     <div id="fields-member" style="display:none">
-      <input class="login-input" id="loginPassword" type="password"
-             placeholder="كلمة مرور الاسم" autocomplete="current-password">
-      <input class="login-input" id="loginRoomPass" type="password"
+      <input class="login-input" id="memberIdent" type="text"
+             placeholder="اسم المستخدم أو الإيميل" autocomplete="username" dir="auto">
+      <input class="login-input" id="memberRoomPass" type="password"
              placeholder="كلمة مرور الغرفة (اختياري)">
     </div>
 
-    <!-- حقول عضو خارق (نفس عضو لكن مع تلميح مختلف) -->
+    <!-- ═══ عضو خارق: اسم/إيميل + كلمة مرور + كلمة مرور الغرفة ═══ -->
     <div id="fields-super" style="display:none">
-      <input class="login-input" id="loginPasswordSuper" type="password"
-             placeholder="كلمة المرور" autocomplete="current-password"
-             oninput="document.getElementById('loginPassword').value=this.value">
-      <input class="login-input" id="loginRoomPassSuper" type="password"
-             placeholder="كلمة مرور الغرفة (اختياري)"
-             oninput="document.getElementById('loginRoomPass').value=this.value">
+      <input class="login-input" id="superIdent" type="text"
+             placeholder="اسم المستخدم أو الإيميل" autocomplete="username" dir="auto">
+      <input class="login-input" id="superPass" type="password"
+             placeholder="كلمة مرور الاسم" autocomplete="current-password">
+      <input class="login-input" id="superRoomPass" type="password"
+             placeholder="كلمة مرور الغرفة (اختياري)">
     </div>
 
-    <!-- ملاحظة لتبويب عضو خارق -->
-    <div id="super-note" style="display:none;font-size:11px;color:#6C63FF;text-align:center;margin-top:-4px;margin-bottom:8px;">
-      🌟 دخول بصلاحيات خارقة (رتبة 500+)
-    </div>
-
-    <!-- أزرار -->
     <div class="login-actions">
       <button class="login-btn-cancel" onclick="closeLoginSheet()">إلغاء</button>
       <button class="login-btn-enter" id="loginEnterBtn" onclick="doEnterRoom()">دخول</button>
@@ -845,13 +837,10 @@ function switchLoginTab(tab) {
   document.getElementById('fields-guest').style.display  = tab === 'guest'  ? 'block' : 'none';
   document.getElementById('fields-member').style.display = tab === 'member' ? 'block' : 'none';
   document.getElementById('fields-super').style.display  = tab === 'super'  ? 'block' : 'none';
-  const note = document.getElementById('super-note');
-  if (note) note.style.display = tab === 'super' ? 'block' : 'none';
   window._loginTab = tab;
-  /* اسم المستخدم مشترك بين التبويبات */
-  if (tab !== 'guest') {
-    setTimeout(() => document.getElementById('loginUsername')?.focus(), 50);
-  }
+  /* focus على أول حقل */
+  const focusMap = { guest: 'guestName', member: 'memberIdent', super: 'superIdent' };
+  setTimeout(() => document.getElementById(focusMap[tab])?.focus(), 80);
 }
 
 function closeLoginSheet() {
@@ -862,59 +851,90 @@ function closeLoginSheet() {
 async function doEnterRoom() {
   const room = window._pendingRoom;
   if (!room) return;
-  const tab      = window._loginTab || 'guest';
-  const username = document.getElementById('loginUsername').value.trim();
-  const password = document.getElementById('loginPassword')?.value || '';
-  const roomPass = document.getElementById('loginRoomPass')?.value || '';
-
-  if (!username) { showToast('⚠️ أدخل اسم المستخدم'); return; }
-
+  const tab = window._loginTab || 'guest';
   const btn = document.getElementById('loginEnterBtn');
+
+  /* اقرأ الحقول حسب التبويب */
+  let ident    = '';
+  let password = '';
+  let roomPass = '';
+
+  if (tab === 'guest') {
+    ident = (document.getElementById('guestName')?.value || '').trim();
+    if (!ident) { showToast('⚠️ أدخل اسم المستخدم'); return; }
+
+  } else if (tab === 'member') {
+    ident    = (document.getElementById('memberIdent')?.value || '').trim();
+    roomPass = (document.getElementById('memberRoomPass')?.value || '');
+    if (!ident) { showToast('⚠️ أدخل اسم المستخدم أو الإيميل'); return; }
+
+  } else { /* super */
+    ident    = (document.getElementById('superIdent')?.value || '').trim();
+    password = (document.getElementById('superPass')?.value || '');
+    roomPass = (document.getElementById('superRoomPass')?.value || '');
+    if (!ident)    { showToast('⚠️ أدخل اسم المستخدم أو الإيميل'); return; }
+    if (!password) { showToast('⚠️ أدخل كلمة المرور'); return; }
+  }
+
   btn.disabled = true;
   btn.textContent = '⏳ جارٍ الدخول...';
 
   try {
     if (tab === 'guest') {
-      /* زائر — دخول مباشر بدون كلمة مرور */
+      /* زائر — دخول بدون حساب */
       const r = await fetch('/api/auth/guest', {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ username, room_id: room.id }),
+        body   : JSON.stringify({ username: ident, room_id: room.id }),
       });
       const d = await r.json();
       if (!d.success) { showToast('⚠️ ' + (d.message || 'خطأ')); return; }
-      localStorage.setItem('token',    d.token);
-      localStorage.setItem('user_id',  d.user.id);
-      localStorage.setItem('username', d.user.username);
-      localStorage.setItem('rank',     d.user.rank);
+      _saveSession(d);
+
+    } else if (tab === 'member') {
+      /* عضو — اسم/إيميل بدون كلمة مرور الاسم
+         يدخل كزائر لكن يتحقق أن الاسم غير محجوز بكلمة مرور */
+      const r = await fetch('/api/auth/guest', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ username: ident, room_id: room.id }),
+      });
+      const d = await r.json();
+      if (!d.success) { showToast('⚠️ ' + (d.message || 'خطأ')); return; }
+      _saveSession(d);
 
     } else {
-      /* عضو أو عضو خارق — تسجيل دخول بكلمة المرور */
+      /* عضو خارق — تسجيل دخول حقيقي بكلمة المرور */
       const r = await fetch('/api/auth/login', {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ username, password }),
+        body   : JSON.stringify({ username: ident, password }),
       });
       const d = await r.json();
-      if (!d.success) { showToast('⚠️ ' + (d.message || 'خطأ في الدخول')); return; }
-      localStorage.setItem('token',    d.token);
-      localStorage.setItem('user_id',  d.user.id);
-      localStorage.setItem('username', d.user.username);
-      localStorage.setItem('rank',     d.user.rank);
+      if (!d.success) { showToast('⚠️ ' + (d.message || 'اسم المستخدم أو كلمة المرور خاطئة')); return; }
+      _saveSession(d);
     }
 
-    /* حفظ الغرفة والانتقال */
     localStorage.setItem('room_id',   room.id);
     localStorage.setItem('room_name', room.name);
     if (roomPass) localStorage.setItem('room_pass', roomPass);
     window.location.href = '/chat.html';
 
   } catch (err) {
-    showToast('❌ خطأ في الاتصال');
+    console.error('doEnterRoom:', err);
+    showToast('❌ تعذّر الاتصال بالسيرفر');
   } finally {
     btn.disabled = false;
     btn.textContent = 'دخول';
   }
+}
+
+function _saveSession(d) {
+  localStorage.setItem('token',    d.token || '');
+  localStorage.setItem('user_id',  d.user?.id   || 0);
+  localStorage.setItem('username', d.user?.username || '');
+  localStorage.setItem('rank',     d.user?.rank  || 100);
+  localStorage.setItem('avatar',   d.user?.avatar || 'av1.svg');
 }
 
 /* ══════════════════════════════════
