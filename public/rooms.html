@@ -602,7 +602,7 @@ html,body { height:100%; font-family:'Tajawal',sans-serif; background:var(--bg);
 const token  = localStorage.getItem('token')  || '';
 const userId = localStorage.getItem('user_id') || '';
 const rank   = parseInt(localStorage.getItem('rank') || '0');
-if (!token) { window.location.href = '/'; }
+/* لا يوجد redirect — الدخول يتم عبر شاشة الغرفة */
 
 let allRooms   = [];
 let categories = [];
@@ -648,7 +648,9 @@ async function loadCategories() {
     </div>`).join('');
 
   try {
-    const r = await fetch('/api/rooms/categories/all', { headers:{ Authorization: token } });
+    const r = await fetch('/api/rooms/categories/all', {
+      headers: token ? { Authorization: token } : {}
+    });
     const d = await r.json();
     if (!d.success) throw new Error();
     categories = d.categories || [];
