@@ -377,13 +377,7 @@ body { background: var(--wevo-chat); }
   cursor: pointer;
 }
 .member-item:active { background: #f5f5ff; }
-.member-avatar {
-  width: 34px; height: 34px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--wevo-top), var(--wevo-dark));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 700; color: #fff;
-  flex-shrink: 0; position: relative;
-}
+/* .member-avatar القديم (دائري) — تم استبداله بـ .member-avatar-wrap */
 .mic-active {
   position: absolute; bottom: -2px; left: -2px;
   width: 12px; height: 12px; border-radius: 50%;
