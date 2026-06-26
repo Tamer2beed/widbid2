@@ -908,7 +908,7 @@ async function doEnterRoom() {
       const r = await fetch('/api/auth/login', {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body   : JSON.stringify({ username: ident, password }),
+        body   : JSON.stringify({ email: ident, password }),
       });
       const d = await r.json();
       if (!d.success) { showToast('⚠️ ' + (d.message || 'اسم المستخدم أو كلمة المرور خاطئة')); return; }
