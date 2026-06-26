@@ -378,6 +378,124 @@ html,body { height:100%; font-family:'Tajawal',sans-serif; background:var(--bg);
 }
 .login-btn-enter:disabled { opacity: .6; cursor: not-allowed; }
 
+
+/* ══ LOGIN SHEET — أفاتار + ident + dropdown ══ */
+.login-avatar-row {
+  display    : flex;
+  align-items: center;
+  gap        : 10px;
+  margin-bottom: 10px;
+}
+.login-avatar-wrap {
+  position     : relative;
+  width        : 52px;
+  height       : 52px;
+  flex-shrink  : 0;
+  cursor       : pointer;
+}
+.login-avatar-img {
+  width        : 52px;
+  height       : 52px;
+  border-radius: 10px;
+  border       : 2.5px solid var(--primary,#0099CC);
+  object-fit   : cover;
+  display      : block;
+}
+.login-avatar-edit {
+  position  : absolute;
+  bottom    : -4px; right: -4px;
+  background: var(--primary,#0099CC);
+  color     : #fff;
+  border-radius: 50%;
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px;
+}
+.login-ident-wrap {
+  flex    : 1;
+  position: relative;
+}
+.login-input-ident {
+  padding-left: 36px !important;
+  margin-bottom: 0 !important;
+}
+.login-dropdown-arrow {
+  position  : absolute;
+  left      : 10px; top: 50%;
+  transform : translateY(-50%);
+  background: none; border: none;
+  font-size : 16px; color: #888;
+  cursor    : pointer; padding: 4px;
+  line-height: 1;
+}
+.login-saved-dropdown {
+  position  : absolute;
+  top       : calc(100% + 4px);
+  left      : 0; right: 0;
+  background: #fff;
+  border    : 1.5px solid #e0e0e0;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  z-index   : 50;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.login-saved-item {
+  display    : flex;
+  align-items: center;
+  gap        : 10px;
+  padding    : 10px 12px;
+  cursor     : pointer;
+  border-bottom: 1px solid #f5f5f5;
+  direction  : rtl;
+}
+.login-saved-item:last-child { border-bottom: none; }
+.login-saved-item:active { background: #f7f7ff; }
+.login-saved-item img {
+  width: 32px; height: 32px;
+  border-radius: 7px; object-fit: cover;
+  border: 2px solid #ddd;
+}
+.login-saved-name { font-size: 13px; font-weight: 600; color: #333; flex:1; }
+.login-saved-del  {
+  font-size: 14px; color: #ccc; padding: 2px 6px;
+  cursor: pointer;
+}
+.login-saved-del:hover { color: #e53935; }
+/* picker أفاتار -->  */
+.login-avatar-picker {
+  background   : #f7f7ff;
+  border-radius: 12px;
+  padding      : 10px;
+  margin-bottom: 10px;
+}
+.lap-grid {
+  display              : grid;
+  grid-template-columns: repeat(8,1fr);
+  gap                  : 6px;
+}
+.lap-opt {
+  width        : 100%;
+  aspect-ratio : 1;
+  border-radius: 8px;
+  border       : 2.5px solid transparent;
+  object-fit   : cover;
+  cursor       : pointer;
+}
+.lap-opt.selected { border-color: var(--primary,#0099CC); }
+/* checkbox حفظ */
+.login-save-row {
+  display    : flex;
+  align-items: center;
+  gap        : 8px;
+  font-size  : 13px;
+  color      : #666;
+  margin     : 6px 0 10px;
+  cursor     : pointer;
+  direction  : rtl;
+}
+.login-save-row input { width:16px; height:16px; cursor:pointer; }
+
 </style>
 </head>
 <body>
@@ -526,41 +644,81 @@ html,body { height:100%; font-family:'Tajawal',sans-serif; background:var(--bg);
 <div class="login-overlay" id="loginOverlay">
   <div class="login-sheet">
 
+    <!-- عنوان الغرفة -->
     <div class="login-room-title">
       <span>🏠</span>
       <span id="loginRoomName">الغرفة</span>
     </div>
 
+    <!-- التبويبات -->
     <div class="login-tabs">
       <div class="login-tab active" id="tab-guest"  onclick="switchLoginTab('guest')">زائر</div>
       <div class="login-tab"        id="tab-member" onclick="switchLoginTab('member')">عضو</div>
       <div class="login-tab"        id="tab-super"  onclick="switchLoginTab('super')">عضو خارق</div>
     </div>
 
-    <!-- ═══ زائر: اسم فقط ═══ -->
-    <div id="fields-guest">
-      <input class="login-input" id="guestName" type="text"
-             placeholder="اسم المستخدم" autocomplete="off" dir="auto">
+    <!-- ═══ صورة شخصية + حقل الاسم (مشترك بين التبويبات) ═══ -->
+    <div class="login-avatar-row">
+      <!-- الصورة الشخصية -->
+      <div class="login-avatar-wrap" onclick="toggleLoginAvatarPicker()">
+        <img id="loginAvatarImg" src="/avatars/av1.svg" class="login-avatar-img" alt="avatar">
+        <div class="login-avatar-edit">✏️</div>
+      </div>
+
+      <!-- حقل الاسم + سهم القائمة المنسدلة -->
+      <div class="login-ident-wrap">
+        <input class="login-input login-input-ident" id="loginIdent" type="text"
+               placeholder="اسم المستخدم أو الإيميل"
+               autocomplete="off" dir="auto"
+               oninput="filterSavedAccounts(this.value)"
+               onfocus="showSavedDropdown()"
+               onblur="setTimeout(hideSavedDropdown,200)">
+        <button class="login-dropdown-arrow" onclick="toggleSavedDropdown()" type="button">▾</button>
+        <!-- قائمة الحسابات المحفوظة -->
+        <div class="login-saved-dropdown" id="loginSavedDropdown" style="display:none"></div>
+      </div>
     </div>
 
-    <!-- ═══ عضو: اسم/إيميل + كلمة مرور الغرفة ═══ -->
+    <!-- picker الأفاتار -->
+    <div class="login-avatar-picker" id="loginAvatarPicker" style="display:none">
+      <div class="lap-grid">
+        <img src="/avatars/av1.svg" class="lap-opt" data-av="av1.svg" onclick="pickLoginAvatar(this)">
+        <img src="/avatars/av2.svg" class="lap-opt" data-av="av2.svg" onclick="pickLoginAvatar(this)">
+        <img src="/avatars/av3.svg" class="lap-opt" data-av="av3.svg" onclick="pickLoginAvatar(this)">
+        <img src="/avatars/av4.svg" class="lap-opt" data-av="av4.svg" onclick="pickLoginAvatar(this)">
+        <img src="/avatars/av5.svg" class="lap-opt" data-av="av5.svg" onclick="pickLoginAvatar(this)">
+        <img src="/avatars/av6.svg" class="lap-opt" data-av="av6.svg" onclick="pickLoginAvatar(this)">
+        <img src="/avatars/av7.svg" class="lap-opt" data-av="av7.svg" onclick="pickLoginAvatar(this)">
+        <img src="/avatars/av8.svg" class="lap-opt" data-av="av8.svg" onclick="pickLoginAvatar(this)">
+      </div>
+    </div>
+
+    <!-- ═══ حقول إضافية حسب التبويب ═══ -->
+
+    <!-- زائر: لا حقول إضافية -->
+    <div id="fields-guest" style="display:block"></div>
+
+    <!-- عضو: كلمة مرور الغرفة فقط -->
     <div id="fields-member" style="display:none">
-      <input class="login-input" id="memberIdent" type="text"
-             placeholder="اسم المستخدم أو الإيميل" autocomplete="username" dir="auto">
       <input class="login-input" id="memberRoomPass" type="password"
              placeholder="كلمة مرور الغرفة (اختياري)">
     </div>
 
-    <!-- ═══ عضو خارق: اسم/إيميل + كلمة مرور + كلمة مرور الغرفة ═══ -->
+    <!-- عضو خارق: كلمة مرور الاسم + كلمة مرور الغرفة -->
     <div id="fields-super" style="display:none">
-      <input class="login-input" id="superIdent" type="text"
-             placeholder="اسم المستخدم أو الإيميل" autocomplete="username" dir="auto">
       <input class="login-input" id="superPass" type="password"
              placeholder="كلمة مرور الاسم" autocomplete="current-password">
       <input class="login-input" id="superRoomPass" type="password"
              placeholder="كلمة مرور الغرفة (اختياري)">
     </div>
 
+    <!-- حفظ تفاصيل الدخول -->
+    <label class="login-save-row">
+      <input type="checkbox" id="loginSaveCheck" checked>
+      <span>حفظ تفاصيل الدخول</span>
+    </label>
+
+    <!-- أزرار -->
     <div class="login-actions">
       <button class="login-btn-cancel" onclick="closeLoginSheet()">إلغاء</button>
       <button class="login-btn-enter" id="loginEnterBtn" onclick="doEnterRoom()">دخول</button>
