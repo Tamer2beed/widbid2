@@ -236,15 +236,12 @@ function getRankColor(rank) {
 
 /* ══ AVATAR BUILDER للرسائل ══ */
 function buildMsgAvatar(user) {
-  const color  = getRankColor(user?.rank || 100);
-  const initials = getInitial(user?.username || '?');
-  const style  = `--rank-color:${color}`;
-  if (user?.avatar_url) {
-    return `<div class="msg-avatar-sm" style="${style}">
-              <img src="${user.avatar_url}" alt="${initials}" onerror="this.parentElement.innerHTML='${initials}'">
-            </div>`;
-  }
-  return `<div class="msg-avatar-sm" style="${style}">${initials}</div>`;
+  const color  = getRankBorder ? getRankBorder(user?.rank || 100) : getRankColor(user?.rank || 100);
+  const av     = user?.avatar || 'av1.svg';
+  const src    = av.startsWith('data:image') ? av : '/avatars/' + av;
+  return `<div class="msg-avatar-sm" style="border-color:${color}">
+            <img src="${src}" alt="${user?.username||'?'}" onerror="this.src='/avatars/av1.svg'">
+          </div>`;
 }
 
 /* ── المايك ─────────────────────────────── */
