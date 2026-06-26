@@ -288,12 +288,13 @@ io.on('connection', (socket) => {
       }
 
       io.to(room_id).emit('newMessage', {
-        id: msgId,
-        username: username || socket.userData?.username,
+        id       : msgId,
+        username : username || socket.userData?.username,
         message,
-        rank: senderRank,
+        rank     : senderRank,
+        avatar   : socket.userData?.avatar || 'av1.svg',
         room_id,
-        time: new Date().toISOString(),
+        time     : new Date().toISOString(),
       });
     } catch (err) {
       console.error('❌ sendMessage:', err.message);
