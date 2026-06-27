@@ -714,37 +714,56 @@ function showMemberMenu(targetUsername, targetRank) {
 }
 
 /* ══ بناء وعرض القائمة ══ */
-function _showCtxMenu(x, y, items) {
+function _showCtxMenu(x, y, items, preview) {
   closeCtxMenu();
 
-  const overlay = document.createElement('div');
+  const overlay     = document.createElement('div');
   overlay.className = 'ctx-overlay';
-  overlay.onclick = closeCtxMenu;
+  overlay.onclick   = closeCtxMenu;
 
-  const menu = document.createElement('div');
+  const menu     = document.createElement('div');
   menu.className = 'ctx-menu';
-  menu.id = 'ctxMenu';
+  menu.id        = 'ctxMenu';
+
+  /* معاينة الرسالة */
+  if (preview) {
+    const prev     = document.createElement('div');
+    prev.className = 'ctx-preview';
+    prev.textContent = preview;
+    menu.appendChild(prev);
+  }
 
   items.forEach(item => {
-    const el = document.createElement('div');
-    el.className = 'ctx-item' + (item.danger ? ' danger' : '');
-    el.innerHTML = `<span>${item.icon}</span><span>${item.label}</span>`;
-    el.onclick = () => { closeCtxMenu(); item.fn(); };
+    if (item.separator) {
+      const sep = document.createElement('div');
+      sep.className = 'ctx-separator';
+      menu.appendChild(sep);
+      return;
+    }
+    const el       = document.createElement('div');
+    el.className   = 'ctx-item' + (item.danger ? ' danger' : '');
+    el.innerHTML   = `<span class="ctx-icon">${item.icon}</span>
+                      <span class="ctx-label">${item.label}</span>`;
+    el.onclick     = () => { closeCtxMenu(); item.fn(); };
     menu.appendChild(el);
   });
 
-  /* ضبط الموضع داخل الشاشة */
   document.body.appendChild(overlay);
   document.body.appendChild(menu);
 
-  const mw = 180, mh = items.length * 46;
-  let left = Math.min(x, window.innerWidth  - mw - 8);
-  let top  = Math.min(y, window.innerHeight - mh - 8);
-  left = Math.max(8, left);
-  top  = Math.max(8, top);
-
-  menu.style.left = left + 'px';
-  menu.style.top  = top  + 'px';
+  /* موضع ذكي */
+  requestAnimationFrame(() => {
+    const mw  = menu.offsetWidth  || 220;
+    const mh  = menu.offsetHeight || 250;
+    const pad = 10;
+    let lx = x, ly = y + 8;
+    if (lx + mw > window.innerWidth  - pad) lx = window.innerWidth  - mw - pad;
+    if (ly + mh > window.innerHeight - pad) ly = y - mh - 8;
+    if (lx < pad) lx = pad;
+    if (ly < pad) ly = pad;
+    menu.style.left = lx + 'px';
+    menu.style.top  = ly + 'px';
+  });
 }
 
 function closeCtxMenu() {
