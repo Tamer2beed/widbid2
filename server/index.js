@@ -9,7 +9,7 @@ require('dotenv').config();
 // تاريخ: 2026-06-25
 const { initWorker, getOrCreateRoom, createTransport, sfuRooms, cleanupRoom } = require('./mediasoup');
 const db          = require('./db');
-const authRoutes  = require('./routes/auth');
+const authRoutes  = require('./routes/Auth');
 const roomRoutes  = require('./routes/rooms');
 const roleRoutes  = require('./routes/roles');
 const ownerRoutes = require('./routes/owner');
