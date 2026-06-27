@@ -336,3 +336,15 @@ function _showMentionBadge(targetWrap) {
   `;
   document.head.appendChild(s);
 })();
+
+
+socket.on('messageDeleted', ({ msg_id }) => {
+  const row = document.querySelector(`.msg-row[data-msg-id="${msg_id}"]`);
+  if (!row) return;
+  const textEl = row.querySelector('.msg-text');
+  if (textEl) {
+    textEl.textContent = '🗑️ تم مسح هذه الرسالة';
+    textEl.style.color = '#aaa';
+    textEl.style.fontStyle = 'italic';
+  }
+});
