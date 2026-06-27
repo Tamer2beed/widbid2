@@ -16,6 +16,10 @@
   background:rgba(0,0,0,.45); display:none;
 }
 .settings-overlay.show { display:block; }
+/* overlay القائمة الجانبية */
+#overlay {
+  z-index: 129 !important;
+}
 
 .settings-panel {
   position:fixed; bottom:0; left:0; right:0;
@@ -94,93 +98,64 @@
   font-size:14px; font-weight:600; cursor:pointer;
 }
 
-/* ══ SIDE MENU — Wevo Style ══ */
-#sideMenu {
+/* ══ SIDE MENU ══ */
+.side-menu, #sideMenu {
   position   : fixed;
-  top        : 0; left: 0;
-  width      : 72vw; max-width: 280px;
+  top        : 0; right: 0;
+  width      : 75vw; max-width: 290px;
   height     : 100vh;
   background : #fff;
-  z-index    : 120;
-  transform  : translateX(-100%);
-  transition : transform .25s cubic-bezier(.4,0,.2,1);
+  z-index    : 130;
+  transform  : translateX(100%);
+  transition : transform .28s cubic-bezier(.4,0,.2,1);
   overflow-y : auto;
-  padding    : 0 0 32px;
-  box-shadow : 4px 0 24px rgba(0,0,0,.15);
+  padding-bottom: 40px;
+  box-shadow : -4px 0 28px rgba(0,0,0,.18);
+  direction  : rtl;
 }
-#sideMenu.open { transform: translateX(0); }
+.side-menu.open, #sideMenu.open { transform: translateX(0); }
 
-/* عنوان الغرفة في أعلى القائمة */
-#sideMenu::before {
-  content    : attr(data-room);
-  display    : block;
-  padding    : 56px 20px 16px;
-  font-size  : 17px;
-  font-weight: 800;
-  color      : #1a1a2e;
-  border-bottom: 1px solid #f0f0f0;
+.sm-profile {
+  display    : flex;
+  align-items: center;
+  gap        : 12px;
+  padding    : 56px 18px 20px;
+  background : linear-gradient(135deg, var(--wevo-top,#0099CC), var(--wevo-dark,#1a2a5e));
 }
+.sm-avatar {
+  width:54px; height:54px; border-radius:12px;
+  border:2.5px solid rgba(255,255,255,.6);
+  object-fit:cover; flex-shrink:0;
+}
+.sm-profile-info { flex:1; min-width:0; }
+.sm-username {
+  font-size:16px; font-weight:700; color:#fff;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.sm-rank-label { font-size:12px; color:rgba(255,255,255,.65); margin-top:3px; }
 
 .sm-item {
   display    : flex;
   align-items: center;
   gap        : 14px;
-  padding    : 15px 20px;
+  padding    : 15px 18px;
   cursor     : pointer;
+  transition : background .12s;
   direction  : rtl;
-  transition : background .1s;
-  position   : relative;
+  -webkit-tap-highlight-color: transparent;
 }
-.sm-item:active { background: #f5f5ff; }
-.sm-item.danger .sm-label { color: #E53935; }
-.sm-item.danger .sm-icon  { filter: none; }
+.sm-item:active { background: #f0f0f8; }
+.sm-danger .sm-label { color: #E53935 !important; }
 
-.sm-icon {
-  font-size  : 20px;
-  width      : 28px;
-  text-align : center;
-  flex-shrink: 0;
-}
-.sm-label {
-  flex      : 1;
-  font-size : 15px;
-  font-weight: 600;
-  color     : #222;
-}
-.sm-arrow {
-  color    : #ccc;
-  font-size: 18px;
-}
-.sm-divider {
-  height    : 1px;
-  background: #f0f0f0;
-  margin    : 4px 0;
-}
+.sm-icon  { font-size:20px; width:26px; text-align:center; flex-shrink:0; }
+.sm-label { flex:1; font-size:15px; font-weight:600; color:#222; }
+.sm-arrow { color:#ddd; font-size:20px; font-weight:300; margin-right:4px; }
+
+.sm-divider { height:1px; background:#f0f0f0; margin:4px 0; }
 .sm-section-label {
-  padding  : 8px 20px 4px;
-  font-size: 11px;
-  color    : #aaa;
-  font-weight: 700;
-  letter-spacing: .5px;
-  text-transform: uppercase;
-  direction: rtl;
+  padding:10px 18px 4px; font-size:11px; color:#bbb;
+  font-weight:700; letter-spacing:.6px; text-align:right;
 }
-
-
-/* ══ SM ══ */
-.sm-profile{display:flex;align-items:center;gap:12px;padding:52px 18px 18px;background:linear-gradient(135deg,var(--wevo-top),var(--wevo-dark))}
-.sm-avatar{width:52px;height:52px;border-radius:12px;border:2.5px solid rgba(255,255,255,.6);object-fit:cover;flex-shrink:0}
-.sm-profile-info{flex:1}
-.sm-username{font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sm-rank-label{font-size:12px;color:rgba(255,255,255,.7);margin-top:2px}
-.sm-item{display:flex;align-items:center;gap:14px;padding:15px 18px;cursor:pointer;transition:background .1s;direction:rtl}
-.sm-item:active{background:#f5f5fa}
-.sm-danger .sm-label{color:#E53935}
-.sm-icon{font-size:20px;width:26px;text-align:center;flex-shrink:0}
-.sm-label{flex:1;font-size:15px;font-weight:600;color:#222}
-.sm-arrow{color:#ccc;font-size:18px;font-weight:300}
-.sm-divider{height:1px;background:#f0f0f0;margin:4px 0}
-.sm-section-label{padding:10px 18px 4px;font-size:11px;color:#aaa;font-weight:700;letter-spacing:.5px;text-align:right}
 </style>
 
 </head>
