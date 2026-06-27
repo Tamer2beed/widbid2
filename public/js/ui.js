@@ -83,7 +83,7 @@ function renderMembers(users) {
     const avatarWrap = document.createElement('div');
     avatarWrap.className        = 'member-avatar-wrap';
     avatarWrap.style.borderColor = getRankBorder(rank);
-    avatarWrap.style.opacity     = isMuted ? '0.55' : '1';
+    avatarWrap.style.opacity = '1';
 
     const avatarImg = document.createElement('img');
     avatarImg.className = 'member-avatar-img';
@@ -113,15 +113,9 @@ function renderMembers(users) {
     const nm = document.createElement('div');
     nm.className   = 'member-name';
     nm.style.color = color;
-    nm.textContent = name + (isMe ? ' (أنا)' : '') + (isMuted ? ' 🔇' : '');
-
-    const badge = document.createElement('span');
-    badge.className    = 'member-badge';
-    badge.style.cssText = `background:${color}22;color:${color}`;
-    badge.textContent  = getRankBadge(rank);
+    nm.textContent = name;
 
     info.appendChild(nm);
-    info.appendChild(badge);
     item.appendChild(info);
 
     item.addEventListener('click', () => {
