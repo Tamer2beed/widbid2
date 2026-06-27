@@ -648,9 +648,21 @@ function showMessageMenu(x, y, text, msgId, sender, isMine) {
     });
   }
 
-  /* ── فاصل + مسح الشات للمشرف ── */
+  /* ── فاصل ── */
+  items.push({ separator: true });
+
+  /* ── مسح الدردشة عندي (تنظيف الكاش) ── */
+  items.push({
+    icon: '🧹', label: 'مسح الدردشة عندي',
+    fn: () => {
+      const msgs = document.getElementById('messages');
+      if (msgs) msgs.innerHTML = '';
+      showToast('🧹 تم مسح الدردشة محلياً');
+    }
+  });
+
+  /* ── مسح الشات للجميع (مشرف 500+) ── */
   if (rank >= 500) {
-    items.push({ separator: true });
     items.push({
       icon: '🗑️', label: 'مسح الشات للجميع', danger: true,
       fn: () => {
