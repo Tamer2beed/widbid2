@@ -302,6 +302,21 @@ io.on('connection', (socket) => {
   });
 
   /* ── مسح شات الغرفة كاملاً (المشرف 500+) ── */
+  /* ── مسح رسالة واحدة (صاحبها فقط أو مشرف) ── */
+  socket.on('deleteMessage', async ({ room_id, msg_id, by }) => {
+    const senderRank = socket.userData?.rank || 0;
+    const isOwner    = socket.userData?.username === by;
+    if (!isOwner && senderRank < 500) return;
+    try {
+      if (msg_id) {
+        await db.query('DELETE FROM messages WHERE id = ? AND room_id = ?', [msg_id, room_id]);
+      }
+      io.to(String(room_id)).emit('messageDeleted', { msg_id });
+    } catch (err) {
+      console.error('deleteMessage:', err.message);
+    }
+  });
+
   socket.on('clearRoomChat', async (data) => {
     if ((socket.userData?.rank || 0) < 500) return;
     const { room_id } = data;
