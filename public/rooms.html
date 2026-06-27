@@ -989,21 +989,7 @@ function clearSearch() {
 /* ══════════════════════════════════
    ENTER ROOM
 ══════════════════════════════════ */
-function enterRoom(id, name) {
-  /* احفظ الغرفة المختارة مؤقتاً */
-  window._pendingRoom = { id, name };
-  document.getElementById('loginRoomName').textContent = name;
-
-  /* أعد تعيين الحقول */
-  ['loginUsername','loginPassword','loginRoomPass'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-
-  /* افتح شاشة الدخول — تبويب زائر افتراضياً */
-  switchLoginTab('guest');
-  document.getElementById('loginOverlay').classList.add('show');
-}
+/* enterRoom القديمة — تم الحذف */
 
 /* switchLoginTab moved to login sheet JS */
 
