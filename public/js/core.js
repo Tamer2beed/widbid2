@@ -25,12 +25,6 @@ const RANK_NAMES = {
   500:'Admin',  600:'S.Admin',  700:'Master',    800:'S.Master',
   900:'Root',   1000:'S.Root',  1100:'Owner',    1200:'S.Owner'
 };
-const RANK_BADGES = {
-  100:'👁️ Guest',    200:'👤 Member',   300:'🛡️ Protected',
-  400:'✨ Royal',    500:'🔵 Admin',    600:'🟢 S.Admin',
-  700:'🔴 Master',  800:'⚡ S.Master', 900:'🔧 Root',
-  1000:'🌿 S.Root', 1100:'👑 Owner',   1200:'👑 S.Owner'
-};
 
 function getRankColor(rank) {
   const keys = Object.keys(RANK_COLORS).map(Number).sort((a,b) => b - a);
@@ -42,11 +36,7 @@ function getRankName(rank) {
   for (const k of keys) { if (rank >= k) return RANK_NAMES[k]; }
   return 'Guest';
 }
-function getRankBadge(rank) {
-  const keys = Object.keys(RANK_BADGES).map(Number).sort((a,b) => b - a);
-  for (const k of keys) { if (rank >= k) return RANK_BADGES[k]; }
-  return '👁️ Guest';
-}
+
 function getInitial(name) { return name ? name.charAt(0).toUpperCase() : '?'; }
 function formatTime(date) {
   const d = date ? new Date(date) : new Date();
