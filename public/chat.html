@@ -16,10 +16,7 @@
   background:rgba(0,0,0,.45); display:none;
 }
 .settings-overlay.show { display:block; }
-/* overlay القائمة الجانبية */
-#overlay {
-  z-index: 129 !important;
-}
+
 
 .settings-panel {
   position:fixed; bottom:0; left:0; right:0;
@@ -98,63 +95,82 @@
   font-size:14px; font-weight:600; cursor:pointer;
 }
 
-/* ══ SIDE MENU ══ */
-.side-menu, #sideMenu {
-  position   : fixed;
-  top        : 0; right: 0;
-  width      : 75vw; max-width: 290px;
-  height     : 100vh;
-  background : #fff;
-  z-index    : 130;
-  transform  : translateX(100%);
-  transition : transform .28s cubic-bezier(.4,0,.2,1);
-  overflow-y : auto;
-  padding-bottom: 40px;
-  box-shadow : -4px 0 28px rgba(0,0,0,.18);
-  direction  : rtl;
+/* ══ DROPDOWN MENU — Wevo Style ══ */
+#overlay {
+  position:fixed; inset:0; z-index:118;
+  background:rgba(0,0,0,.25);
+  display:none;
 }
-.side-menu.open, #sideMenu.open { transform: translateX(0); }
+#overlay.show { display:block; }
 
+.side-menu, #sideMenu {
+  position     : fixed;
+  top          : 52px;
+  right        : 8px;
+  width        : 220px;
+  max-height   : calc(100vh - 70px);
+  background   : #1c1c2e;
+  border-radius: 14px;
+  z-index      : 119;
+  overflow-y   : auto;
+  overflow-x   : hidden;
+  box-shadow   : 0 8px 32px rgba(0,0,0,.35);
+  direction    : rtl;
+  transform    : scale(.92) translateY(-8px);
+  opacity      : 0;
+  pointer-events: none;
+  transition   : transform .18s cubic-bezier(.34,1.56,.64,1),
+                 opacity .15s ease;
+}
+.side-menu.open, #sideMenu.open {
+  transform    : scale(1) translateY(0);
+  opacity      : 1;
+  pointer-events: all;
+}
+
+/* الملف الشخصي */
 .sm-profile {
   display    : flex;
   align-items: center;
-  gap        : 12px;
-  padding    : 56px 18px 20px;
-  background : linear-gradient(135deg, var(--wevo-top,#0099CC), var(--wevo-dark,#1a2a5e));
+  gap        : 10px;
+  padding    : 14px 14px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
 }
 .sm-avatar {
-  width:54px; height:54px; border-radius:12px;
-  border:2.5px solid rgba(255,255,255,.6);
+  width:40px; height:40px; border-radius:10px;
+  border:2px solid rgba(255,255,255,.3);
   object-fit:cover; flex-shrink:0;
 }
 .sm-profile-info { flex:1; min-width:0; }
 .sm-username {
-  font-size:16px; font-weight:700; color:#fff;
+  font-size:14px; font-weight:700; color:#fff;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.sm-rank-label { font-size:12px; color:rgba(255,255,255,.65); margin-top:3px; }
+.sm-rank-label { font-size:11px; color:rgba(255,255,255,.5); margin-top:1px; }
 
+/* العناصر */
 .sm-item {
   display    : flex;
   align-items: center;
-  gap        : 14px;
-  padding    : 15px 18px;
+  gap        : 10px;
+  padding    : 12px 14px;
   cursor     : pointer;
-  transition : background .12s;
   direction  : rtl;
+  transition : background .1s;
   -webkit-tap-highlight-color: transparent;
 }
-.sm-item:active { background: #f0f0f8; }
-.sm-danger .sm-label { color: #E53935 !important; }
+.sm-item:active, .sm-item:hover { background: rgba(255,255,255,.06); }
+.sm-danger .sm-label { color: #ff5252 !important; }
 
-.sm-icon  { font-size:20px; width:26px; text-align:center; flex-shrink:0; }
-.sm-label { flex:1; font-size:15px; font-weight:600; color:#222; }
-.sm-arrow { color:#ddd; font-size:20px; font-weight:300; margin-right:4px; }
+.sm-icon  { font-size:18px; width:22px; text-align:center; flex-shrink:0; }
+.sm-label { flex:1; font-size:14px; font-weight:600; color:rgba(255,255,255,.88); }
+.sm-arrow { color:rgba(255,255,255,.2); font-size:16px; }
 
-.sm-divider { height:1px; background:#f0f0f0; margin:4px 0; }
+.sm-divider { height:1px; background:rgba(255,255,255,.07); margin:3px 0; }
 .sm-section-label {
-  padding:10px 18px 4px; font-size:11px; color:#bbb;
-  font-weight:700; letter-spacing:.6px; text-align:right;
+  padding:8px 14px 3px; font-size:10px;
+  color:rgba(255,255,255,.3); font-weight:700;
+  letter-spacing:.6px; text-align:right;
 }
 </style>
 
