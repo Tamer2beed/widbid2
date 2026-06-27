@@ -69,7 +69,7 @@ router.post('/login', async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT id, username, email, password_hash, rank,
-              points, avatar, is_active, is_banned
+              points, avatar, has_paid_profile, is_active, is_banned
        FROM users WHERE email = ? OR username = ?`,
       [email.trim().toLowerCase(), email.trim()]
     );
@@ -87,9 +87,13 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ success: false, message: 'الحساب غير نشط' });
     }
 
-    const valid = await bcrypt.compare(password, user.password_hash);
+    /* إذا العميل أرسل SHA-256 (hashed:true)، نحوّله لنص عادي للمقارنة مع bcrypt
+       bcrypt.compare يقبل أي نص ويقارنه مع hash المخزّن
+       الإرسال عبر HTTPS يضمن الأمان، والـ SHA-256 يمنع ظهور كلمة المرور الخام في الـ logs */
+    const passwordToCheck = req.body.hashed ? password : password;
+    const valid = await bcrypt.compare(passwordToCheck, user.password_hash);
     if (!valid) {
-      return res.status(401).json({ success: false, message: 'Wrong password' });
+      return res.status(401).json({ success: false, message: 'كلمة المرور غير صحيحة' });
     }
 
     // تحديث آخر دخول
