@@ -104,7 +104,7 @@ socket.on('messageHistory', (msgs) => {
 });
 
 socket.on('newMessage', (d) => {
-  addMessage(d.username, d.message, d.username === username, d.rank || 100, null, d.id);
+  addMessage(d.username, d.message, d.username === username, d.rank || 100, null, d.id, d.avatar);
   if (d.username !== username) playNotif();
   msgCount++;
   const el = document.getElementById('statMsgs');
@@ -141,20 +141,30 @@ socket.on('welcomeUpdated', (d) => {
 /* ── الرسائل ────────────────────────────── */
 let msgCount = 0;
 
-function addMessage(user, text, isMe, rank = 100, time = null, msgId = null) {
+function addMessage(user, text, isMe, rank = 100, time = null, msgId = null, avatar = null) {
   const color   = getRankColor(rank);
-  const initial = getInitial(user);
   const timeStr = formatTime(time);
 
   const wrap = document.createElement('div');
   wrap.className = `msg-row ${isMe ? 'self' : 'other'}`;
   if (msgId) wrap.dataset.msgId = msgId;
 
-  /* ── أفاتار مع إطار لون الرتبة ── */
+  /* ── أفاتار SVG مربع بإطار لون الرتبة ── */
   const av = document.createElement('div');
   av.className = 'msg-avatar-sm';
-  av.style.setProperty('--rank-color', color);
-  av.textContent = initial;
+  av.style.borderColor = typeof getRankBorder === 'function'
+    ? getRankBorder(rank) : getRankColor(rank);
+
+  /* اختر الأفاتار: من الرسالة أو من localStorage (للمستخدم الحالي) */
+  const avSrc = avatar
+    ? (avatar.startsWith('data:image') ? avatar : '/avatars/' + avatar)
+    : '/avatars/' + (localStorage.getItem('avatar') || 'av1.svg');
+
+  const avImg = document.createElement('img');
+  avImg.src     = avSrc;
+  avImg.alt     = user;
+  avImg.onerror = () => { avImg.src = '/avatars/av1.svg'; };
+  av.appendChild(avImg);
 
   /* ── فقاعة الرسالة ── */
   const bubble = document.createElement('div');
