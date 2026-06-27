@@ -104,7 +104,13 @@ socket.on('messageHistory', (msgs) => {
 });
 
 socket.on('newMessage', (d) => {
-  addMessage(d.username, d.message, d.username === username, d.rank || 100, null, d.id, d.avatar);
+  /* كشف إذا كنت مذكوراً في الرسالة */
+  const isMention = d.message && username &&
+    d.message.includes('@' + username) &&
+    d.username !== username;
+
+  addMessage(d.username, d.message, d.username === username,
+             d.rank || 100, null, d.id, d.avatar, isMention);
   if (d.username !== username) playNotif();
   msgCount++;
   const el = document.getElementById('statMsgs');
@@ -141,13 +147,14 @@ socket.on('welcomeUpdated', (d) => {
 /* ── الرسائل ────────────────────────────── */
 let msgCount = 0;
 
-function addMessage(user, text, isMe, rank = 100, time = null, msgId = null, avatar = null) {
+function addMessage(user, text, isMe, rank = 100, time = null, msgId = null, avatar = null, isMention = false) {
   const color   = getRankColor(rank);
   const timeStr = formatTime(time);
 
   const wrap = document.createElement('div');
   wrap.className = `msg-row ${isMe ? 'self' : 'other'}`;
-  if (msgId) wrap.dataset.msgId = msgId;
+  if (msgId)  wrap.dataset.msgId  = msgId;
+  if (user)   wrap.dataset.sender = user;
 
   /* ── أفاتار SVG مربع بإطار لون الرتبة ── */
   const av = document.createElement('div');
@@ -180,7 +187,27 @@ function addMessage(user, text, isMe, rank = 100, time = null, msgId = null, ava
 
   const msgText = document.createElement('div');
   msgText.className = 'msg-text';
-  msgText.textContent = text;
+  /* تمييز @mentions في النص */
+  if (text.includes('@')) {
+    const parts = text.split(/(@\w+)/g);
+    parts.forEach(p => {
+      if (p.startsWith('@')) {
+        const span = document.createElement('span');
+        span.textContent = p;
+        span.style.cssText = 'color:#6C63FF;font-weight:700;';
+        if (p === '@' + username) {
+          span.style.background = 'rgba(108,99,255,.15)';
+          span.style.borderRadius = '4px';
+          span.style.padding = '0 3px';
+        }
+        msgText.appendChild(span);
+      } else {
+        msgText.appendChild(document.createTextNode(p));
+      }
+    });
+  } else {
+    msgText.textContent = text;
+  }
   bubble.appendChild(msgText);
 
   const msgTime = document.createElement('div');
@@ -259,3 +286,53 @@ function showToast(msg) {
 
 /* ── إعداد الصفحة ───────────────────────── */
 document.getElementById('roomTitle').textContent = roomName;
+
+
+/* ══ إشعار @mention — badge ينتقل إلى الرسالة ══ */
+function _showMentionBadge(targetWrap) {
+  /* أزل badge قديم */
+  document.getElementById('mentionBadge')?.remove();
+
+  const badge = document.createElement('div');
+  badge.id = 'mentionBadge';
+  badge.style.cssText = `
+    position:fixed; left:12px; bottom:100px; z-index:200;
+    background:#6C63FF; color:#fff;
+    border-radius:20px; padding:6px 14px;
+    font-size:13px; font-weight:700;
+    box-shadow:0 4px 12px rgba(108,99,255,.4);
+    cursor:pointer; animation:mentionPulse 2s ease-in-out infinite;
+    display:flex; align-items:center; gap:6px;
+  `;
+  badge.innerHTML = '<span>@</span><span>تم ذكرك</span>';
+
+  /* عند الضغط — انتقل للرسالة */
+  badge.onclick = () => {
+    targetWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    targetWrap.style.transition = 'background .3s';
+    targetWrap.style.background = 'rgba(108,99,255,.2)';
+    setTimeout(() => {
+      targetWrap.style.background = 'rgba(108,99,255,.07)';
+    }, 800);
+    badge.remove();
+  };
+
+  document.body.appendChild(badge);
+
+  /* يختفي بعد 5 ثوان */
+  setTimeout(() => badge.remove(), 5000);
+}
+
+/* CSS لـ animation */
+(function addMentionCSS() {
+  if (document.getElementById('mentionStyle')) return;
+  const s = document.createElement('style');
+  s.id = 'mentionStyle';
+  s.textContent = `
+    @keyframes mentionPulse {
+      0%,100% { transform:scale(1);    box-shadow:0 4px 12px rgba(108,99,255,.4); }
+      50%      { transform:scale(1.05); box-shadow:0 6px 20px rgba(108,99,255,.6); }
+    }
+  `;
+  document.head.appendChild(s);
+})();
