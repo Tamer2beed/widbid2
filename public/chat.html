@@ -95,540 +95,71 @@
 }
 
 /* ══ SIDE MENU — Wevo Style ══ */
-#sideMenu {
+/* ══ SIDE MENU — Wevo Style ══ */
+.side-menu {
   position   : fixed;
-  top        : 0; left: 0;
-  width      : 72vw; max-width: 280px;
+  top        : 0; right: 0;
+  width      : 75vw; max-width: 290px;
   height     : 100vh;
   background : #fff;
   z-index    : 120;
-  transform  : translateX(-100%);
-  transition : transform .25s cubic-bezier(.4,0,.2,1);
+  transform  : translateX(100%);
+  transition : transform .28s cubic-bezier(.4,0,.2,1);
   overflow-y : auto;
-  padding    : 0 0 32px;
-  box-shadow : 4px 0 24px rgba(0,0,0,.15);
+  padding-bottom: 32px;
+  box-shadow : -4px 0 28px rgba(0,0,0,.14);
+  direction  : rtl;
 }
-#sideMenu.open { transform: translateX(0); }
+.side-menu.open { transform: translateX(0); }
 
-/* عنوان الغرفة في أعلى القائمة */
-#sideMenu::before {
-  content    : attr(data-room);
-  display    : block;
-  padding    : 56px 20px 16px;
-  font-size  : 17px;
-  font-weight: 800;
-  color      : #1a1a2e;
-  border-bottom: 1px solid #f0f0f0;
+/* ── الملف الشخصي أعلى القائمة ── */
+.sm-profile {
+  display    : flex;
+  align-items: center;
+  gap        : 12px;
+  padding    : 52px 18px 18px;
+  background : linear-gradient(135deg, var(--wevo-top,#0099CC), var(--wevo-dark,#1a2a5e));
 }
+.sm-avatar {
+  width        : 52px; height: 52px;
+  border-radius: 12px;
+  border       : 2.5px solid rgba(255,255,255,.6);
+  object-fit   : cover;
+  flex-shrink  : 0;
+}
+.sm-profile-info { flex: 1; }
+.sm-username {
+  font-size  : 15px; font-weight: 700; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sm-rank-label { font-size: 12px; color: rgba(255,255,255,.7); margin-top: 2px; }
 
+/* ── العناصر ── */
 .sm-item {
   display    : flex;
   align-items: center;
   gap        : 14px;
-  padding    : 15px 20px;
+  padding    : 15px 18px;
   cursor     : pointer;
-  direction  : rtl;
   transition : background .1s;
-  position   : relative;
+  direction  : rtl;
 }
-.sm-item:active { background: #f5f5ff; }
-.sm-item.danger .sm-label { color: #E53935; }
-.sm-item.danger .sm-icon  { filter: none; }
+.sm-item:active { background: #f5f5fa; }
+.sm-danger .sm-label { color: #E53935; }
 
-.sm-icon {
-  font-size  : 20px;
-  width      : 28px;
-  text-align : center;
-  flex-shrink: 0;
-}
-.sm-label {
-  flex      : 1;
-  font-size : 15px;
-  font-weight: 600;
-  color     : #222;
-}
-.sm-arrow {
-  color    : #ccc;
-  font-size: 18px;
-}
-.sm-divider {
-  height    : 1px;
-  background: #f0f0f0;
-  margin    : 4px 0;
-}
+.sm-icon  { font-size: 20px; width: 26px; text-align: center; flex-shrink: 0; }
+.sm-label { flex: 1; font-size: 15px; font-weight: 600; color: #222; }
+.sm-arrow { color: #ccc; font-size: 18px; font-weight: 300; }
+
+.sm-divider      { height: 1px; background: #f0f0f0; margin: 4px 0; }
 .sm-section-label {
-  padding  : 8px 20px 4px;
-  font-size: 11px;
-  color    : #aaa;
-  font-weight: 700;
-  letter-spacing: .5px;
-  text-transform: uppercase;
-  direction: rtl;
+  padding    : 10px 18px 4px;
+  font-size  : 11px; color: #aaa;
+  font-weight: 700; letter-spacing: .5px;
+  text-align : right;
 }
 
-</style>
 
-</head>
-<body>
-
-<!-- ══ UNIFIED HEADER + BANNER ══ -->
-<div class="room-header" id="roomHeader">
-
-  <!-- البانر (خلفية الهيدر) -->
-  <div class="room-banner" id="roomBanner">
-    <!-- صورة موبايل (≤768px) -->
-    <img class="banner-img banner-mobile" id="bannerMobile" src="" alt="" style="display:none">
-    <!-- صورة ديسكتوب (>768px) -->
-    <img class="banner-img banner-desktop" id="bannerDesktop" src="" alt="" style="display:none">
-    <!-- overlay لضمان قراءة النص -->
-    <div class="banner-overlay"></div>
-  </div>
-
-  <!-- الشريط العلوي: أيقونات + اسم الغرفة -->
-  <div class="header-row header-top">
-    <div class="header-icons-right">
-      <span class="header-icon" onclick="openSideMenu()">☰</span>
-      <span class="header-icon">💬</span>
-      <span class="header-icon" onclick="toggleMembers()">👥</span>
-    </div>
-    <div class="header-title" id="roomTitle">...</div>
-    <div class="header-icons-left">
-      <!-- أيقونات الإدارة انتقلت للقائمة الجانبية -->
-      <span id="spkAdminIcon" style="display:none"></span>
-      <span id="adminToolBtn" style="display:none"></span>
-      <span id="bannerEditBtn" style="display:none"></span>
-    </div>
-  </div>
-
-  <!-- الشريط السفلي: السبيكر + الطابور -->
-  <div class="header-row header-speaker" id="speakerHeaderRow">
-    <!-- يُملأ بـ speaker.js -->
-    <!-- عناصر مخفية للتوافق مع speaker.js -->
-    <span id="micIcon"   style="display:none">🔊</span>
-    <span id="micStatus" style="display:none">Mic Free</span>
-    <span id="micTime"   style="display:none">--:--</span>
-    <span id="statOnline" style="display:none">0</span>
-    <span id="statMsgs"   style="display:none">0</span>
-    <span id="statRankWrap" style="display:none"></span>
-    <span id="statRankName" style="display:none"></span>
-  </div>
-
-</div>
-
-<!-- Banner Editor Modal — للمشرف فقط -->
-<div class="banner-editor-overlay" id="bannerEditorOverlay" style="display:none">
-  <div class="banner-editor-box">
-    <div class="banner-editor-title">🖼️ تخصيص بانر الغرفة</div>
-
-    <!-- مرجع الدقة -->
-    <div class="banner-specs">
-      <div class="spec-card">
-        <div class="spec-icon">📱</div>
-        <div class="spec-label">موبايل</div>
-        <div class="spec-size">360 × 120 px</div>
-        <div class="spec-note">JPG/PNG/WebP • أقل من 500KB</div>
-      </div>
-      <div class="spec-card">
-        <div class="spec-icon">🖥️</div>
-        <div class="spec-label">ديسكتوب</div>
-        <div class="spec-size">1200 × 180 px</div>
-        <div class="spec-note">JPG/PNG/WebP • أقل من 1MB</div>
-      </div>
-    </div>
-
-    <!-- رفع موبايل -->
-    <div class="banner-upload-row">
-      <label class="banner-upload-label" for="bannerMobileFile">
-        📱 صورة الموبايل
-        <div class="banner-preview-wrap" id="bannerMobilePreview">
-          <div class="banner-preview-placeholder">360 × 120</div>
-        </div>
-        <input type="file" id="bannerMobileFile" accept="image/*" style="display:none"
-               onchange="previewBanner('mobile', this)">
-        <span class="banner-choose-btn">اختر صورة</span>
-      </label>
-    </div>
-
-    <!-- رفع ديسكتوب -->
-    <div class="banner-upload-row">
-      <label class="banner-upload-label" for="bannerDesktopFile">
-        🖥️ صورة الديسكتوب
-        <div class="banner-preview-wrap wide" id="bannerDesktopPreview">
-          <div class="banner-preview-placeholder">1200 × 180</div>
-        </div>
-        <input type="file" id="bannerDesktopFile" accept="image/*" style="display:none"
-               onchange="previewBanner('desktop', this)">
-        <span class="banner-choose-btn">اختر صورة</span>
-      </label>
-    </div>
-
-    <div class="banner-editor-actions">
-      <button class="banner-btn-save"   onclick="saveBanner()">✅ حفظ وتطبيق</button>
-      <button class="banner-btn-remove" onclick="removeBanner()">🗑️ حذف البانر</button>
-      <button class="banner-btn-cancel" onclick="closeBannerEditor()">إلغاء</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MAIN ══ -->
-<div class="main" id="mainArea">
-
-  <!-- ══ طبقة الأعضاء (الخلفية — ثابتة) ══ -->
-  <div class="members-bg" id="membersBg">
-    <div class="members-header">
-      👥 المتواجدون <span id="membersCount"></span>
-    </div>
-    <div class="members-list" id="membersList"></div>
-  </div>
-
-  <!-- ══ طبقة الدردشة (تنزلق يميناً) ══ -->
-  <div class="chat-layer" id="chatLayer">
-
-    <!-- ══ CHAT AREA ══ -->
-    <div class="chat-area">
-      <div class="chat-bg"></div>
-      <div id="messages">
-        <div class="welcome-banner" id="welcomeBanner">مرحباً بكم</div>
-      </div>
-    </div><!-- end chat-layer -->
-
-</div><!-- end main -->
-
-<!-- ══ TOOLBAR 1 ══ -->
-<div class="toolbar1">
-  <div class="tb-btn tb-mic" id="micTbBtn" onclick="toggleMic()">🎤</div>
-  <div class="tb-btn tb-chat-btn">💬</div>
-  <div class="msg-input-wrap">
-    <input class="msg-input" id="msgInput" placeholder="اكتب رسالة..." autocomplete="off" />
-    <span class="tb-emoji" onclick="toggleEmoji()">😊</span>
-  </div>
-  <span class="tb-image" onclick="toggleImagePicker()">📤</span>
-  <button class="tb-send" onclick="sendMessage()">➤</button>
-</div>
-
-<!-- ══ TOOLBAR 2 ══ -->
-<div class="toolbar2">
-  <div class="quick-btn" onclick="sendQuick('⏰')">⏰</div>
-  <div class="quick-btn" onclick="sendQuick('😐')">😐</div>
-  <div class="quick-btn" onclick="sendQuick('❤️')">❤️</div>
-  <div class="quick-btn" onclick="sendQuick('💡')">💡</div>
-  <div class="quick-btn" onclick="sendQuick('👏')">👏</div>
-</div>
-
-<!-- ══ OVERLAY ══ -->
-<div class="overlay" id="overlay" onclick="closeAll()"></div>
-
-<!-- ══ SIDE MENU ══ -->
-<div class="side-menu" id="sideMenu">
-  <div class="side-menu-header">القائمة</div>
-  <div class="side-menu-item" onclick="openStatusMenu()">
-    <span class="item-icon">🔵</span><span>الحالة</span>
-  </div>
-  <div class="side-menu-item" onclick="openSettings()">
-    <span class="item-icon">⚙️</span><span>الإعدادات</span>
-  </div>
-  <div class="side-menu-item" onclick="toggleFavorite()">
-    <span class="item-icon">⭐</span><span id="favText">إضافة للمفضلة</span>
-  </div>
-  <div class="side-menu-item" id="clearTextBtn" style="display:none" onclick="clearChat()">
-    <span class="item-icon">🗑️</span><span>مسح الشات</span>
-  </div>
-  <div class="side-menu-item" onclick="reportRoom()">
-    <span class="item-icon">🚨</span><span>تبليغ</span>
-  </div>
-
-  <!-- ══ أدوات الإدارة (500+) ══ -->
-  <div id="adminMenuSection" style="display:none">
-    <div class="side-menu-divider">إدارة الغرفة</div>
-    <div class="side-menu-item" onclick="openBannerEditor(); closeSideMenu()">
-      <span class="item-icon">🖼️</span><span>تعديل البانر</span>
-    </div>
-    <div class="side-menu-item" onclick="openAdminSheet(); closeSideMenu()">
-      <span class="item-icon">🛠️</span><span>أدوات المشرف</span>
-    </div>
-    <div class="side-menu-item" onclick="SpeakerSystem.openAdminPanel(); closeSideMenu()">
-      <span class="item-icon">🎙️</span><span>إدارة السبيكر</span>
-    </div>
-  </div>
-    <span class="item-icon">🚪</span><span>خروج</span>
-  </div>
-</div>
-
-<!-- ══ STATUS DROPDOWN ══ -->
-<div class="status-overlay" id="statusOverlay" onclick="closeStatusMenu()"></div>
-<div class="status-dropdown" id="statusPopup">
-  <div class="status-dropdown-header">الحالة</div>
-  <div class="status-dropdown-item" onclick="setStatus('available','🟢','متاح')">
-    <span class="sd-icon">🟢</span><span class="sd-label">متاح</span>
-  </div>
-  <div class="status-dropdown-item" onclick="setStatus('away','⏰','بالخارج')">
-    <span class="sd-icon">⏰</span><span class="sd-label">بالخارج</span>
-  </div>
-  <div class="status-dropdown-item" onclick="setStatus('busy','🔴','مشغول')">
-    <span class="sd-icon">🔴</span><span class="sd-label">مشغول</span>
-  </div>
-  <div class="status-dropdown-item" onclick="setStatus('phone','📞','هاتف')">
-    <span class="sd-icon">📞</span><span class="sd-label">هاتف</span>
-  </div>
-  <div class="status-dropdown-item" onclick="setStatus('food','🍴','طعام')">
-    <span class="sd-icon">🍴</span><span class="sd-label">طعام</span>
-  </div>
-  <div class="status-dropdown-item" onclick="setStatus('pray','🕌','صلاة')">
-    <span class="sd-icon">🕌</span><span class="sd-label">صلاة</span>
-  </div>
-  <div class="status-dropdown-item" onclick="setStatus('sleep','💤','نائم')">
-    <span class="sd-icon">💤</span><span class="sd-label">نائم</span>
-  </div>
-  <div class="status-dropdown-item" onclick="setStatus('car','🚗','سيارة')">
-    <span class="sd-icon">🚗</span><span class="sd-label">سيارة</span>
-  </div>
-</div>
-<!-- ══ EMOJI PANEL ══ -->
-<div class="emoji-panel" id="emojiPanel">
-  <div class="emoji-tabs">
-    <div class="emoji-tab active" onclick="switchEmojiTab(0)">❤️</div>
-    <div class="emoji-tab"        onclick="switchEmojiTab(1)">😊</div>
-    <div class="emoji-tab"        onclick="switchEmojiTab(2)">🎉</div>
-    <div class="emoji-tab"        onclick="switchEmojiTab(3)">🌿</div>
-  </div>
-  <div class="emoji-grid" id="emojiGrid"></div>
-</div>
-
-<!-- ══ IMAGE PICKER ══ -->
-<div class="image-picker" id="imagePicker">
-  <div class="picker-btn" onclick="pickImage('gallery')">
-    <span class="picker-icon">🖼️</span><span class="picker-label">المعرض</span>
-  </div>
-  <div class="picker-btn" onclick="pickImage('camera')">
-    <span class="picker-icon">📷</span><span class="picker-label">الكاميرا</span>
-  </div>
-  <div class="picker-btn" onclick="toggleVideo()">
-    <span class="picker-icon">🎥</span><span class="picker-label">فيديو</span>
-  </div>
-</div>
-
-<!-- ══ ADMIN TOOLS SHEET ══ -->
-<div class="overlay" id="adminOverlay" onclick="closeAdminSheet()"></div>
-<div class="admin-sheet" id="adminSheet">
-  <div class="admin-sheet-title" id="adminSheetTitle">🛠️ أدوات المشرف</div>
-  <div id="adminToolsList"></div>
-</div>
-
-<!-- ══ WARN DIALOG ══ -->
-<div class="warn-dialog" id="warnDialog">
-  <div class="warn-box">
-    <h3>⚠️ تحذير رسمي</h3>
-    <p>سيُرسل للمستخدم <strong id="warnTarget"></strong> ويُحفظ في سجله</p>
-    <textarea id="warnText" placeholder="اكتب سبب التحذير..."></textarea>
-    <div class="warn-actions">
-      <button class="btn-warn-send"   onclick="sendWarn()">إرسال</button>
-      <button class="btn-warn-cancel" onclick="closeWarnDialog()">إلغاء</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ TOAST ══ -->
-<div class="toast" id="toast"></div>
-
-<!-- ══ VIDEO BROADCAST UI ══ -->
-
-<!-- نافذة البث (قابلة للسحب وتغيير الحجم) -->
-<div class="video-window" id="videoWindow" style="display:none">
-  <!-- شريط العنوان (للسحب) -->
-  <div class="video-titlebar" id="videoTitlebar">
-    <span class="video-broadcaster" id="videoBroadcasterName">🎥 البث المباشر</span>
-    <div class="video-controls">
-      <span class="vid-ctrl-btn" onclick="cycleVideoSize()" title="تغيير الحجم">⊞</span>
-      <span class="vid-ctrl-btn" onclick="closeVideoWindow()" title="إغلاق">✕</span>
-    </div>
-  </div>
-
-  <!-- منطقة الفيديو -->
-  <div class="video-screen" id="videoScreen">
-    <!-- Phase 21: يُستبدل بـ <video> WebRTC -->
-    <div class="video-placeholder">
-      <div class="vid-ph-icon">📹</div>
-      <div class="vid-ph-text">البث المباشر</div>
-      <div class="vid-ph-sub">سيُفعَّل في Phase 21 (WebRTC)</div>
-    </div>
-    <!-- مؤشر البث الحي -->
-    <div class="live-badge">🔴 LIVE</div>
-  </div>
-
-  <!-- أزرار الحجم -->
-  <div class="video-size-bar">
-    <span class="size-btn active" data-size="sm" onclick="setVideoSize('sm')">صغير</span>
-    <span class="size-btn"       data-size="md" onclick="setVideoSize('md')">وسط</span>
-    <span class="size-btn"       data-size="lg" onclick="setVideoSize('lg')">كبير</span>
-  </div>
-</div>
-
-<!-- طلب مشاهدة البث (للمشاهد) -->
-<div class="video-request-overlay" id="videoRequestOverlay" style="display:none">
-  <div class="video-request-box">
-    <div class="vreq-icon">📹</div>
-    <div class="vreq-title">طلب مشاهدة البث</div>
-    <div class="vreq-name" id="vreqBroadcasterName">اسم المُذيع</div>
-    <div class="vreq-sub">يريد <strong id="vreqViewerName"></strong> مشاهدة بثك المباشر</div>
-    <div class="vreq-actions">
-      <button class="vreq-btn accept" onclick="respondToRequest(true)">✅ قبول</button>
-      <button class="vreq-btn reject" onclick="respondToRequest(false)">❌ رفض</button>
-    </div>
-  </div>
-</div>
-
-<!-- إشعار طلب البث (للمُذيع) -->
-<div class="broadcast-request-toast" id="broadcastReqToast" style="display:none">
-  <span id="broadcastReqText"></span>
-  <div class="breq-actions">
-    <button class="breq-btn accept" onclick="answerBroadcastReq(true)">قبول</button>
-    <button class="breq-btn reject" onclick="answerBroadcastReq(false)">رفض</button>
-  </div>
-</div>
-
-<!-- ══ JS — يُحمَّل حسب الرتبة ══ -->
-<script src="/socket.io/socket.io.js"></script>
-<script src="/js/core.js"></script>
-<script src="/js/ui.js"></script>
-<script src="/js/sounds.js"></script>
-<script src="/js/camera.js"></script>
-<script src="/js/video.js"></script>
-<!-- [SKILL-AUDIO] مكتبة Mediasoup Client + نظام الصوت -->
-<script src="https://cdn.jsdelivr.net/npm/mediasoup-client@3/lib/mediasoup-client.min.js"></script>
-<script src="/js/audio.js"></script>
-<script src="/js/speaker.js"></script>
-<script src="/js/banner.js"></script>
-<script>
-(async function loadRankModules() {
-  const rank = parseInt(localStorage.getItem('rank')) || 100;
-
-  const load = (src) => new Promise((res, rej) => {
-    const s = document.createElement('script');
-    s.src = src;
-    s.onload = res;
-    s.onerror = () => { console.warn('تعذّر تحميل:', src); res(); };
-    document.body.appendChild(s);
-  });
-
-  /* ── ترتيب التحميل مهم جداً ── */
-
-  // 1. مشترك لجميع الرتب
-  await load('/js/emojis.js');
-  await load('/js/helpers.js');
-  await load('/js/ranks/guest.js');
-
-  // 2. Member, Protected, Royal (200-400)
-  if (rank >= 200) await load('/js/ranks/member.js');
-
-  // 3. Admin (500)
-  if (rank >= 500) await load('/js/ranks/admin.js');
-
-  // 4. Super Admin (600)
-  if (rank >= 600) await load('/js/ranks/super_admin.js');
-
-  // 5. Master (700)
-  if (rank >= 700) await load('/js/ranks/master.js');
-
-  // 6. Super Master (800)
-  if (rank >= 800) await load('/js/ranks/super_master.js');
-
-  // 7. Root (900)
-  if (rank >= 900) await load('/js/ranks/root.js');
-
-  // 8. Super Root (1000)
-  if (rank >= 1000) await load('/js/ranks/super_root.js');
-
-  // 9. Owner (1100)
-  if (rank >= 1100) await load('/js/ranks/owner.js');
-
-  // 10. Super Owner (1200)
-  if (rank >= 1200) await load('/js/ranks/super_owner.js');
-
-  console.log(`✅ WidBid جاهز — الرتبة: ${rank} (${getRankName?.(rank)||'Guest'})`);
-})();
-</script>
-
-
-<!-- ══ SETTINGS PANEL ══ -->
-<div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
-<div class="settings-panel" id="settingsPanel">
-
-  <div class="settings-header">
-    <span>⚙️ الإعدادات</span>
-    <span class="settings-close" onclick="closeSettings()">✕</span>
-  </div>
-
-  <!-- الملف الشخصي -->
-  <div class="settings-section">
-    <div class="settings-profile-row">
-      <div class="settings-avatar-wrap" onclick="closeSettings(); openAvatarPicker()">
-        <img id="settingsAvatarImg" src="/avatars/av1.svg" class="settings-avatar-img" alt="avatar">
-        <div class="settings-avatar-edit">✏️</div>
-      </div>
-      <div class="settings-profile-info">
-        <div class="settings-username" id="settingsUsername">—</div>
-        <button class="settings-btn-avatar" id="settingsChangeAvatar">
-          تغيير الصورة
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- الحالة -->
-  <div class="settings-section">
-    <div class="settings-label">الحالة</div>
-    <div class="settings-status-grid">
-      <div class="ssg-item" onclick="setStatusFromSettings('available','🟢','متاح')">🟢 متاح</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('away','⏰','بالخارج')">⏰ بالخارج</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('busy','🔴','مشغول')">🔴 مشغول</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('phone','📞','هاتف')">📞 هاتف</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('food','🍴','طعام')">🍴 طعام</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('pray','🕌','صلاة')">🕌 صلاة</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('sleep','💤','نائم')">💤 نائم</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('car','🚗','سيارة')">🚗 سيارة</div>
-    </div>
-  </div>
-
-  <!-- خروج -->
-  <div class="settings-section">
-    <button class="settings-btn-danger" onclick="leaveRoom()">🚪 خروج من الغرفة</button>
-  </div>
-
-</div>
-
-<script>
-function setStatusFromSettings(key, icon, label) {
-  if (typeof setStatus === 'function') setStatus(key, icon, label);
-  closeSettings();
-}
-</script>
-
-<!-- ══ AVATAR PICKER ══ -->
-<div class="avatar-picker-overlay" id="avatarPickerOverlay">
-  <div class="avatar-picker-box">
-    <div class="avatar-picker-title">🖼️ اختر صورتك</div>
-    <div class="avatar-grid" id="avatarGrid">
-      <img src="/avatars/av1.svg" class="avatar-option" data-av="av1.svg" onclick="selectAvatar(this)">
-      <img src="/avatars/av2.svg" class="avatar-option" data-av="av2.svg" onclick="selectAvatar(this)">
-      <img src="/avatars/av3.svg" class="avatar-option" data-av="av3.svg" onclick="selectAvatar(this)">
-      <img src="/avatars/av4.svg" class="avatar-option" data-av="av4.svg" onclick="selectAvatar(this)">
-      <img src="/avatars/av5.svg" class="avatar-option" data-av="av5.svg" onclick="selectAvatar(this)">
-      <img src="/avatars/av6.svg" class="avatar-option" data-av="av6.svg" onclick="selectAvatar(this)">
-      <img src="/avatars/av7.svg" class="avatar-option" data-av="av7.svg" onclick="selectAvatar(this)">
-      <img src="/avatars/av8.svg" class="avatar-option" data-av="av8.svg" onclick="selectAvatar(this)">
-    </div>
-    <!-- زر رفع صورة — يظهر فقط للحسابات المدفوعة -->
-    <button class="avatar-upload-btn" id="avatarUploadBtn"
-            onclick="triggerAvatarUpload()" style="display:none">
-      📷 رفع صورة مخصصة
-    </button>
-    <input type="file" id="avatarFileInput" accept="image/jpeg,image/png,image/webp"
-           style="display:none" onchange="handleAvatarFile(event)">
-    <button class="avatar-picker-close" onclick="closeAvatarPicker()">إغلاق</button>
-  </div>
-</div>
-
-<script>
 /* ══ AVATAR PICKER ══ */
 let _selectedAv = null;
 
