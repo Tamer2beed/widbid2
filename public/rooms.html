@@ -1165,24 +1165,26 @@ function uploadAvatarRooms(e) {
 const AV_COUNT = 16;
 let _loginAvatar = localStorage.getItem('lastAvatar') || 'av1.svg';
 
-/* ── init grid ── */
-(function buildGrid() {
+/* ── init grid عند جاهزية DOM ── */
+function buildAvatarGrid() {
   const grid = document.getElementById('lapGrid');
-  if (!grid) return;
+  if (!grid || grid.children.length > 0) return; /* لا تبنِ مرتين */
   for (let i = 1; i <= AV_COUNT; i++) {
     const img = document.createElement('img');
-    img.src       = `/avatars/av${i}.svg`;
-    img.className = 'lap-opt';
+    img.src        = `/avatars/av${i}.svg`;
+    img.className  = 'lap-opt';
     img.dataset.av = `av${i}.svg`;
-    img.onclick   = () => pickLoginAvatar(img);
+    img.onclick    = () => pickLoginAvatar(img);
     grid.appendChild(img);
   }
   _updateLoginAvatarUI();
-})();
+}
+document.addEventListener('DOMContentLoaded', buildAvatarGrid);
 
 /* ── فتح شاشة الدخول ── */
 function enterRoom(id, name) {
   window._pendingRoom = { id, name };
+  buildAvatarGrid(); /* تأكد من بناء الـ grid */
   document.getElementById('loginRoomName').textContent = name;
   _loginAvatar = localStorage.getItem('lastAvatar') || 'av1.svg';
   _updateLoginAvatarUI();
