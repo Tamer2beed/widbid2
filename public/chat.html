@@ -167,39 +167,20 @@
 }
 
 
-/* ══ SIDE MENU — Wevo Style ══ */
-.sm-profile {
-  display    : flex;
-  align-items: center;
-  gap        : 12px;
-  padding    : 52px 18px 18px;
-  background : linear-gradient(135deg, var(--wevo-top), var(--wevo-dark));
-}
-.sm-avatar {
-  width:52px; height:52px; border-radius:12px;
-  border:2.5px solid rgba(255,255,255,.6);
-  object-fit:cover; flex-shrink:0;
-}
-.sm-profile-info { flex:1; }
-.sm-username  { font-size:15px; font-weight:700; color:#fff;
-                white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sm-rank-label{ font-size:12px; color:rgba(255,255,255,.7); margin-top:2px; }
-.sm-item {
-  display:flex; align-items:center; gap:14px;
-  padding:15px 18px; cursor:pointer;
-  transition:background .1s; direction:rtl;
-}
-.sm-item:active { background:#f5f5fa; }
-.sm-danger .sm-label { color:#E53935; }
-.sm-icon  { font-size:20px; width:26px; text-align:center; flex-shrink:0; }
-.sm-label { flex:1; font-size:15px; font-weight:600; color:#222; }
-.sm-arrow { color:#ccc; font-size:18px; font-weight:300; }
-.sm-divider { height:1px; background:#f0f0f0; margin:4px 0; }
-.sm-section-label {
-  padding:10px 18px 4px; font-size:11px; color:#aaa;
-  font-weight:700; letter-spacing:.5px; text-align:right;
-}
-
+/* ══ SM ══ */
+.sm-profile{display:flex;align-items:center;gap:12px;padding:52px 18px 18px;background:linear-gradient(135deg,var(--wevo-top),var(--wevo-dark))}
+.sm-avatar{width:52px;height:52px;border-radius:12px;border:2.5px solid rgba(255,255,255,.6);object-fit:cover;flex-shrink:0}
+.sm-profile-info{flex:1}
+.sm-username{font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sm-rank-label{font-size:12px;color:rgba(255,255,255,.7);margin-top:2px}
+.sm-item{display:flex;align-items:center;gap:14px;padding:15px 18px;cursor:pointer;transition:background .1s;direction:rtl}
+.sm-item:active{background:#f5f5fa}
+.sm-danger .sm-label{color:#E53935}
+.sm-icon{font-size:20px;width:26px;text-align:center;flex-shrink:0}
+.sm-label{flex:1;font-size:15px;font-weight:600;color:#222}
+.sm-arrow{color:#ccc;font-size:18px;font-weight:300}
+.sm-divider{height:1px;background:#f0f0f0;margin:4px 0}
+.sm-section-label{padding:10px 18px 4px;font-size:11px;color:#aaa;font-weight:700;letter-spacing:.5px;text-align:right}
 </style>
 
 </head>
@@ -354,8 +335,6 @@
 
 <!-- ══ SIDE MENU ══ -->
 <div class="side-menu" id="sideMenu">
-
-  <!-- الملف الشخصي -->
   <div class="sm-profile">
     <img id="smAvatar" src="/avatars/av1.svg" class="sm-avatar" onerror="this.src='/avatars/av1.svg'">
     <div class="sm-profile-info">
@@ -363,79 +342,46 @@
       <div class="sm-rank-label" id="smRankLabel">زائر</div>
     </div>
   </div>
-
   <div class="sm-divider"></div>
-
-  <!-- الحالة -->
   <div class="sm-item" onclick="openStatusMenu()">
-    <span class="sm-icon" id="smStatusIcon">🟢</span>
-    <span class="sm-label">الحالة</span>
-    <span class="sm-arrow">›</span>
+    <span class="sm-icon">🟢</span><span class="sm-label">الحالة</span><span class="sm-arrow">›</span>
   </div>
-
-  <!-- الإعدادات -->
   <div class="sm-item" onclick="openSettings()">
-    <span class="sm-icon">⚙️</span>
-    <span class="sm-label">الإعدادات</span>
-    <span class="sm-arrow">›</span>
+    <span class="sm-icon">⚙️</span><span class="sm-label">الإعدادات</span><span class="sm-arrow">›</span>
   </div>
-
   <div class="sm-divider"></div>
-
-  <!-- المفضلة -->
   <div class="sm-item" onclick="toggleFavorite()">
-    <span class="sm-icon" id="smFavIcon">☆</span>
-    <span class="sm-label" id="favText">إضافة للمفضلة</span>
+    <span class="sm-icon">☆</span><span class="sm-label" id="favText">إضافة للمفضلة</span>
   </div>
-
-  <!-- مسح الدردشة -->
-  <div class="sm-item" onclick="clearLocalChat(); closeSideMenu()">
-    <span class="sm-icon">🧹</span>
-    <span class="sm-label">مسح الدردشة</span>
+  <div class="sm-item" onclick="clearLocalChat();closeSideMenu()">
+    <span class="sm-icon">🧹</span><span class="sm-label">مسح الدردشة</span>
   </div>
-
-  <!-- بث مباشر -->
-  <div class="sm-item" onclick="startBroadcast(); closeSideMenu()">
-    <span class="sm-icon">📹</span>
-    <span class="sm-label">بث مباشر</span>
+  <div class="sm-item" onclick="startBroadcast();closeSideMenu()">
+    <span class="sm-icon">📹</span><span class="sm-label">بث مباشر</span>
   </div>
-
-  <!-- تبليغ -->
   <div class="sm-item" onclick="reportRoom()">
-    <span class="sm-icon">🚨</span>
-    <span class="sm-label">تبليغ</span>
+    <span class="sm-icon">🚨</span><span class="sm-label">تبليغ</span>
   </div>
-
-  <!-- ══ أدوات الإدارة (500+) ══ -->
   <div id="adminMenuSection" style="display:none">
     <div class="sm-divider"></div>
     <div class="sm-section-label">إدارة الغرفة</div>
-    <div class="sm-item" onclick="openBannerEditor(); closeSideMenu()">
-      <span class="sm-icon">🖼️</span>
-      <span class="sm-label">تعديل البانر</span>
+    <div class="sm-item" onclick="openBannerEditor();closeSideMenu()">
+      <span class="sm-icon">🖼️</span><span class="sm-label">تعديل البانر</span>
     </div>
-    <div class="sm-item" onclick="openAdminSheet(); closeSideMenu()">
-      <span class="sm-icon">🛠️</span>
-      <span class="sm-label">أدوات المشرف</span>
+    <div class="sm-item" onclick="openAdminSheet();closeSideMenu()">
+      <span class="sm-icon">🛠️</span><span class="sm-label">أدوات المشرف</span>
     </div>
-    <div class="sm-item" onclick="SpeakerSystem.openAdminPanel(); closeSideMenu()">
-      <span class="sm-icon">🎙️</span>
-      <span class="sm-label">إدارة السبيكر</span>
+    <div class="sm-item" onclick="SpeakerSystem.openAdminPanel();closeSideMenu()">
+      <span class="sm-icon">🎙️</span><span class="sm-label">إدارة السبيكر</span>
     </div>
-    <div class="sm-item sm-danger" id="clearTextBtn" onclick="clearChat(); closeSideMenu()">
-      <span class="sm-icon">🗑️</span>
-      <span class="sm-label">مسح الشات للجميع</span>
+    <div class="sm-item sm-danger" id="clearTextBtn" onclick="clearChat();closeSideMenu()">
+      <span class="sm-icon">🗑️</span><span class="sm-label">مسح الشات للجميع</span>
     </div>
   </div>
-
   <div class="sm-divider"></div>
-
-  <!-- خروج -->
   <div class="sm-item sm-danger" onclick="leaveRoom()">
-    <span class="sm-icon">🚪</span>
-    <span class="sm-label">خروج</span>
+    <span class="sm-icon">🚪</span><span class="sm-label">خروج</span>
   </div>
-
 </div>
 
 <!-- ══ STATUS DROPDOWN ══ -->
