@@ -406,18 +406,7 @@ function _removeCamBadge(uname) {
    16. زر البث في القائمة ☰
 ══════════════════════════════════════════ */
 function addBroadcastMenuItem() {
-  const menu = document.getElementById('sideMenu');
-  if (!menu || menu.querySelector('#broadcastMenuItem')) return;
-  const item       = document.createElement('div');
-  item.id          = 'broadcastMenuItem';
-  item.className   = 'side-menu-item';
-  item.innerHTML   = `<span class="item-icon">📹</span><span>بث مباشر</span>`;
-  item.onclick     = () => {
-    closeSideMenu?.();
-    videoState.isBroadcasting ? stopBroadcast() : startBroadcast();
-  };
-  const danger = menu.querySelector('.danger');
-  menu.insertBefore(item, danger);
+  /* البث موجود مباشرة في القائمة الجديدة — لا تكرار */
 }
 
 /* ══════════════════════════════════════════
