@@ -477,65 +477,180 @@ function openPrivateChat(name) {
    قائمة سياق الرسالة (نقرة واحدة)
 ════════════════════════════════════════ */
 
+/* ══ قائمة سياق الرسائل ══ */
 function initMessageContextMenu() {
   const style = document.createElement('style');
   style.textContent = `
+  /* ── Overlay ── */
+  .ctx-overlay {
+    position:fixed; inset:0; z-index:249;
+    background:rgba(0,0,0,.25);
+    animation: ctxFadeIn .15s ease;
+  }
+  /* ── القائمة ── */
   .ctx-menu {
-    position: fixed; z-index: 250;
-    background: #1a1a2e; border-radius: 12px;
-    overflow: hidden; min-width: 180px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    animation: ctxIn .15s ease;
+    position:fixed; z-index:250;
+    background:#fff;
+    border-radius:16px;
+    overflow:hidden;
+    min-width:200px;
+    max-width:260px;
+    box-shadow:0 12px 40px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08);
+    animation: ctxSlideUp .18s cubic-bezier(.34,1.56,.64,1);
   }
-  @keyframes ctxIn { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:scale(1)} }
+  @keyframes ctxFadeIn  { from{opacity:0}         to{opacity:1} }
+  @keyframes ctxSlideUp { from{opacity:0;transform:translateY(10px) scale(.95)}
+                          to{opacity:1;transform:translateY(0) scale(1)} }
+  /* ── رأس القائمة (معاينة الرسالة) ── */
+  .ctx-preview {
+    padding:10px 14px 8px;
+    font-size:12px; color:#999;
+    border-bottom:1px solid #f0f0f0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    max-width:100%; direction:rtl;
+  }
+  /* ── الخيارات ── */
   .ctx-item {
-    padding: 13px 18px; font-size: 14px; font-weight: 600;
-    color: #fff; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,.08);
-    display: flex; align-items: center; gap: 10px;
+    padding:13px 16px;
+    font-size:14px; font-weight:600;
+    color:#222; cursor:pointer;
+    border-bottom:1px solid #f5f5f5;
+    display:flex; align-items:center; gap:12px;
+    direction:rtl; transition:background .1s;
   }
-  .ctx-item:last-child { border-bottom: none; }
-  .ctx-item:active { background: rgba(255,255,255,.1); }
-  .ctx-item.danger { color: #E74C3C; }
-  .ctx-overlay { position: fixed; inset: 0; z-index: 249; }
+  .ctx-item:last-child { border-bottom:none; }
+  .ctx-item:active, .ctx-item:hover { background:#f7f7ff; }
+  .ctx-item .ctx-icon {
+    font-size:17px; width:24px; text-align:center; flex-shrink:0;
+  }
+  .ctx-item .ctx-label { flex:1; }
+  .ctx-item.danger { color:#E53935; }
+  .ctx-item.danger:hover { background:#fff5f5; }
+  .ctx-separator {
+    height:6px; background:#f8f8f8;
+    border-top:1px solid #f0f0f0;
+    border-bottom:1px solid #f0f0f0;
+  }
   `;
   document.head.appendChild(style);
 
-  /* نقرة واحدة على الرسالة */
+  /* ضغطة على الرسالة */
   document.getElementById('messages')?.addEventListener('click', e => {
     const bubble = e.target.closest('.msg-bubble');
     if (!bubble) return;
     e.stopPropagation();
-    const row    = bubble.closest('.msg-row');
-    const text   = bubble.querySelector('.msg-text')?.textContent || '';
-    const msgId  = row?.dataset.msgId || null;
-    showMessageMenu(e.clientX, e.clientY, text, msgId);
+    const row      = bubble.closest('.msg-row');
+    const text     = bubble.querySelector('.msg-text')?.textContent || '';
+    const msgId    = row?.dataset.msgId || null;
+    const sender   = bubble.querySelector('.msg-sender')?.textContent || null;
+    const isMine   = row?.classList.contains('self') || false;
+    showMessageMenu(e.clientX, e.clientY, text, msgId, sender, isMine);
   });
 }
 
-function showMessageMenu(x, y, text, msgId) {
+/* ════ مجموعة المستخدمين المتجاهَلين ════ */
+const _ignored = new Set(JSON.parse(localStorage.getItem('ignoredUsers') || '[]'));
+
+function _saveIgnored() {
+  localStorage.setItem('ignoredUsers', JSON.stringify([..._ignored]));
+}
+
+function isIgnored(uname) { return _ignored.has(uname); }
+
+function showMessageMenu(x, y, text, msgId, sender, isMine) {
   closeCtxMenu();
   const rank = parseInt(localStorage.getItem('rank') || '0');
+  const preview = text.length > 40 ? text.slice(0, 40) + '…' : text;
 
-  const items = [
-    {
-      icon: '📋', label: 'نسخ',
-      fn: () => { navigator.clipboard?.writeText(text); showToast('✅ تم النسخ'); }
-    },
-    {
-      icon: '↩️', label: 'ردّ',
+  const items = [];
+
+  /* ── نسخ ── */
+  items.push({
+    icon: '📋', label: 'نسخ الرسالة',
+    fn: () => {
+      navigator.clipboard?.writeText(text).then(() => showToast('✅ تم النسخ'));
+    }
+  });
+
+  /* ── ردّ ── */
+  items.push({
+    icon: '↩️', label: 'ردّ',
+    fn: () => {
+      const inp = document.getElementById('msgInput');
+      if (inp) { inp.value = `«${text.slice(0, 30)}» `; inp.focus(); }
+    }
+  });
+
+  /* ── التقاط الاسم ── */
+  if (sender && sender !== username) {
+    items.push({
+      icon: '@', label: `ذكر @${sender}`,
       fn: () => {
         const inp = document.getElementById('msgInput');
-        if (inp) { inp.value = `«${text.slice(0,30)}» `; inp.focus(); }
+        if (inp) {
+          inp.value = `@${sender} `;
+          inp.focus();
+          inp.setSelectionRange(inp.value.length, inp.value.length);
+        }
       }
-    },
-    {
-      icon: '🚨', label: 'تبليغ عن الرسالة',
-      fn: () => { socket.emit('reportMessage', { room_id: roomId, msg_id: msgId, by: username }); showToast('✅ تم إرسال البلاغ'); }
-    },
-  ];
+    });
+  }
 
-  /* مسح الشات للجميع — للمشرف فقط */
+  /* ── فاصل ── */
+  items.push({ separator: true });
+
+  /* ── مسح النص (رسالتي) ── */
+  if (isMine && msgId) {
+    items.push({
+      icon: '✏️', label: 'مسح النص',
+      fn: () => {
+        socket.emit('deleteMessage', { room_id: roomId, msg_id: msgId, by: username });
+        /* أزل الرسالة محلياً فوراً */
+        document.querySelector(`.msg-row[data-msg-id="${msgId}"]`)?.remove();
+        showToast('🗑️ تم مسح الرسالة');
+      }
+    });
+  }
+
+  /* ── تجاهل المرسل ── */
+  if (sender && sender !== username) {
+    const alreadyIgnored = _ignored.has(sender);
+    items.push({
+      icon: alreadyIgnored ? '✅' : '🚫',
+      label: alreadyIgnored ? `إلغاء تجاهل ${sender}` : `تجاهل ${sender}`,
+      fn: () => {
+        if (alreadyIgnored) {
+          _ignored.delete(sender);
+          /* أظهر رسائله المخفية */
+          document.querySelectorAll(`.msg-row[data-sender="${sender}"]`)
+            .forEach(r => r.style.display = '');
+          showToast(`✅ تم إلغاء تجاهل ${sender}`);
+        } else {
+          _ignored.add(sender);
+          /* أخفِ رسائله */
+          document.querySelectorAll(`.msg-row[data-sender="${sender}"]`)
+            .forEach(r => r.style.display = 'none');
+          showToast(`🚫 تم تجاهل ${sender}`);
+        }
+        _saveIgnored();
+      }
+    });
+  }
+
+  /* ── تبليغ ── */
+  if (!isMine) {
+    items.push({
+      icon: '🚨', label: 'تبليغ', danger: true,
+      fn: () => {
+        socket.emit('reportMessage', { room_id: roomId, msg_id: msgId, by: username });
+        showToast('✅ تم إرسال البلاغ');
+      }
+    });
+  }
+
+  /* ── فاصل + مسح الشات للمشرف ── */
   if (rank >= 500) {
+    items.push({ separator: true });
     items.push({
       icon: '🗑️', label: 'مسح الشات للجميع', danger: true,
       fn: () => {
@@ -546,7 +661,7 @@ function showMessageMenu(x, y, text, msgId) {
     });
   }
 
-  _showCtxMenu(x, y, items);
+  _showCtxMenu(x, y, items, preview);
 }
 
 /* ════════════════════════════════════════
