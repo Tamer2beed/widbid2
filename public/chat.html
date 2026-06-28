@@ -383,30 +383,37 @@
 <!-- ══ STATUS DROPDOWN ══ -->
 <div class="status-overlay" id="statusOverlay" onclick="closeStatusMenu()"></div>
 <div class="status-dropdown" id="statusPopup">
-  <div class="status-dropdown-header">الحالة</div>
   <div class="status-dropdown-item" onclick="setStatus('available','🟢','متاح')">
-    <span class="sd-icon">🟢</span><span class="sd-label">متاح</span>
+    <span class="sd-icon" style="background:rgba(39,174,96,.35)">🟢</span>
+    <span class="sd-label">متاح</span>
   </div>
   <div class="status-dropdown-item" onclick="setStatus('away','⏰','بالخارج')">
-    <span class="sd-icon">⏰</span><span class="sd-label">بالخارج</span>
+    <span class="sd-icon" style="background:rgba(243,156,18,.35)">⏰</span>
+    <span class="sd-label">بالخارج</span>
   </div>
   <div class="status-dropdown-item" onclick="setStatus('busy','🔴','مشغول')">
-    <span class="sd-icon">🔴</span><span class="sd-label">مشغول</span>
+    <span class="sd-icon" style="background:rgba(231,76,60,.35)">🚫</span>
+    <span class="sd-label">مشغول</span>
   </div>
   <div class="status-dropdown-item" onclick="setStatus('phone','📞','هاتف')">
-    <span class="sd-icon">📞</span><span class="sd-label">هاتف</span>
+    <span class="sd-icon" style="background:rgba(52,152,219,.35)">📞</span>
+    <span class="sd-label">هاتف</span>
   </div>
   <div class="status-dropdown-item" onclick="setStatus('food','🍴','طعام')">
-    <span class="sd-icon">🍴</span><span class="sd-label">طعام</span>
+    <span class="sd-icon" style="background:rgba(46,204,113,.35)">🍴</span>
+    <span class="sd-label">طعام</span>
   </div>
   <div class="status-dropdown-item" onclick="setStatus('pray','🕌','صلاة')">
-    <span class="sd-icon">🕌</span><span class="sd-label">صلاة</span>
+    <span class="sd-icon" style="background:rgba(155,89,182,.35)">🕌</span>
+    <span class="sd-label">صلاة</span>
   </div>
   <div class="status-dropdown-item" onclick="setStatus('sleep','💤','نائم')">
-    <span class="sd-icon">💤</span><span class="sd-label">نائم</span>
+    <span class="sd-icon" style="background:rgba(142,68,173,.35)">💤</span>
+    <span class="sd-label">نائم</span>
   </div>
   <div class="status-dropdown-item" onclick="setStatus('car','🚗','سيارة')">
-    <span class="sd-icon">🚗</span><span class="sd-label">سيارة</span>
+    <span class="sd-icon" style="background:rgba(231,76,60,.35)">🚗</span>
+    <span class="sd-label">سيارة</span>
   </div>
 </div>
 <!-- ══ EMOJI PANEL ══ -->
