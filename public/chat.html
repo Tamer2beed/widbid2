@@ -772,16 +772,19 @@
 
 <script>
 /* ══ SETTINGS LOGIC ══ */
+let _selectedFontColor = localStorage.getItem('stgFontColor') || '#ffffff';
+
 function openSettings() {
   closeSideMenu();
+  /* تحديث الملف الشخصي */
   const img = document.getElementById('settingsAvatarImg');
   const usr = document.getElementById('settingsUsername');
+  const rkEl= document.getElementById('settingsRankLabel');
   if (usr) usr.textContent = localStorage.getItem('username') || '—';
   if (img) {
     const av = localStorage.getItem('avatar') || 'av1.svg';
     img.src = av.startsWith('data:') ? av : '/avatars/' + av;
   }
-  const rkEl = document.getElementById('settingsRankLabel');
   if (rkEl) {
     const r = parseInt(localStorage.getItem('rank')||'100');
     const L = {100:'زائر',200:'عضو',300:'اسم محمي',400:'اسم ملكي',500:'مشرف',
@@ -794,84 +797,150 @@ function openSettings() {
   document.getElementById('settingsOverlay').classList.add('show');
   document.getElementById('settingsPanel').classList.add('show');
 }
+
 function closeSettings() {
   document.getElementById('settingsPanel')?.classList.remove('show');
   document.getElementById('settingsOverlay')?.classList.remove('show');
+  /* طبّق الإعدادات على الشات عند الإغلاق */
+  applySettingsToChat();
 }
 
 function loadSettings() {
   const s = JSON.parse(localStorage.getItem('chatSettings') || '{}');
-  if (s.muteAll      != null) document.getElementById('stgMuteAll').checked      = s.muteAll;
-  if (s.muteSpeaking != null) document.getElementById('stgMuteSpeaking').checked = s.muteSpeaking;
-  if (s.muteMention  != null) document.getElementById('stgMuteMention').checked  = s.muteMention;
-  if (s.mutePM       != null) document.getElementById('stgMutePM').checked       = s.mutePM;
-  if (s.joinLeave    != null) document.getElementById('stgJoinLeave').checked     = s.joinLeave;
-  else document.getElementById('stgJoinLeave').checked = true;
-  if (s.autoPhone    != null) document.getElementById('stgAutoPhone').checked     = s.autoPhone;
-  if (s.autoMic      != null) document.getElementById('stgAutoMic').checked       = s.autoMic;
-  if (s.pmPref) document.querySelector(`input[name=pmPref][value="${s.pmPref}"]`).checked = true;
-  if (s.fontSize) document.getElementById('stgFontSize').value = s.fontSize;
-  if (s.fontBold != null) document.getElementById('stgFontBold').checked = s.fontBold;
-  if (s.lang) { document.getElementById('stgLangLabel').textContent = s.langLabel || 'العربية'; }
+  const setChk = (id, val, def=false) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = val != null ? val : def;
+  };
+  setChk('stgMuteAll',      s.muteAll);
+  setChk('stgMuteSpeaking', s.muteSpeaking);
+  setChk('stgMuteMention',  s.muteMention);
+  setChk('stgMutePM',       s.mutePM);
+  setChk('stgJoinLeave',    s.joinLeave, true);
+  setChk('stgAutoPhone',    s.autoPhone, true);
+  setChk('stgAutoMic',      s.autoMic, true);
+  setChk('stgFontBold',     s.fontBold);
+
+  if (s.pmPref) {
+    const el = document.querySelector(`input[name=pmPref][value="${s.pmPref}"]`);
+    if (el) el.checked = true;
+  }
+  const sizeEl = document.getElementById('stgFontSize');
+  if (sizeEl && s.fontSize) sizeEl.value = s.fontSize;
+
+  /* استعادة لون الخط */
+  _selectedFontColor = s.fontColor || '#ffffff';
+  document.querySelectorAll('.sp-color-dot').forEach(d => {
+    d.classList.toggle('selected', d.dataset.color === _selectedFontColor);
+  });
+
+  /* اللغة */
+  if (s.langLabel) {
+    const lbl = document.getElementById('stgLangLabel');
+    if (lbl) lbl.textContent = s.langLabel;
+    const code = s.lang || 'ar';
+    ['ar','en','fr','de','tr','fa'].forEach(c => {
+      const el = document.getElementById('langCheck_' + c);
+      if (el) el.textContent = c === code ? '●' : '';
+    });
+  }
+
   applyFontPreview();
 }
 
 function saveSettings() {
   const s = {
-    muteAll     : document.getElementById('stgMuteAll').checked,
-    muteSpeaking: document.getElementById('stgMuteSpeaking').checked,
-    muteMention : document.getElementById('stgMuteMention').checked,
-    mutePM      : document.getElementById('stgMutePM').checked,
-    joinLeave   : document.getElementById('stgJoinLeave').checked,
-    autoPhone   : document.getElementById('stgAutoPhone').checked,
-    autoMic     : document.getElementById('stgAutoMic').checked,
+    muteAll     : document.getElementById('stgMuteAll')?.checked,
+    muteSpeaking: document.getElementById('stgMuteSpeaking')?.checked,
+    muteMention : document.getElementById('stgMuteMention')?.checked,
+    mutePM      : document.getElementById('stgMutePM')?.checked,
+    joinLeave   : document.getElementById('stgJoinLeave')?.checked,
+    autoPhone   : document.getElementById('stgAutoPhone')?.checked,
+    autoMic     : document.getElementById('stgAutoMic')?.checked,
+    fontBold    : document.getElementById('stgFontBold')?.checked,
+    fontSize    : document.getElementById('stgFontSize')?.value || '14',
+    fontColor   : _selectedFontColor,
     pmPref      : document.querySelector('input[name=pmPref]:checked')?.value || 'members',
-    fontSize    : document.getElementById('stgFontSize').value,
-    fontBold    : document.getElementById('stgFontBold').checked,
     lang        : localStorage.getItem('stgLang') || 'ar',
-    langLabel   : document.getElementById('stgLangLabel').textContent,
+    langLabel   : document.getElementById('stgLangLabel')?.textContent || 'العربية',
   };
   localStorage.setItem('chatSettings', JSON.stringify(s));
+  localStorage.setItem('stgFontColor', _selectedFontColor);
+  /* طبّق فوراً */
+  applySettingsToChat();
 }
 
-let _selectedFontColor = '#ffffff';
+/* ══ تطبيق الإعدادات على الشات فعلياً ══ */
+function applySettingsToChat() {
+  const s = JSON.parse(localStorage.getItem('chatSettings') || '{}');
+  const size  = s.fontSize  || '14';
+  const bold  = s.fontBold  ? '700' : '400';
+  const color = s.fontColor || '#ffffff';
 
+  /* أضف CSS ديناميكي */
+  let styleEl = document.getElementById('chatSettingsStyle');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'chatSettingsStyle';
+    document.head.appendChild(styleEl);
+  }
+  styleEl.textContent = `
+    .msg-text {
+      font-size: ${size}px !important;
+      font-weight: ${bold} !important;
+      color: ${color} !important;
+    }
+    .msg-sender {
+      font-size: ${Math.max(10, parseInt(size)-2)}px !important;
+    }
+  `;
+}
+
+/* ══ picker اللون ══ */
 function pickFontColor(el) {
   document.querySelectorAll('.sp-color-dot').forEach(d => d.classList.remove('selected'));
   el.classList.add('selected');
   _selectedFontColor = el.dataset.color;
   applyFontPreview();
+  saveSettings();
 }
 
+/* ══ معاينة الخط ══ */
 function applyFontPreview() {
-  const size  = document.getElementById('stgFontSize').value;
-  const bold  = document.getElementById('stgFontBold').checked;
+  const size  = document.getElementById('stgFontSize')?.value || '14';
+  const bold  = document.getElementById('stgFontBold')?.checked;
   const prev  = document.getElementById('stgFontPreview');
   if (prev) {
     prev.style.fontSize   = size + 'px';
     prev.style.fontWeight = bold ? '700' : '400';
     prev.style.color      = _selectedFontColor;
   }
-  saveSettings();
 }
 
+/* ══ dropdown اللغة ══ */
 function toggleLangDropdown() {
   const dd = document.getElementById('stgLangDropdown');
-  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+  if (dd) dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
 }
 
 function pickLang(code, label) {
-  document.getElementById('stgLangLabel').textContent = label;
-  document.getElementById('stgLangDropdown').style.display = 'none';
+  const lbl = document.getElementById('stgLangLabel');
+  const dd  = document.getElementById('stgLangDropdown');
+  if (lbl) lbl.textContent = label;
+  if (dd)  dd.style.display = 'none';
   localStorage.setItem('stgLang', code);
-  /* حدّث علامة الاختيار */
   ['ar','en','fr','de','tr','fa'].forEach(c => {
     const el = document.getElementById('langCheck_' + c);
     if (el) el.textContent = c === code ? '●' : '';
   });
   saveSettings();
 }
+
+/* ══ تطبيق الإعدادات عند تحميل الصفحة ══ */
+document.addEventListener('DOMContentLoaded', () => {
+  applySettingsToChat();
+});
 </script>
+
 
 <!-- ══ AVATAR PICKER ══ -->
 <div class="avatar-picker-overlay" id="avatarPickerOverlay">
