@@ -586,53 +586,312 @@
 <div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
 <div class="settings-panel" id="settingsPanel">
 
-  <div class="settings-header">
-    <span>⚙️ الإعدادات</span>
-    <span class="settings-close" onclick="closeSettings()">✕</span>
+  <!-- هيدر -->
+  <div class="sp-header">
+    <button class="sp-back" onclick="closeSettings()">✕</button>
+    <span class="sp-title">الإعدادات</span>
   </div>
 
-  <!-- الملف الشخصي -->
-  <div class="settings-section">
-    <div class="settings-profile-row">
-      <div class="settings-avatar-wrap" onclick="closeSettings(); openAvatarPicker()">
-        <img id="settingsAvatarImg" src="/avatars/av1.svg" class="settings-avatar-img" alt="avatar">
-        <div class="settings-avatar-edit">✏️</div>
+  <div class="sp-body">
+
+    <!-- ══ الملف الشخصي ══ -->
+    <div class="sp-profile-card">
+      <div class="sp-avatar-wrap" onclick="closeSettings();openAvatarPicker()">
+        <img id="settingsAvatarImg" src="/avatars/av1.svg" class="sp-avatar-img" onerror="this.src='/avatars/av1.svg'">
+        <div class="sp-avatar-edit">✏️</div>
       </div>
-      <div class="settings-profile-info">
-        <div class="settings-username" id="settingsUsername">—</div>
-        <button class="settings-btn-avatar" id="settingsChangeAvatar">
-          تغيير الصورة
-        </button>
+      <div class="sp-profile-info">
+        <div class="sp-username" id="settingsUsername">—</div>
+        <button class="sp-change-avatar-btn" onclick="closeSettings();openAvatarPicker()">تغيير الصورة</button>
       </div>
     </div>
-  </div>
 
-  <!-- الحالة -->
-  <div class="settings-section">
-    <div class="settings-label">الحالة</div>
-    <div class="settings-status-grid">
-      <div class="ssg-item" onclick="setStatusFromSettings('available','🟢','متاح')">🟢 متاح</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('away','⏰','بالخارج')">⏰ بالخارج</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('busy','🔴','مشغول')">🔴 مشغول</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('phone','📞','هاتف')">📞 هاتف</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('food','🍴','طعام')">🍴 طعام</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('pray','🕌','صلاة')">🕌 صلاة</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('sleep','💤','نائم')">💤 نائم</div>
-      <div class="ssg-item" onclick="setStatusFromSettings('car','🚗','سيارة')">🚗 سيارة</div>
+    <!-- ══ الإشعارات ══ -->
+    <div class="sp-section-title">الإشعارات</div>
+    <div class="sp-card">
+      <div class="sp-toggle-row">
+        <span>إلغاء التنبيهات الصوتية</span>
+        <label class="sp-toggle"><input type="checkbox" id="stgMuteAll" onchange="saveSettings()"><span class="sp-slider"></span></label>
+      </div>
+      <div class="sp-divider"></div>
+      <div class="sp-toggle-row">
+        <span>إلغاء التنبيه أثناء التحدث</span>
+        <label class="sp-toggle"><input type="checkbox" id="stgMuteSpeaking" onchange="saveSettings()"><span class="sp-slider"></span></label>
+      </div>
+      <div class="sp-divider"></div>
+      <div class="sp-toggle-row">
+        <span>إلغاء تنبيه تذكير الاسم</span>
+        <label class="sp-toggle"><input type="checkbox" id="stgMuteMention" onchange="saveSettings()"><span class="sp-slider"></span></label>
+      </div>
+      <div class="sp-divider"></div>
+      <div class="sp-toggle-row">
+        <span>إلغاء تنبيه الرسائل الخاصة</span>
+        <label class="sp-toggle"><input type="checkbox" id="stgMutePM" onchange="saveSettings()"><span class="sp-slider"></span></label>
+      </div>
+      <div class="sp-divider"></div>
+      <div class="sp-toggle-row">
+        <span>تنبيهات الدخول والخروج</span>
+        <label class="sp-toggle"><input type="checkbox" id="stgJoinLeave" onchange="saveSettings()"><span class="sp-slider"></span></label>
+      </div>
     </div>
-  </div>
 
-  <!-- خروج -->
-  <div class="settings-section">
-    <button class="settings-btn-danger" onclick="leaveRoom()">🚪 خروج من الغرفة</button>
-  </div>
+    <!-- ══ اللغة ══ -->
+    <div class="sp-section-title">اللغة</div>
+    <div class="sp-card">
+      <div class="sp-select-row" onclick="toggleLangDropdown()">
+        <span id="stgLangLabel">العربية</span>
+        <span class="sp-select-arrow">▾</span>
+      </div>
+      <div class="sp-lang-dropdown" id="stgLangDropdown" style="display:none">
+        <div class="sp-lang-item" onclick="pickLang('ar','العربية')">العربية <span id="langCheck_ar">●</span></div>
+        <div class="sp-lang-item" onclick="pickLang('en','English')">English <span id="langCheck_en"></span></div>
+        <div class="sp-lang-item" onclick="pickLang('fr','Français')">Français <span id="langCheck_fr"></span></div>
+        <div class="sp-lang-item" onclick="pickLang('de','Deutsch')">Deutsch <span id="langCheck_de"></span></div>
+        <div class="sp-lang-item" onclick="pickLang('tr','Türkçe')">Türkçe <span id="langCheck_tr"></span></div>
+        <div class="sp-lang-item" onclick="pickLang('fa','فارسی')">فارسی <span id="langCheck_fa"></span></div>
+      </div>
+    </div>
 
-</div>
+    <!-- ══ الخط ══ -->
+    <div class="sp-section-title">الخط</div>
+    <div class="sp-card">
+      <div class="sp-font-preview" id="stgFontPreview">Test Message</div>
+      <div class="sp-toggle-row" style="margin-top:10px">
+        <span>عريض</span>
+        <label class="sp-toggle"><input type="checkbox" id="stgFontBold" onchange="applyFontPreview()"><span class="sp-slider"></span></label>
+      </div>
+      <div class="sp-divider"></div>
+      <div class="sp-size-row">
+        <span class="sp-size-min">صغير</span>
+        <input type="range" id="stgFontSize" min="10" max="20" value="14" class="sp-range" oninput="applyFontPreview()">
+        <span class="sp-size-max">كبير</span>
+      </div>
+    </div>
+
+    <!-- ══ الرسائل الخاصة ══ -->
+    <div class="sp-section-title">الرسائل الخاصة</div>
+    <div class="sp-card">
+      <div class="sp-radio-row"><label><input type="radio" name="pmPref" value="none" id="stgPMNone" onchange="saveSettings()"> رفض جميع الرسائل الخاصة</label></div>
+      <div class="sp-divider"></div>
+      <div class="sp-radio-row"><label><input type="radio" name="pmPref" value="members" id="stgPMMembers" checked onchange="saveSettings()"> قبول فقط من الأعضاء والمسجلين</label></div>
+      <div class="sp-divider"></div>
+      <div class="sp-radio-row"><label><input type="radio" name="pmPref" value="all" id="stgPMAll" onchange="saveSettings()"> قبول جميع الرسائل الخاصة</label></div>
+    </div>
+
+    <!-- ══ عام ══ -->
+    <div class="sp-section-title">عام</div>
+    <div class="sp-card">
+      <div class="sp-toggle-row">
+        <span>تحويل الحالة لـ هاتف أثناء المكالمات</span>
+        <label class="sp-toggle"><input type="checkbox" id="stgAutoPhone" checked onchange="saveSettings()"><span class="sp-slider"></span></label>
+      </div>
+      <div class="sp-divider"></div>
+      <div class="sp-toggle-row">
+        <span>اسحب المايك عند وجود مكالمة هاتفية</span>
+        <label class="sp-toggle"><input type="checkbox" id="stgAutoMic" checked onchange="saveSettings()"><span class="sp-slider"></span></label>
+      </div>
+    </div>
+
+    <!-- ══ خروج ══ -->
+    <button class="sp-exit-btn" onclick="leaveRoom()">🚪 خروج من الغرفة</button>
+
+  </div><!-- /sp-body -->
+
+</div><!-- /settingsPanel -->
+
+<style>
+/* ══ SETTINGS PANEL ══ */
+.settings-overlay { position:fixed;inset:0;z-index:190;background:rgba(0,0,0,.45);display:none; }
+.settings-overlay.show { display:block; }
+
+.settings-panel {
+  position:fixed;bottom:0;left:0;right:0;z-index:191;
+  background:#f2f2f7;border-radius:20px 20px 0 0;
+  max-height:90vh;overflow-y:auto;
+  transform:translateY(100%);transition:transform .25s ease;
+  direction:rtl;
+}
+.settings-panel.show { transform:translateY(0); }
+
+.sp-header {
+  display:flex;align-items:center;gap:12px;
+  padding:16px 18px 12px;background:#fff;
+  border-bottom:1px solid #e0e0e0;position:sticky;top:0;z-index:1;
+}
+.sp-back { background:none;border:none;font-size:18px;color:#666;cursor:pointer;padding:4px 8px; }
+.sp-title { font-size:17px;font-weight:700;color:#1a1a2e;flex:1;text-align:right; }
+
+.sp-body { padding:14px 14px 40px; }
+
+/* بطاقة الملف الشخصي */
+.sp-profile-card {
+  display:flex;align-items:center;gap:14px;
+  background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;
+}
+.sp-avatar-wrap { position:relative;cursor:pointer;flex-shrink:0; }
+.sp-avatar-img { width:64px;height:64px;border-radius:14px;border:3px solid var(--wevo-top,#0099CC);object-fit:cover; }
+.sp-avatar-edit {
+  position:absolute;bottom:-4px;right:-4px;
+  background:var(--wevo-top,#0099CC);color:#fff;
+  border-radius:50%;width:22px;height:22px;
+  display:flex;align-items:center;justify-content:center;font-size:11px;
+}
+.sp-profile-info { flex:1; }
+.sp-username { font-size:17px;font-weight:700;color:#1a1a2e;margin-bottom:8px; }
+.sp-change-avatar-btn {
+  background:rgba(0,153,204,.1);color:var(--wevo-top,#0099CC);
+  border:none;border-radius:8px;padding:7px 14px;
+  font-size:13px;font-weight:600;cursor:pointer;
+}
+
+/* عناوين الأقسام */
+.sp-section-title {
+  font-size:15px;font-weight:700;color:#1a1a2e;
+  margin:16px 4px 8px;text-align:right;
+}
+
+/* البطاقات */
+.sp-card { background:#fff;border-radius:14px;overflow:hidden;margin-bottom:6px; }
+.sp-divider { height:1px;background:#f0f0f0;margin:0 14px; }
+
+/* صف toggle */
+.sp-toggle-row {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 14px;font-size:14px;color:#333;direction:rtl;
+}
+
+/* toggle switch */
+.sp-toggle { position:relative;width:44px;height:26px;flex-shrink:0; }
+.sp-toggle input { opacity:0;width:0;height:0; }
+.sp-slider {
+  position:absolute;inset:0;background:#ccc;border-radius:26px;cursor:pointer;
+  transition:.2s;
+}
+.sp-slider::before {
+  content:'';position:absolute;width:20px;height:20px;
+  left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;
+}
+.sp-toggle input:checked + .sp-slider { background:var(--wevo-top,#0099CC); }
+.sp-toggle input:checked + .sp-slider::before { transform:translateX(18px); }
+
+/* dropdown اللغة */
+.sp-select-row {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 14px;font-size:14px;color:#333;cursor:pointer;
+}
+.sp-select-arrow { color:#aaa;font-size:16px; }
+.sp-lang-dropdown { border-top:1px solid #f0f0f0; }
+.sp-lang-item {
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 14px;font-size:14px;color:#333;cursor:pointer;
+  border-bottom:1px solid #f5f5f5;
+}
+.sp-lang-item:last-child { border-bottom:none; }
+.sp-lang-item:active { background:#f7f7ff; }
+
+/* الخط */
+.sp-font-preview {
+  font-size:17px;font-weight:700;text-align:center;
+  padding:16px;border-bottom:1px solid #f0f0f0;color:#222;
+}
+.sp-size-row {
+  display:flex;align-items:center;gap:10px;padding:12px 14px;direction:rtl;
+}
+.sp-size-min,.sp-size-max { font-size:12px;color:#999;white-space:nowrap; }
+.sp-range { flex:1;accent-color:var(--wevo-top,#0099CC); }
+
+/* radio */
+.sp-radio-row { padding:13px 14px;font-size:14px;color:#333;direction:rtl; }
+.sp-radio-row label { display:flex;align-items:center;gap:10px;cursor:pointer; }
+.sp-radio-row input[type=radio] { accent-color:var(--wevo-top,#0099CC);width:18px;height:18px; }
+
+/* زر الخروج */
+.sp-exit-btn {
+  width:100%;margin-top:20px;padding:14px;
+  background:#fff0f0;color:#e53935;
+  border:1px solid #ffcdd2;border-radius:14px;
+  font-size:15px;font-weight:700;cursor:pointer;
+}
+</style>
 
 <script>
-function setStatusFromSettings(key, icon, label) {
-  if (typeof setStatus === 'function') setStatus(key, icon, label);
-  closeSettings();
+/* ══ SETTINGS LOGIC ══ */
+function openSettings() {
+  closeSideMenu();
+  const img = document.getElementById('settingsAvatarImg');
+  const usr = document.getElementById('settingsUsername');
+  if (usr) usr.textContent = localStorage.getItem('username') || '—';
+  if (img) {
+    const av = localStorage.getItem('avatar') || 'av1.svg';
+    img.src = av.startsWith('data:') ? av : '/avatars/' + av;
+  }
+  loadSettings();
+  document.getElementById('settingsOverlay').classList.add('show');
+  document.getElementById('settingsPanel').classList.add('show');
+}
+function closeSettings() {
+  document.getElementById('settingsPanel')?.classList.remove('show');
+  document.getElementById('settingsOverlay')?.classList.remove('show');
+}
+
+function loadSettings() {
+  const s = JSON.parse(localStorage.getItem('chatSettings') || '{}');
+  if (s.muteAll      != null) document.getElementById('stgMuteAll').checked      = s.muteAll;
+  if (s.muteSpeaking != null) document.getElementById('stgMuteSpeaking').checked = s.muteSpeaking;
+  if (s.muteMention  != null) document.getElementById('stgMuteMention').checked  = s.muteMention;
+  if (s.mutePM       != null) document.getElementById('stgMutePM').checked       = s.mutePM;
+  if (s.joinLeave    != null) document.getElementById('stgJoinLeave').checked     = s.joinLeave;
+  else document.getElementById('stgJoinLeave').checked = true;
+  if (s.autoPhone    != null) document.getElementById('stgAutoPhone').checked     = s.autoPhone;
+  if (s.autoMic      != null) document.getElementById('stgAutoMic').checked       = s.autoMic;
+  if (s.pmPref) document.querySelector(`input[name=pmPref][value="${s.pmPref}"]`).checked = true;
+  if (s.fontSize) document.getElementById('stgFontSize').value = s.fontSize;
+  if (s.fontBold != null) document.getElementById('stgFontBold').checked = s.fontBold;
+  if (s.lang) { document.getElementById('stgLangLabel').textContent = s.langLabel || 'العربية'; }
+  applyFontPreview();
+}
+
+function saveSettings() {
+  const s = {
+    muteAll     : document.getElementById('stgMuteAll').checked,
+    muteSpeaking: document.getElementById('stgMuteSpeaking').checked,
+    muteMention : document.getElementById('stgMuteMention').checked,
+    mutePM      : document.getElementById('stgMutePM').checked,
+    joinLeave   : document.getElementById('stgJoinLeave').checked,
+    autoPhone   : document.getElementById('stgAutoPhone').checked,
+    autoMic     : document.getElementById('stgAutoMic').checked,
+    pmPref      : document.querySelector('input[name=pmPref]:checked')?.value || 'members',
+    fontSize    : document.getElementById('stgFontSize').value,
+    fontBold    : document.getElementById('stgFontBold').checked,
+    lang        : localStorage.getItem('stgLang') || 'ar',
+    langLabel   : document.getElementById('stgLangLabel').textContent,
+  };
+  localStorage.setItem('chatSettings', JSON.stringify(s));
+}
+
+function applyFontPreview() {
+  const size = document.getElementById('stgFontSize').value;
+  const bold = document.getElementById('stgFontBold').checked;
+  const prev = document.getElementById('stgFontPreview');
+  if (prev) { prev.style.fontSize = size + 'px'; prev.style.fontWeight = bold ? '700' : '400'; }
+  saveSettings();
+}
+
+function toggleLangDropdown() {
+  const dd = document.getElementById('stgLangDropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+function pickLang(code, label) {
+  document.getElementById('stgLangLabel').textContent = label;
+  document.getElementById('stgLangDropdown').style.display = 'none';
+  localStorage.setItem('stgLang', code);
+  /* حدّث علامة الاختيار */
+  ['ar','en','fr','de','tr','fa'].forEach(c => {
+    const el = document.getElementById('langCheck_' + c);
+    if (el) el.textContent = c === code ? '●' : '';
+  });
+  saveSettings();
 }
 </script>
 
