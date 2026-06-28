@@ -314,10 +314,34 @@ function sendQuick(emoji) {
 
 /* ── القائمة الجانبية ───────────────────── */
 function openSideMenu() {
-  document.getElementById('sideMenu').classList.add('open');
-  document.getElementById('overlay').classList.add('show');
+  const menu = document.getElementById('sideMenu');
+  /* toggle — إذا مفتوح أغلق */
+  if (menu.classList.contains('open')) { closeSideMenu(); return; }
+
+  /* تحديث الملف الشخصي */
+  const smAv = document.getElementById('smAvatar');
+  const smUs = document.getElementById('smUsername');
+  const smRk = document.getElementById('smRankLabel');
+  if (smUs) smUs.textContent = localStorage.getItem('username') || '—';
+  if (smAv) {
+    const av = localStorage.getItem('avatar') || 'av1.svg';
+    smAv.src = av.startsWith('data:') ? av : '/avatars/' + av;
+  }
+  if (smRk) {
+    const r = parseInt(localStorage.getItem('rank') || '100');
+    const L = {100:'زائر',200:'عضو',300:'اسم محمي',400:'اسم ملكي',
+               500:'مشرف',600:'مشرف عام',700:'ماستر',800:'سوبر ماستر',
+               900:'روت',1000:'سوبر روت',1100:'أونر',1200:'سوبر أونر'};
+    const steps = [1200,1100,1000,900,800,700,600,500,400,300,200,100];
+    for (const s of steps) { if (r >= s) { smRk.textContent = L[s]; break; } }
+  }
+
+  /* أظهر زر مسح الشات للمشرف */
   const clearBtn = document.getElementById('clearTextBtn');
   if (clearBtn) clearBtn.style.display = userRank >= 500 ? 'flex' : 'none';
+
+  menu.classList.add('open');
+  document.getElementById('overlay').classList.add('show');
 }
 
 function closeSideMenu() {
