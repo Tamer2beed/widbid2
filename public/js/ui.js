@@ -349,27 +349,20 @@ function closeSideMenu() {
   document.getElementById('overlay').classList.remove('show');
 }
 
-function openSettings() {
-  closeSideMenu();
-  /* حدّث بيانات الشاشة قبل الفتح */
-  const uname = localStorage.getItem('username') || '—';
-  document.getElementById('settingsUsername').textContent  = uname;
-  document.getElementById('settingsAvatarImg').src =
-    getAvatarSrc(window._myAvatar || 'av1.svg');
-
-  /* زر تغيير الصورة — يفتح picker مباشرة */
-  document.getElementById('settingsChangeAvatar').onclick = () => {
-    closeSettings();
-    openAvatarPicker();
+/* openSettings + closeSettings مُعرَّفتان داخل chat.html */
+/* هذه نسخة احتياطية في حال لم تُحمَّل بعد */
+if (typeof openSettings === 'undefined') {
+  window.openSettings = function() {
+    closeSideMenu();
+    document.getElementById('settingsPanel').classList.add('show');
+    document.getElementById('settingsOverlay').classList.add('show');
   };
-
-  document.getElementById('settingsPanel').classList.add('show');
-  document.getElementById('settingsOverlay').classList.add('show');
 }
-
-function closeSettings() {
-  document.getElementById('settingsPanel')?.classList.remove('show');
-  document.getElementById('settingsOverlay')?.classList.remove('show');
+if (typeof closeSettings === 'undefined') {
+  window.closeSettings = function() {
+    document.getElementById('settingsPanel')?.classList.remove('show');
+    document.getElementById('settingsOverlay')?.classList.remove('show');
+  };
 }
 
 function closeAll() {
