@@ -595,12 +595,12 @@
       </div>
       <div class="sp-toggle-row">
         <span>عريض</span>
-        <label class="sp-toggle"><input type="checkbox" id="stgFontBold" onchange="applyFontPreview()"><span class="sp-slider"></span></label>
+        <label class="sp-toggle"><input type="checkbox" id="stgFontBold" onchange="applyFontPreview();saveSettings()"><span class="sp-slider"></span></label>
       </div>
       <div class="sp-divider"></div>
       <div class="sp-size-row">
         <span class="sp-size-min">صغير</span>
-        <input type="range" id="stgFontSize" min="10" max="20" value="14" class="sp-range" oninput="applyFontPreview()">
+        <input type="range" id="stgFontSize" min="10" max="20" value="14" class="sp-range" oninput="applyFontPreview();saveSettings()">
         <span class="sp-size-max">كبير</span>
       </div>
     </div>
@@ -871,28 +871,11 @@ function saveSettings() {
 
 /* ══ تطبيق الإعدادات على الشات فعلياً ══ */
 function applySettingsToChat() {
-  const s = JSON.parse(localStorage.getItem('chatSettings') || '{}');
+  const s     = JSON.parse(localStorage.getItem('chatSettings') || '{}');
   const size  = s.fontSize  || '14';
   const bold  = s.fontBold  ? '700' : '400';
   const color = s.fontColor || '#ffffff';
-
-  /* أضف CSS ديناميكي */
-  let styleEl = document.getElementById('chatSettingsStyle');
-  if (!styleEl) {
-    styleEl = document.createElement('style');
-    styleEl.id = 'chatSettingsStyle';
-    document.head.appendChild(styleEl);
-  }
-  styleEl.textContent = `
-    .msg-text {
-      font-size: ${size}px !important;
-      font-weight: ${bold} !important;
-      color: ${color} !important;
-    }
-    .msg-sender {
-      font-size: ${Math.max(10, parseInt(size)-2)}px !important;
-    }
-  `;
+  _applyFontToChat(size, bold, color);
 }
 
 /* ══ picker اللون ══ */
@@ -904,7 +887,7 @@ function pickFontColor(el) {
   saveSettings();
 }
 
-/* ══ معاينة الخط ══ */
+/* ══ معاينة الخط + تطبيق فوري ══ */
 function applyFontPreview() {
   const size  = document.getElementById('stgFontSize')?.value || '14';
   const bold  = document.getElementById('stgFontBold')?.checked;
@@ -914,6 +897,24 @@ function applyFontPreview() {
     prev.style.fontWeight = bold ? '700' : '400';
     prev.style.color      = _selectedFontColor;
   }
+  /* طبّق على الشات فوراً */
+  _applyFontToChat(size, bold ? '700':'400', _selectedFontColor);
+}
+
+function _applyFontToChat(size, weight, color) {
+  let st = document.getElementById('chatSettingsStyle');
+  if (!st) {
+    st = document.createElement('style');
+    st.id = 'chatSettingsStyle';
+    document.head.appendChild(st);
+  }
+  st.textContent = [
+    '.msg-text {',
+    '  font-size: ' + size + 'px !important;',
+    '  font-weight: ' + weight + ' !important;',
+    '  color: ' + color + ' !important;',
+    '}',
+  ].join('\n');
 }
 
 /* ══ dropdown اللغة ══ */
