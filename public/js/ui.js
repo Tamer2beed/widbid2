@@ -386,8 +386,11 @@ function openStatusMenu() {
   closeSideMenu();
   const dropdown = document.getElementById('statusPopup');
   const overlay  = document.getElementById('statusOverlay');
-  dropdown.classList.add('show');
-  overlay.classList.add('show');
+  /* تأخير بسيط ليظهر بعد إغلاق القائمة */
+  setTimeout(() => {
+    dropdown.classList.add('show');
+    overlay.classList.add('show');
+  }, 60);
 }
 
 function closeStatusMenu() {
