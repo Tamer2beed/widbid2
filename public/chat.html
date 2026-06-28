@@ -108,14 +108,16 @@
   top           : 46px;
   right         : 4px;
   width         : 155px;
-  background    : rgba(14,14,24,.55);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  height        : fit-content !important;
+  max-height    : fit-content !important;
+  background    : rgba(10,10,20,.45);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
   border-radius : 10px;
-  border        : 1px solid rgba(255,255,255,.07);
+  border        : 1px solid rgba(255,255,255,.06);
   z-index       : 119;
-  overflow      : hidden;
-  box-shadow    : 0 4px 20px rgba(0,0,0,.45);
+  overflow      : visible !important;
+  box-shadow    : 0 4px 20px rgba(0,0,0,.4);
   direction     : rtl;
   transform     : scale(.85) translateY(-8px);
   transform-origin: top right;
@@ -123,6 +125,8 @@
   pointer-events: none;
   transition    : transform .15s cubic-bezier(.34,1.5,.64,1),
                   opacity .1s ease;
+  display       : flex;
+  flex-direction: column;
 }
 .side-menu.open, #sideMenu.open {
   transform     : scale(1) translateY(0);
