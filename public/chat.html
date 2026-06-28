@@ -95,7 +95,7 @@
   font-size:14px; font-weight:600; cursor:pointer;
 }
 
-/* ══ DROPDOWN MENU — Compact Style ══ */
+/* ══ DROPDOWN MENU — Mini Style ══ */
 #overlay {
   position:fixed; inset:0; z-index:118;
   background:transparent;
@@ -105,25 +105,24 @@
 
 .side-menu, #sideMenu {
   position      : fixed;
-  top           : 48px;
-  right         : 6px;
-  width         : 185px;
-  max-height    : calc(100vh - 60px);
-  background    : rgba(22,22,38,.82);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-radius : 12px;
-  border        : 1px solid rgba(255,255,255,.08);
+  top           : 46px;
+  right         : 4px;
+  width         : 155px;
+  background    : rgba(18,18,30,.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius : 10px;
+  border        : 1px solid rgba(255,255,255,.07);
   z-index       : 119;
-  overflow-y    : auto;
-  overflow-x    : hidden;
-  box-shadow    : 0 6px 24px rgba(0,0,0,.4);
+  overflow      : hidden;
+  box-shadow    : 0 4px 20px rgba(0,0,0,.45);
   direction     : rtl;
-  transform     : scale(.88) translateY(-10px);
+  transform     : scale(.85) translateY(-8px);
+  transform-origin: top right;
   opacity       : 0;
   pointer-events: none;
-  transition    : transform .16s cubic-bezier(.34,1.4,.64,1),
-                  opacity .12s ease;
+  transition    : transform .15s cubic-bezier(.34,1.5,.64,1),
+                  opacity .1s ease;
 }
 .side-menu.open, #sideMenu.open {
   transform     : scale(1) translateY(0);
@@ -135,45 +134,45 @@
 .sm-profile {
   display    : flex;
   align-items: center;
-  gap        : 8px;
-  padding    : 10px 10px 9px;
-  border-bottom: 1px solid rgba(255,255,255,.07);
+  gap        : 6px;
+  padding    : 8px 8px 7px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
 }
 .sm-avatar {
-  width:34px; height:34px; border-radius:8px;
-  border:1.5px solid rgba(255,255,255,.25);
+  width:28px; height:28px; border-radius:7px;
+  border:1.5px solid rgba(255,255,255,.2);
   object-fit:cover; flex-shrink:0;
 }
 .sm-profile-info { flex:1; min-width:0; }
 .sm-username {
-  font-size:13px; font-weight:700; color:#fff;
+  font-size:11px; font-weight:700; color:#fff;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.sm-rank-label { font-size:10px; color:rgba(255,255,255,.45); margin-top:1px; }
+.sm-rank-label { font-size:9px; color:rgba(255,255,255,.4); }
 
 /* العناصر */
 .sm-item {
   display    : flex;
   align-items: center;
-  gap        : 8px;
-  padding    : 9px 10px;
+  gap        : 6px;
+  padding    : 7px 8px;
   cursor     : pointer;
   direction  : rtl;
-  transition : background .1s;
+  transition : background .08s;
   -webkit-tap-highlight-color: transparent;
 }
-.sm-item:active { background: rgba(255,255,255,.08); }
-.sm-danger .sm-label { color: #ff5252 !important; }
+.sm-item:active { background: rgba(255,255,255,.1); }
+.sm-danger .sm-label { color: #ff5555 !important; }
 
-.sm-icon  { font-size:15px; width:18px; text-align:center; flex-shrink:0; }
-.sm-label { flex:1; font-size:13px; font-weight:500; color:rgba(255,255,255,.85); }
-.sm-arrow { color:rgba(255,255,255,.18); font-size:13px; }
+.sm-icon  { font-size:13px; width:16px; text-align:center; flex-shrink:0; }
+.sm-label { flex:1; font-size:12px; font-weight:500; color:rgba(255,255,255,.82); }
+.sm-arrow { color:rgba(255,255,255,.15); font-size:11px; }
 
-.sm-divider { height:1px; background:rgba(255,255,255,.06); margin:2px 0; }
+.sm-divider { height:1px; background:rgba(255,255,255,.05); margin:1px 0; }
 .sm-section-label {
-  padding:6px 10px 2px; font-size:9px;
-  color:rgba(255,255,255,.28); font-weight:700;
-  letter-spacing:.5px; text-align:right;
+  padding:4px 8px 2px; font-size:8px;
+  color:rgba(255,255,255,.25); font-weight:700;
+  letter-spacing:.4px; text-align:right;
 }
 </style>
 
