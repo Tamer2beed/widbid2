@@ -18,82 +18,7 @@
 .settings-overlay.show { display:block; }
 
 
-.settings-panel {
-  position:fixed; bottom:0; left:0; right:0;
-  z-index:191;
-  background:#fff;
-  border-radius:20px 20px 0 0;
-  padding:0 0 30px;
-  max-height:85vh;
-  overflow-y:auto;
-  transform:translateY(100%);
-  transition:transform .25s ease;
-}
-.settings-panel.show { transform:translateY(0); }
 
-.settings-header {
-  display:flex; justify-content:space-between; align-items:center;
-  padding:16px 20px 12px;
-  border-bottom:1px solid #f0f0f0;
-  font-size:16px; font-weight:700; color:#333;
-}
-.settings-close {
-  font-size:18px; color:#999; cursor:pointer; padding:4px 8px;
-}
-.settings-section {
-  padding:14px 20px;
-  border-bottom:1px solid #f5f5f5;
-}
-.settings-label {
-  font-size:12px; color:#999; font-weight:600;
-  margin-bottom:10px; text-transform:uppercase; letter-spacing:.5px;
-}
-.settings-profile-row {
-  display:flex; align-items:center; gap:14px;
-}
-.settings-avatar-wrap {
-  position:relative; cursor:pointer;
-  width:64px; height:64px; flex-shrink:0;
-}
-.settings-avatar-img {
-  width:64px; height:64px;
-  border-radius:12px;
-  border:3px solid #6C63FF;
-  object-fit:cover;
-}
-.settings-avatar-edit {
-  position:absolute; bottom:-4px; right:-4px;
-  background:#6C63FF; color:#fff;
-  border-radius:50%; width:22px; height:22px;
-  display:flex; align-items:center; justify-content:center;
-  font-size:11px;
-}
-.settings-profile-info { flex:1; }
-.settings-username {
-  font-size:16px; font-weight:700; color:#222; margin-bottom:8px;
-}
-.settings-btn-avatar {
-  background:#6C63FF22; color:#6C63FF;
-  border:none; border-radius:8px;
-  padding:7px 14px; font-size:13px; font-weight:600;
-  cursor:pointer;
-}
-.settings-status-grid {
-  display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
-}
-.ssg-item {
-  background:#f7f7ff; border-radius:10px;
-  padding:8px 4px; text-align:center;
-  font-size:12px; cursor:pointer;
-  transition:background .1s;
-}
-.ssg-item:active { background:#e8e8ff; }
-.settings-btn-danger {
-  width:100%; padding:12px;
-  background:#fff0f0; color:#e53935;
-  border:1px solid #ffcdd2; border-radius:10px;
-  font-size:14px; font-weight:600; cursor:pointer;
-}
 
 /* ══ DROPDOWN MENU — Mini Style ══ */
 #overlay {
@@ -594,15 +519,12 @@
 
   <div class="sp-body">
 
-    <!-- ══ الملف الشخصي ══ -->
+    <!-- ══ الملف الشخصي (عرض فقط) ══ -->
     <div class="sp-profile-card">
-      <div class="sp-avatar-wrap" onclick="closeSettings();openAvatarPicker()">
-        <img id="settingsAvatarImg" src="/avatars/av1.svg" class="sp-avatar-img" onerror="this.src='/avatars/av1.svg'">
-        <div class="sp-avatar-edit">✏️</div>
-      </div>
+      <img id="settingsAvatarImg" src="/avatars/av1.svg" class="sp-avatar-img" onerror="this.src='/avatars/av1.svg'">
       <div class="sp-profile-info">
         <div class="sp-username" id="settingsUsername">—</div>
-        <button class="sp-change-avatar-btn" onclick="closeSettings();openAvatarPicker()">تغيير الصورة</button>
+        <div class="sp-rank-label-sp" id="settingsRankLabel">زائر</div>
       </div>
     </div>
 
@@ -656,7 +578,22 @@
     <div class="sp-section-title">الخط</div>
     <div class="sp-card">
       <div class="sp-font-preview" id="stgFontPreview">Test Message</div>
-      <div class="sp-toggle-row" style="margin-top:10px">
+      <!-- ألوان الخط -->
+      <div class="sp-color-grid" id="stgColorGrid">
+        <div class="sp-color-dot selected" data-color="#ffffff" style="background:#ffffff" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#ffeb3b" style="background:#ffeb3b" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#4fc3f7" style="background:#4fc3f7" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#a5d6a7" style="background:#a5d6a7" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#ef9a9a" style="background:#ef9a9a" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#ce93d8" style="background:#ce93d8" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#ff8a65" style="background:#ff8a65" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#80cbc4" style="background:#80cbc4" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#f48fb1" style="background:#f48fb1" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#ffe082" style="background:#ffe082" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#b0bec5" style="background:#b0bec5" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#f44336" style="background:#f44336" onclick="pickFontColor(this)"></div>
+      </div>
+      <div class="sp-toggle-row">
         <span>عريض</span>
         <label class="sp-toggle"><input type="checkbox" id="stgFontBold" onchange="applyFontPreview()"><span class="sp-slider"></span></label>
       </div>
@@ -700,72 +637,79 @@
 </div><!-- /settingsPanel -->
 
 <style>
-/* ══ SETTINGS PANEL ══ */
-.settings-overlay { position:fixed;inset:0;z-index:190;background:rgba(0,0,0,.45);display:none; }
+/* ══ SETTINGS PANEL v2 ══ */
+.settings-overlay { position:fixed;inset:0;z-index:190;background:rgba(0,0,0,.5);display:none; }
 .settings-overlay.show { display:block; }
 
 .settings-panel {
   position:fixed;bottom:0;left:0;right:0;z-index:191;
-  background:#f2f2f7;border-radius:20px 20px 0 0;
-  max-height:90vh;overflow-y:auto;
+  background:rgba(14,14,24,.88);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border-radius:20px 20px 0 0;
+  max-height:92vh;overflow-y:auto;
   transform:translateY(100%);transition:transform .25s ease;
   direction:rtl;
+  border-top:1px solid rgba(255,255,255,.08);
 }
 .settings-panel.show { transform:translateY(0); }
 
+/* هيدر واضح مع زر إغلاق كبير */
 .sp-header {
-  display:flex;align-items:center;gap:12px;
-  padding:16px 18px 12px;background:#fff;
-  border-bottom:1px solid #e0e0e0;position:sticky;top:0;z-index:1;
+  display:flex;align-items:center;
+  padding:18px 18px 14px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  position:sticky;top:0;z-index:1;
+  background:rgba(14,14,24,.95);
 }
-.sp-back { background:none;border:none;font-size:18px;color:#666;cursor:pointer;padding:4px 8px; }
-.sp-title { font-size:17px;font-weight:700;color:#1a1a2e;flex:1;text-align:right; }
+.sp-back {
+  background:rgba(255,255,255,.12);border:none;
+  width:36px;height:36px;border-radius:50%;
+  font-size:16px;color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.sp-title { font-size:17px;font-weight:700;color:#fff;flex:1;text-align:center;margin-right:-36px; }
 
-.sp-body { padding:14px 14px 40px; }
+.sp-body { padding:14px 14px 50px; }
 
-/* بطاقة الملف الشخصي */
+/* بطاقة الملف الشخصي — بدون زر تغيير الصورة */
 .sp-profile-card {
   display:flex;align-items:center;gap:14px;
-  background:#fff;border-radius:14px;padding:14px;margin-bottom:14px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;padding:14px;margin-bottom:14px;
 }
-.sp-avatar-wrap { position:relative;cursor:pointer;flex-shrink:0; }
-.sp-avatar-img { width:64px;height:64px;border-radius:14px;border:3px solid var(--wevo-top,#0099CC);object-fit:cover; }
-.sp-avatar-edit {
-  position:absolute;bottom:-4px;right:-4px;
-  background:var(--wevo-top,#0099CC);color:#fff;
-  border-radius:50%;width:22px;height:22px;
-  display:flex;align-items:center;justify-content:center;font-size:11px;
-}
+.sp-avatar-img { width:54px;height:54px;border-radius:12px;border:2.5px solid rgba(255,255,255,.3);object-fit:cover; }
 .sp-profile-info { flex:1; }
-.sp-username { font-size:17px;font-weight:700;color:#1a1a2e;margin-bottom:8px; }
-.sp-change-avatar-btn {
-  background:rgba(0,153,204,.1);color:var(--wevo-top,#0099CC);
-  border:none;border-radius:8px;padding:7px 14px;
-  font-size:13px;font-weight:600;cursor:pointer;
-}
+.sp-username { font-size:16px;font-weight:700;color:#fff;margin-bottom:2px; }
+.sp-rank-label-sp { font-size:12px;color:rgba(255,255,255,.45); }
 
 /* عناوين الأقسام */
 .sp-section-title {
-  font-size:15px;font-weight:700;color:#1a1a2e;
-  margin:16px 4px 8px;text-align:right;
+  font-size:12px;font-weight:700;color:rgba(255,255,255,.4);
+  margin:18px 4px 8px;text-align:right;
+  letter-spacing:.5px;text-transform:uppercase;
 }
 
 /* البطاقات */
-.sp-card { background:#fff;border-radius:14px;overflow:hidden;margin-bottom:6px; }
-.sp-divider { height:1px;background:#f0f0f0;margin:0 14px; }
+.sp-card {
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;overflow:hidden;margin-bottom:6px;
+}
+.sp-divider { height:1px;background:rgba(255,255,255,.06);margin:0 14px; }
 
-/* صف toggle */
+/* toggle row */
 .sp-toggle-row {
   display:flex;align-items:center;justify-content:space-between;
-  padding:13px 14px;font-size:14px;color:#333;direction:rtl;
+  padding:13px 14px;font-size:14px;color:rgba(255,255,255,.85);direction:rtl;
 }
-
-/* toggle switch */
 .sp-toggle { position:relative;width:44px;height:26px;flex-shrink:0; }
 .sp-toggle input { opacity:0;width:0;height:0; }
 .sp-slider {
-  position:absolute;inset:0;background:#ccc;border-radius:26px;cursor:pointer;
-  transition:.2s;
+  position:absolute;inset:0;background:rgba(255,255,255,.15);
+  border-radius:26px;cursor:pointer;transition:.2s;
 }
 .sp-slider::before {
   content:'';position:absolute;width:20px;height:20px;
@@ -777,39 +721,51 @@
 /* dropdown اللغة */
 .sp-select-row {
   display:flex;align-items:center;justify-content:space-between;
-  padding:13px 14px;font-size:14px;color:#333;cursor:pointer;
+  padding:13px 14px;font-size:14px;color:rgba(255,255,255,.85);cursor:pointer;
 }
-.sp-select-arrow { color:#aaa;font-size:16px; }
-.sp-lang-dropdown { border-top:1px solid #f0f0f0; }
+.sp-select-arrow { color:rgba(255,255,255,.3);font-size:16px; }
+.sp-lang-dropdown { border-top:1px solid rgba(255,255,255,.06); }
 .sp-lang-item {
   display:flex;justify-content:space-between;align-items:center;
-  padding:12px 14px;font-size:14px;color:#333;cursor:pointer;
-  border-bottom:1px solid #f5f5f5;
+  padding:12px 14px;font-size:14px;color:rgba(255,255,255,.8);cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,.04);
 }
 .sp-lang-item:last-child { border-bottom:none; }
-.sp-lang-item:active { background:#f7f7ff; }
+.sp-lang-item:active { background:rgba(255,255,255,.08); }
 
-/* الخط */
+/* الخط + ألوان */
 .sp-font-preview {
   font-size:17px;font-weight:700;text-align:center;
-  padding:16px;border-bottom:1px solid #f0f0f0;color:#222;
+  padding:14px;border-bottom:1px solid rgba(255,255,255,.06);
+  color:#fff;
 }
+.sp-color-grid {
+  display:grid;grid-template-columns:repeat(6,1fr);gap:8px;
+  padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06);
+}
+.sp-color-dot {
+  width:100%;aspect-ratio:1;border-radius:50%;
+  cursor:pointer;border:2.5px solid transparent;
+  transition:transform .1s;
+}
+.sp-color-dot.selected { border-color:#fff;transform:scale(1.15); }
+.sp-color-dot:active { transform:scale(.9); }
 .sp-size-row {
   display:flex;align-items:center;gap:10px;padding:12px 14px;direction:rtl;
 }
-.sp-size-min,.sp-size-max { font-size:12px;color:#999;white-space:nowrap; }
+.sp-size-min,.sp-size-max { font-size:12px;color:rgba(255,255,255,.4);white-space:nowrap; }
 .sp-range { flex:1;accent-color:var(--wevo-top,#0099CC); }
 
 /* radio */
-.sp-radio-row { padding:13px 14px;font-size:14px;color:#333;direction:rtl; }
+.sp-radio-row { padding:13px 14px;font-size:14px;color:rgba(255,255,255,.82);direction:rtl; }
 .sp-radio-row label { display:flex;align-items:center;gap:10px;cursor:pointer; }
 .sp-radio-row input[type=radio] { accent-color:var(--wevo-top,#0099CC);width:18px;height:18px; }
 
 /* زر الخروج */
 .sp-exit-btn {
   width:100%;margin-top:20px;padding:14px;
-  background:#fff0f0;color:#e53935;
-  border:1px solid #ffcdd2;border-radius:14px;
+  background:rgba(229,57,53,.15);color:#ff5252;
+  border:1px solid rgba(229,57,53,.3);border-radius:14px;
   font-size:15px;font-weight:700;cursor:pointer;
 }
 </style>
@@ -824,6 +780,15 @@ function openSettings() {
   if (img) {
     const av = localStorage.getItem('avatar') || 'av1.svg';
     img.src = av.startsWith('data:') ? av : '/avatars/' + av;
+  }
+  const rkEl = document.getElementById('settingsRankLabel');
+  if (rkEl) {
+    const r = parseInt(localStorage.getItem('rank')||'100');
+    const L = {100:'زائر',200:'عضو',300:'اسم محمي',400:'اسم ملكي',500:'مشرف',
+               600:'مشرف عام',700:'ماستر',800:'سوبر ماستر',900:'روت',
+               1000:'سوبر روت',1100:'أونر',1200:'سوبر أونر'};
+    const steps=[1200,1100,1000,900,800,700,600,500,400,300,200,100];
+    for(const s of steps){if(r>=s){rkEl.textContent=L[s];break;}}
   }
   loadSettings();
   document.getElementById('settingsOverlay').classList.add('show');
@@ -869,11 +834,24 @@ function saveSettings() {
   localStorage.setItem('chatSettings', JSON.stringify(s));
 }
 
+let _selectedFontColor = '#ffffff';
+
+function pickFontColor(el) {
+  document.querySelectorAll('.sp-color-dot').forEach(d => d.classList.remove('selected'));
+  el.classList.add('selected');
+  _selectedFontColor = el.dataset.color;
+  applyFontPreview();
+}
+
 function applyFontPreview() {
-  const size = document.getElementById('stgFontSize').value;
-  const bold = document.getElementById('stgFontBold').checked;
-  const prev = document.getElementById('stgFontPreview');
-  if (prev) { prev.style.fontSize = size + 'px'; prev.style.fontWeight = bold ? '700' : '400'; }
+  const size  = document.getElementById('stgFontSize').value;
+  const bold  = document.getElementById('stgFontBold').checked;
+  const prev  = document.getElementById('stgFontPreview');
+  if (prev) {
+    prev.style.fontSize   = size + 'px';
+    prev.style.fontWeight = bold ? '700' : '400';
+    prev.style.color      = _selectedFontColor;
+  }
   saveSettings();
 }
 
