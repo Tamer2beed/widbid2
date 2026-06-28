@@ -513,19 +513,16 @@
 
   <!-- هيدر -->
   <div class="sp-header">
-    <button class="sp-back" onclick="closeSettings()">✕</button>
     <span class="sp-title">الإعدادات</span>
+    <button class="sp-back" onclick="closeSettings()">✕</button>
   </div>
 
   <div class="sp-body">
 
-    <!-- ══ الملف الشخصي (عرض فقط) ══ -->
-    <div class="sp-profile-card">
-      <img id="settingsAvatarImg" src="/avatars/av1.svg" class="sp-avatar-img" onerror="this.src='/avatars/av1.svg'">
-      <div class="sp-profile-info">
-        <div class="sp-username" id="settingsUsername">—</div>
-        <div class="sp-rank-label-sp" id="settingsRankLabel">زائر</div>
-      </div>
+    <!-- ══ اسم المستخدم فقط (بدون صورة) ══ -->
+    <div class="sp-user-row">
+      <span class="sp-username" id="settingsUsername">—</span>
+      <span class="sp-rank-label-sp" id="settingsRankLabel">زائر</span>
     </div>
 
     <!-- ══ الإشعارات ══ -->
@@ -580,12 +577,21 @@
       <div class="sp-font-preview" id="stgFontPreview">Test Message</div>
       <!-- ألوان الخط -->
       <div class="sp-color-grid" id="stgColorGrid">
-        <div class="sp-color-dot selected" data-color="#ffffff" style="background:#ffffff" onclick="pickFontColor(this)"></div>
+        <!-- فاتحة -->
+        <div class="sp-color-dot selected" data-color="#ffffff" style="background:#ffffff;border:1px solid rgba(255,255,255,.3)" onclick="pickFontColor(this)"></div>
         <div class="sp-color-dot" data-color="#ffeb3b" style="background:#ffeb3b" onclick="pickFontColor(this)"></div>
         <div class="sp-color-dot" data-color="#4fc3f7" style="background:#4fc3f7" onclick="pickFontColor(this)"></div>
         <div class="sp-color-dot" data-color="#a5d6a7" style="background:#a5d6a7" onclick="pickFontColor(this)"></div>
         <div class="sp-color-dot" data-color="#ef9a9a" style="background:#ef9a9a" onclick="pickFontColor(this)"></div>
         <div class="sp-color-dot" data-color="#ce93d8" style="background:#ce93d8" onclick="pickFontColor(this)"></div>
+        <!-- داكنة -->
+        <div class="sp-color-dot" data-color="#000000" style="background:#000000;border:1px solid rgba(255,255,255,.2)" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#5d4037" style="background:#5d4037" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#37474f" style="background:#37474f" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#1a237e" style="background:#1a237e" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#1b5e20" style="background:#1b5e20" onclick="pickFontColor(this)"></div>
+        <div class="sp-color-dot" data-color="#b71c1c" style="background:#b71c1c" onclick="pickFontColor(this)"></div>
+        <!-- متوسطة -->
         <div class="sp-color-dot" data-color="#ff8a65" style="background:#ff8a65" onclick="pickFontColor(this)"></div>
         <div class="sp-color-dot" data-color="#80cbc4" style="background:#80cbc4" onclick="pickFontColor(this)"></div>
         <div class="sp-color-dot" data-color="#f48fb1" style="background:#f48fb1" onclick="pickFontColor(this)"></div>
@@ -629,8 +635,11 @@
       </div>
     </div>
 
-    <!-- ══ خروج ══ -->
-    <button class="sp-exit-btn" onclick="leaveRoom()">🚪 خروج من الغرفة</button>
+    <!-- ══ أزرار الحفظ والإلغاء ══ -->
+    <div class="sp-action-row">
+      <button class="sp-cancel-btn" onclick="closeSettings()">إلغاء</button>
+      <button class="sp-save-btn" onclick="saveSettings();closeSettings();showToast('✅ تم حفظ الإعدادات')">حفظ</button>
+    </div>
 
   </div><!-- /sp-body -->
 
@@ -762,11 +771,40 @@
 .sp-radio-row input[type=radio] { accent-color:var(--wevo-top,#0099CC);width:18px;height:18px; }
 
 /* زر الخروج */
-.sp-exit-btn {
-  width:100%;margin-top:20px;padding:14px;
-  background:rgba(229,57,53,.15);color:#ff5252;
-  border:1px solid rgba(229,57,53,.3);border-radius:14px;
-  font-size:15px;font-weight:700;cursor:pointer;
+.sp-user-row {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 14px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;margin-bottom:6px;
+}
+.sp-header {
+  flex-direction:row-reverse !important;
+}
+.sp-back {
+  width:32px !important;height:32px !important;
+  background:rgba(255,255,255,.15) !important;
+  font-size:14px !important;font-weight:700 !important;
+}
+.sp-color-grid {
+  grid-template-columns:repeat(6,1fr) !important;
+}
+.sp-action-row {
+  display:flex;gap:10px;margin-top:20px;padding-bottom:10px;
+}
+.sp-cancel-btn {
+  flex:1;padding:13px;
+  background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);
+  border:1px solid rgba(255,255,255,.12);border-radius:12px;
+  font-size:14px;font-weight:600;cursor:pointer;
+  font-family:'Tajawal',sans-serif;
+}
+.sp-save-btn {
+  flex:2;padding:13px;
+  background:var(--wevo-top,#0099CC);color:#fff;
+  border:none;border-radius:12px;
+  font-size:14px;font-weight:700;cursor:pointer;
+  font-family:'Tajawal',sans-serif;
 }
 </style>
 
