@@ -301,8 +301,14 @@ body { background: var(--wevo-chat); }
   margin-bottom: 2px;
 }
 .msg-text {
-  font-size: 14px; color: #222;
+  font-size: var(--chat-font-size, 14px);
+  font-weight: var(--chat-font-weight, 400);
+  color: #222;
   line-height: 1.5; word-break: break-word;
+}
+/* لون خط المستخدم الحالي فقط */
+.msg-row.self .msg-text {
+  color: var(--my-font-color, #222);
 }
 .msg-time {
   font-size: 10px; color: #aaa;
