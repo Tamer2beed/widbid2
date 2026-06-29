@@ -912,7 +912,7 @@ function applySettingsToChat() {
   const s     = JSON.parse(localStorage.getItem('chatSettings') || '{}');
   const size  = s.fontSize  || '14';
   const bold  = s.fontBold  ? '700' : '400';
-  const color = s.fontColor || '#ffffff';
+  const color = s.fontColor || '#222';
   _applyFontToChat(size, bold, color);
 }
 
@@ -940,19 +940,12 @@ function applyFontPreview() {
 }
 
 function _applyFontToChat(size, weight, color) {
-  let st = document.getElementById('chatSettingsStyle');
-  if (!st) {
-    st = document.createElement('style');
-    st.id = 'chatSettingsStyle';
-    document.head.appendChild(st);
-  }
-  st.textContent = [
-    '.msg-text {',
-    '  font-size: ' + size + 'px !important;',
-    '  font-weight: ' + weight + ' !important;',
-    '  color: ' + color + ' !important;',
-    '}',
-  ].join('\n');
+  /* استخدم CSS custom properties على :root — أكثر موثوقية */
+  const root = document.documentElement;
+  root.style.setProperty('--chat-font-size',   size + 'px');
+  root.style.setProperty('--chat-font-weight', weight);
+  /* اللون يُطبَّق فقط على رسائل المستخدم الحالي */
+  root.style.setProperty('--my-font-color', color);
 }
 
 /* ══ dropdown اللغة ══ */
