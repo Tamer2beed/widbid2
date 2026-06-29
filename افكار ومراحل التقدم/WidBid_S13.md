@@ -1,169 +1,125 @@
-# WidBid — Session 13 (S13)
-**التاريخ:** 2026-06-25
-**الحالة:** مكتملة ✅
+# WidBid — Session 13 (S13) — ملخص نهائي
+**التاريخ:** 2026-06-25 → 2026-06-29
 **المستودع:** github.com/Tamer2beed/widbid2 (private)
-**بُنيت على:** S12 (cc93efc)
+**بُنيت على:** S12
 
 ---
 
-## 1. ما تم إنجازه في S13
+## الملفات المعدَّلة في S13
 
-### 🎙️ تفعيل الصوت الحقيقي — Mediasoup SFU
+### server/
+- `index.js` — WebRTC signaling (20 مشاهد) + deleteMessage + 6 audio events
+- `mediasoup.js` — Mediasoup SFU stub (try/catch — لا يكسر السيرفر بدونه)
+- `routes/auth.js` — /guest endpoint + bcrypt 12 rounds + has_paid_profile
+- `routes/users.js` — avatar default/upload endpoints
 
-#### الملفات الجديدة:
-| الملف | الوصف | السطور |
-|-------|-------|--------|
-| `server/mediasoup.js` | Worker + Router + Transport factory | ~90 |
-| `public/js/audio.js` | Mediasoup Client كامل | ~200 |
+### public/js/
+- `video.js` — WebRTC P2P حقيقي (حد 20 مشاهد)
+- `audio.js` — Mediasoup Client (stub — يحتاج npm install mediasoup على Windows)
+- `speaker.js` — ربط AudioSystem
+- `ui.js` — renderMembers (أفاتار SVG + إطار رتبة) + قوائم سياق الرسائل + openSideMenu dropdown
+- `core.js` — addMessage (أفاتار SVG) + @mention badge + CSS variables للخط
 
-#### الملفات المعدَّلة:
-| الملف | التغيير |
-|-------|---------|
-| `server/index.js` | import mediasoup + 6 audio events + تنظيف SFU عند disconnect |
-| `public/js/speaker.js` | ربط AudioSystem بالسبيكر (request/done/state) |
-| `public/chat.html` | إضافة mediasoup-client CDN + audio.js |
-| `package.json` | إضافة mediasoup ^3.14.0 |
+### public/css/
+- `chat.css` — msg-avatar-sm مربع + CSS variables للخط (.msg-text + .msg-row.self .msg-text)
 
----
+### public/
+- `chat.html` — قائمة ☰ dropdown شفافة + قائمة الحالة All2Chat + إعدادات كاملة
+- `rooms.html` — شاشة دخول الغرفة (زائر/عضو/عضو خارق) + picker أفاتار + حسابات محفوظة
+- `index.html` — splash screen + redirect لـ rooms.html (حذف واجهة الدخول القديمة)
+- `avatars/` — av1.svg → av16.svg (16 أفاتار SVG كارتوني مربع)
 
-## 2. البنية المنفَّذة
-
-```
-server/
-  mediasoup.js  — Worker + Router + createTransport
-  index.js      — 6 audio events:
-                  audio:getCapabilities
-                  audio:createSendTransport
-                  audio:createRecvTransport
-                  audio:connectTransport
-                  audio:produce
-                  audio:consume
-
-public/js/
-  audio.js      — AudioSystem IIFE:
-                  initDevice()
-                  startSpeaking()
-                  stopSpeaking()
-                  consumeAudio(producerId)
-                  stopConsuming(producerId)
-  speaker.js    — معدَّل: ربط AudioSystem بالطابور
-```
+### setup-db.js + seed.js
+- avatar VARCHAR(50) + has_paid_profile TINYINT
+- 15 مستخدم تجريبي من كل الرتب
 
 ---
 
-## 3. تسلسل التشغيل الصوتي
+## الميزات المنجزة في S13
 
-```
-المستخدم يضغط 🎤
-        ↓
-requestSpeaker() → AudioSystem.initDevice(roomId)  [يحضّر بدون مايك]
-        ↓
-السيرفر يعطيه السبيكر → speakerState { isSpeaking: true }
-        ↓
-speaker.js → AudioSystem.startSpeaking()
-  → getUserMedia(audio) [يُطلب إذن المايك الآن فقط]
-  → createSendTransport
-  → produce()
-  → socket.emit('audio:newProducer') للغرفة
-        ↓
-المستمعون → consumeAudio(producerId)
-  → createRecvTransport (مرة واحدة)
-  → consume()
-  → new Audio(stream).play()
-        ↓
-انتهاء الوقت أو doneSpeaking()
-  → AudioSystem.stopSpeaking()
-  → socket.emit('audio:producerClosed') للغرفة
-  → المستمعون → stopConsuming(producerId)
-```
+### 1. نظام الأفاتار
+- 16 أفاتار SVG مربع يملأ الحاوية (av1-av16)
+- إطار ملون بلون رتبة كل عضو
+- badge الحالة 🟢 على زاوية الصورة
+- badge 🖐️ للطابور بأنيميشن نبض
+- اختيار الأفاتار في rooms.html قبل الدخول
+- رفع صورة مخصصة للحسابات المدفوعة فقط (has_paid_profile=1)
+
+### 2. بث الفيديو — WebRTC P2P
+- بث حقيقي بدون SFU — حمل السيرفر = صفر
+- حد أقصى 20 مشاهد لكل مُذيع
+- فيديو فقط بدون صوت
+- badge 📹 في قائمة الأعضاء
+- نافذة بث قابلة للسحب
+
+### 3. واجهة تسجيل الدخول الجديدة
+- rooms.html: قائمة الغرف بدون تسجيل دخول
+- عند الضغط على غرفة: شاشة منزلقة (زائر/عضو/عضو خارق)
+- picker أفاتار مدمج قبل الدخول
+- حسابات محفوظة مع dropdown وزر 💾
+- تشفير SHA-256 لكلمات المرور
+
+### 4. قائمة ☰ Dropdown
+- قائمة شفافة داكنة (155px، blur(22px)، rgba(.45))
+- تفتح من زاوية زر ☰ مع أنيميشن scale
+- ملف شخصي (أفاتار + اسم + رتبة) في الأعلى
+- الترتيب: الحالة، الإعدادات، المفضلة، مسح الدردشة، بث مباشر، تبليغ، خروج
+
+### 5. قائمة الحالة
+- All2Chat style: أيقونات دائرية ملوّنة
+- 8 حالات: متاح، بالخارج، مشغول، هاتف، طعام، صلاة، نائم، سيارة
+- نفس الشفافية والـ blur من القائمة الرئيسية
+
+### 6. صفحة الإعدادات
+- شفافة داكنة (rgba(.88) + blur(24px))
+- الإشعارات: 5 toggles
+- اللغة: dropdown منسدل (6 لغات)
+- الخط: معاينة حية + 18 لون (فاتح + داكن) + slider حجم + سماكة
+- اللون يُطبَّق على رسائل المستخدم فقط (CSS variable --my-font-color)
+- الرسائل الخاصة: 3 خيارات radio
+- عام: 2 toggles
+- أزرار: حفظ + إلغاء
+
+### 7. قائمة سياق الرسائل
+- تصميم أبيض انسيابي مع معاينة النص
+- نسخ، ردّ، ذكر @، مسح النص (رسالتي)، تجاهل، تبليغ
+- مسح الدردشة عندي (local)
+- مسح الشات للجميع (مشرف 500+)
+- @mention: badge نبض + تمييز النص بلون بنفسجي
 
 ---
 
-## 4. أوامر التفعيل على Termux
+## ما تبقى للـ S14
+
+### أولوية عالية:
+1. **اختبار WebRTC على Windows** — npm install mediasoup + تشغيل الصوت
+2. **market.html** — واجهة الباقات والأسعار (§32 في الدستور)
+3. **إصلاح حجم الخط** — التحقق من تطبيق CSS variable على جميع الرسائل
+4. **اختبار شامل** بجهازين (Windows server + هاتف)
+
+### أولوية متوسطة:
+5. **نظام النقاط** — عرض النقاط في الملف الشخصي
+6. **الرسائل الخاصة** — تنفيذ Private Chat فعلي
+7. **حفظ إعدادات الخط** — التأكد من تطبيقها عند إعادة تحميل الصفحة
+
+---
+
+## بروتوكول S14
 
 ```bash
-cd ~/widbid2/widbid2
-
-# تثبيت mediasoup (يحتاج gcc + python — جاهزان ✅)
-npm install mediasoup
-
-# تشغيل السيرفر
-node server/index.js
-
-# يجب أن يظهر:
-# 🚀 WidBid Server on port 3000
-# 🎙️ Mediasoup Worker جاهز (PID: XXXX)
-# 🎙️ Mediasoup SFU جاهز
+# في بداية S14:
+# 1. أرسل التوكن لـ Claude
+# 2. Claude يقرأ:
+#    - افكار ومراحل التقدم/Qwen_markdown.md
+#    - افكار ومراحل التقدم/WidBid_S13.md (هذا الملف)
+# 3. ابدأ بـ: git pull origin master && node server/index.js
 ```
 
 ---
 
-## 5. اختبار الصوت
+## ملاحظات تقنية مهمة
 
-```
-هاتف 1 (192.168.1.244:3000):
-  - سجّل بـ member@widbid.com / 123456
-  - ادخل أي غرفة
-  - اضغط 🎤 → ستظهر رسالة طلب إذن المايك
-  - قبل الإذن → تحدث
-
-هاتف 2 (192.168.1.244:3000):
-  - سجّل بـ guest@widbid.com / 123456
-  - ادخل نفس الغرفة
-  - يجب أن تسمع هاتف 1 تلقائياً
-```
-
----
-
-## 6. الحالة الحالية للملفات
-
-```
-server/
-  index.js          — 1350+ سطر (+ 6 audio events)
-  mediasoup.js      — جديد ✅
-  routes/auth.js
-  routes/rooms.js
-  db.js / middleware.js
-
-public/
-  chat.html         — + mediasoup-client CDN + audio.js
-  js/
-    audio.js        — جديد ✅ (Mediasoup Client)
-    speaker.js      — معدَّل ✅ (ربط AudioSystem)
-    core.js / ui.js / camera.js / video.js
-    banner.js / sounds.js / helpers.js / emojis.js
-    ranks/          — 12 ملف
-```
-
----
-
-## 7. الخطوة التالية (S14)
-
-**الأولوية الأولى:** اختبار الصوت وإصلاح أي مشاكل
-- تشغيل `npm install mediasoup` على Termux
-- اختبار بهاتفين
-- إصلاح أي مشكلة ICE/DTLS
-
-**الأولوية الثانية:** market.html
-- واجهة الباقات والأسعار (موجودة في الدستور §32)
-- AI Agent — فحص إثبات التحويل
-
----
-
-## 8. بروتوكول S14
-
-```bash
-# في بداية S14 — على Claude:
-git clone https://github.com/Tamer2beed/widbid2.git
-cat "افكار ومراحل التقدم/Qwen_markdown.md"
-cat "افكار ومراحل التقدم/WidBid_S13.md"
-```
-
----
-
-## 9. ملاحظات تقنية
-
-- **Recv Transport المشترك:** الكود الحالي يشارك Recv Transport واحد بين جميع المستمعين في الغرفة. إذا ظهرت مشكلة "لا يوجد Recv Transport"، يجب إنشاء transport مخصص لكل مستخدم.
-- **announcedIp:** مضبوط على `null` — مناسب لنفس الشبكة. للإنترنت العام، يجب تغييره لـ IP الخادم العام.
-- **mediasoup-client CDN:** يُستخدم الإصدار 3 (`mediasoup-client@3`) — متوافق مع mediasoup سيرفر v3.
-- **تنظيف تلقائي:** عند انقطاع اتصال المتحدث، يُغلق producer تلقائياً وتُبلَّغ الغرفة.
+- **Mediasoup على Termux**: يفشل بسبب Python 3.13 + ninja. الحل: تثبيته على Windows.
+- **CSS variables**: حجم الخط يستخدم `--chat-font-size` على `:root`، اللون `--my-font-color` على `.msg-row.self .msg-text`
+- **GitHub tokens**: جميع التوكنات المستخدمة في S13 يجب إلغاؤها
+- **seed.js**: كلمة مرور جميع الحسابات التجريبية: `123456`
