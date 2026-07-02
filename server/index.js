@@ -8,6 +8,7 @@ require('dotenv').config();
 // [SKILL-AUDIO][server/index.js:~9] — استيراد SFU
 // تاريخ: 2026-06-25
 const { initWorker, getOrCreateRoom, createTransport, sfuRooms, cleanupRoom } = require('./mediasoup');
+const { initBots, getBotUsers } = require('./bots');
 const db          = require('./db');
 const authRoutes  = require('./routes/Auth');
 const roomRoutes  = require('./routes/rooms');
@@ -63,12 +64,16 @@ async function getRoomInfo(roomId) {
 // بناء قائمة المتواجدين مع الرتبة والحالة
 async function buildOnlineUsers(roomId) {
   const sockets = await io.in(roomId).fetchSockets();
-  return sockets.map(s => ({
+  const realUsers = sockets.map(s => ({
     username: s.userData?.username || s.username || '?',
     rank:     s.userData?.rank     || 100,
     status:   s.userData?.status   || 'available',
     isMuted:  s.userData?.isMuted  || false,
   })).filter(u => u.username !== '?');
+
+  /* ── إضافة الأعضاء الوهميين (البوتات) ── */
+  const botUsers = getBotUsers(String(roomId));
+  return [...realUsers, ...botUsers];
 }
 
 // التحقق من صلاحية تنفيذ إجراء على هدف
@@ -1510,4 +1515,7 @@ server.listen(PORT, async () => {
     console.error('❌ فشل تشغيل Mediasoup:', err.message);
     console.warn('⚠️ الخادم يعمل بدون SFU — نفّذ: npm install mediasoup');
   }
+
+  /* ── تشغيل الأعضاء الوهميين بعد ثانيتين من بدء الخادم ── */
+  setTimeout(() => initBots(io, db, buildOnlineUsers), 2000);
 });
