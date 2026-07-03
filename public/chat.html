@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>WidBid</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
 <!-- CSS -->
 <link rel="stylesheet" href="/css/base.css">
@@ -103,6 +104,89 @@
   color:rgba(255,255,255,.25); font-weight:700;
   letter-spacing:.4px; text-align:right;
 }
+
+/* ══════════════════════════════════════════
+   ADMIN MODAL — CSS لوحة التحكم الجديدة
+══════════════════════════════════════════ */
+.glass-menu {
+  background: rgba(20,20,30,.92) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+}
+#adminModal { position:fixed;inset:0;z-index:200;display:none;flex-direction:column;overflow-y:auto; }
+#adminModal.show { display:flex; }
+/* جداول السجلات */
+.log-table-container { overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,.08); }
+.log-table { width:100%;border-collapse:collapse;font-size:13px;color:rgba(255,255,255,.85);text-align:right; }
+.log-table th { background:rgba(255,255,255,.05);padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-weight:600;color:rgba(255,255,255,.6);font-size:12px;white-space:nowrap; }
+.log-table td { padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle; }
+.log-table tr:hover { background:rgba(255,255,255,.03); }
+/* إحصائيات */
+.stats-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px; }
+.stat-card { background:rgba(255,255,255,.05);border-radius:12px;padding:12px;text-align:center;border:1px solid rgba(255,255,255,.06); }
+.stat-card .num { font-size:24px;font-weight:700; }
+.stat-card .label { font-size:11px;color:rgba(255,255,255,.5);margin-top:4px; }
+/* أزرار الإجراءات */
+.action-btn { padding:4px 10px;border-radius:8px;font-size:11px;font-weight:500;border:none;cursor:pointer;color:#fff;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:all .2s; }
+.action-btn:active { transform:scale(.95); }
+.action-btn.ban-temp { background:linear-gradient(135deg,#f59e0b,#d97706); }
+.action-btn.ban-perm { background:linear-gradient(135deg,#ef4444,#dc2626); }
+.action-btn.kick     { background:linear-gradient(135deg,#8b5cf6,#7c3aed); }
+.action-btn.promote  { background:linear-gradient(135deg,#06b6d4,#0891b2); }
+.action-btn.unban    { background:linear-gradient(135deg,#22c55e,#16a34a); }
+/* شارات */
+.status-badge { padding:2px 10px;border-radius:10px;font-size:10px; }
+.status-badge.online  { background:rgba(34,197,94,.2);color:#4ade80; }
+.status-badge.offline { background:rgba(239,68,68,.2);color:#f87171; }
+.status-badge.banned  { background:rgba(239,68,68,.3);color:#fca5a5; }
+.admin-role-badge { padding:2px 10px;border-radius:12px;font-size:11px;font-weight:500;display:inline-block; }
+.admin-role-badge.member { background:#fbbf24;color:#78350f; }
+.admin-role-badge.admin  { background:#3b82f6;color:#fff; }
+.admin-role-badge.super  { background:#22c55e;color:#fff; }
+.admin-role-badge.master { color:#fff;background:#ef4444; }
+/* admin actions */
+.admin-actions { display:flex;gap:4px;flex-wrap:wrap; }
+.admin-actions button { padding:2px 8px;border-radius:6px;font-size:10px;border:none;cursor:pointer;color:#fff;transition:all .2s; }
+.admin-actions .promote-btn { background:#22c55e; }
+.admin-actions .demote-btn  { background:#f59e0b; }
+.admin-actions .password-btn{ background:#3b82f6; }
+.admin-actions .delete-btn  { background:#ef4444; }
+.admin-actions button:hover { opacity:.8;transform:scale(.95); }
+/* رفع صور */
+.custom-bg-upload-btn { background:rgba(255,255,255,.05);border:2px dashed rgba(255,255,255,.3);border-radius:12px;padding:12px;color:#fff;cursor:pointer;transition:all .3s;text-align:center; }
+.custom-bg-upload-btn:hover { background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.5); }
+/* frame select */
+.frame-select { background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px;color:#fff;width:100%;outline:none;font-size:14px; }
+.frame-select option { background:#1a1a2e;color:#fff; }
+/* color picker */
+.color-picker-btn { width:36px;height:36px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:all .2s; }
+.color-picker-btn:hover { transform:scale(1.1); }
+.color-picker-btn.active { border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.5); }
+.weight-btn-active   { background:#ca8a04 !important; }
+.weight-btn-inactive { background:transparent !important; }
+.welcome-preview { background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;min-height:120px; }
+.welcome-frame { border-radius:12px;overflow:hidden; }
+/* frame image */
+.frame-image-preview { max-width:100%;max-height:150px;border-radius:12px;margin-top:8px;border:1px solid rgba(255,255,255,.1);object-fit:cover; }
+.frame-image-remove-btn { background:rgba(255,0,0,.2);border:1px solid rgba(255,0,0,.3);color:#ff6b6b;padding:4px 12px;border-radius:8px;cursor:pointer;font-size:12px; }
+/* مودالات */
+.ban-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:210;display:none;align-items:center;justify-content:center; }
+.ban-modal-overlay.active { display:flex; }
+.ban-modal-box { background:rgba(30,30,40,.95);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:24px;max-width:420px;width:90%;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.5); }
+.ban-modal-box h3 { font-size:18px;font-weight:700;margin-bottom:12px; }
+.ban-modal-box label { color:rgba(255,255,255,.7);font-size:13px; }
+.ban-modal-box input,.ban-modal-box select { background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 12px;color:#fff;width:100%;outline:none;font-size:14px;margin-top:4px; }
+.ban-modal-box input:focus,.ban-modal-box select:focus { border-color:rgba(139,92,246,.5); }
+.ban-modal-box .btn-cancel { background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);padding:8px 20px;border-radius:10px;border:none;cursor:pointer; }
+.ban-modal-box .btn-confirm { background:#8b5cf6;color:#fff;padding:8px 20px;border-radius:10px;border:none;cursor:pointer; }
+.ban-modal-box .btn-confirm:hover { background:#7c3aed; }
+.duration-options { display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px; }
+.duration-options button { padding:6px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#fff;cursor:pointer;font-size:13px;transition:all .2s; }
+.duration-options button.active { background:#8b5cf6;border-color:#8b5cf6; }
+.modal-actions { display:flex;gap:10px;margin-top:16px;justify-content:flex-end; }
+.role-option-item { display:block;width:100%;padding:10px 16px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:#fff;cursor:pointer;transition:all .2s;text-align:right;margin-bottom:6px; }
+.role-option-item:hover { background:rgba(255,255,255,.12); }
 </style>
 
 </head>
@@ -290,7 +374,7 @@
     <div class="sm-item" onclick="openBannerEditor();closeSideMenu()">
       <span class="sm-icon">🖼️</span><span class="sm-label">تعديل البانر</span>
     </div>
-    <div class="sm-item" onclick="openAdminSheet();closeSideMenu()">
+    <div class="sm-item" onclick="openAdminModal();closeSideMenu()">
       <span class="sm-icon">🛠️</span><span class="sm-label">أدوات المشرف</span>
     </div>
     <div class="sm-item" onclick="SpeakerSystem.openAdminPanel();closeSideMenu()">
@@ -1080,6 +1164,862 @@ function handleAvatarFile(e) {
   };
   reader.readAsDataURL(file);
 }
+</script>
+
+
+<!-- ══════════════════════════════════════════
+     ADMIN MODAL — لوحة التحكم الجديدة
+══════════════════════════════════════════ -->
+<div id="adminModal" class="glass-menu">
+  <div class="flex flex-col h-full w-full">
+
+    <!-- ═══ الصفحة الرئيسية ═══ -->
+    <div id="adminMainPage" class="flex flex-col h-full w-full" style="min-height:100vh">
+      <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
+        <button id="closeAdminBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px">
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+        <span style="font-weight:700;font-size:18px;color:#fff">لوحة التحكم</span>
+        <div style="width:40px"></div>
+      </div>
+      <div style="flex:1;padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:12px">
+
+        <button id="goToAppearanceFromAdminBtn" class="admin-main-btn">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;border-radius:12px;background:rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center;color:#4ade80">
+              <i class="fa-solid fa-palette"></i></div>
+            <div style="text-align:right">
+              <span style="font-weight:700;font-size:14px;color:#fff;display:block">مظهر الغرفة</span>
+              <span style="color:rgba(255,255,255,.4);font-size:11px">تغيير خلفية الشات والهيدر</span>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
+        </button>
+
+        <button id="editWelcomeBtn" class="admin-main-btn">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;border-radius:12px;background:rgba(251,191,36,.2);display:flex;align-items:center;justify-content:center;color:#fbbf24">
+              <i class="fa-solid fa-message"></i></div>
+            <div style="text-align:right">
+              <span style="font-weight:700;font-size:14px;color:#fff;display:block">تعديل رسالة الترحيب</span>
+              <span style="color:rgba(255,255,255,.4);font-size:11px">النص والإطار والخيارات</span>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
+        </button>
+
+        <button id="goToLogsEntryBtn" class="admin-main-btn">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;border-radius:12px;background:rgba(96,165,250,.2);display:flex;align-items:center;justify-content:center;color:#60a5fa">
+              <i class="fa-solid fa-right-to-bracket"></i></div>
+            <div style="text-align:right">
+              <span style="font-weight:700;font-size:14px;color:#fff;display:block">سجل الدخول</span>
+              <span style="color:rgba(255,255,255,.4);font-size:11px">آخر 15 يوم</span>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
+        </button>
+
+        <button id="goToLogsExitBtn" class="admin-main-btn">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;border-radius:12px;background:rgba(251,146,60,.2);display:flex;align-items:center;justify-content:center;color:#fb923c">
+              <i class="fa-solid fa-right-from-bracket"></i></div>
+            <div style="text-align:right">
+              <span style="font-weight:700;font-size:14px;color:#fff;display:block">سجل الخروج</span>
+              <span style="color:rgba(255,255,255,.4);font-size:11px">آخر 15 يوم</span>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
+        </button>
+
+        <button id="goToLogsBannedBtn" class="admin-main-btn">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;border-radius:12px;background:rgba(248,113,113,.2);display:flex;align-items:center;justify-content:center;color:#f87171">
+              <i class="fa-solid fa-ban"></i></div>
+            <div style="text-align:right">
+              <span style="font-weight:700;font-size:14px;color:#fff;display:block">المحظورون</span>
+              <span style="color:rgba(255,255,255,.4);font-size:11px">قائمة الحظر</span>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
+        </button>
+
+        <button id="goToAdminsFromAdminBtn" class="admin-main-btn">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;border-radius:12px;background:rgba(244,114,182,.2);display:flex;align-items:center;justify-content:center;color:#f472b6">
+              <i class="fa-solid fa-user-tie"></i></div>
+            <div style="text-align:right">
+              <span style="font-weight:700;font-size:14px;color:#fff;display:block">إدارة المشرفين</span>
+              <span style="color:rgba(255,255,255,.4);font-size:11px">الرتب، الترقية، الإضافة</span>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
+        </button>
+
+        <button id="goToLogsActivityBtn" class="admin-main-btn">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;border-radius:12px;background:rgba(129,140,248,.2);display:flex;align-items:center;justify-content:center;color:#818cf8">
+              <i class="fa-solid fa-clock-rotate-left"></i></div>
+            <div style="text-align:right">
+              <span style="font-weight:700;font-size:14px;color:#fff;display:block">سجل التغييرات</span>
+              <span style="color:rgba(255,255,255,.4);font-size:11px">جميع إجراءات المشرفين</span>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
+        </button>
+
+        <button id="goToSpeakerManagerBtn" class="admin-main-btn">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;border-radius:12px;background:rgba(251,191,36,.2);display:flex;align-items:center;justify-content:center;color:#fbbf24">
+              <i class="fa-solid fa-microphone"></i></div>
+            <div style="text-align:right">
+              <span style="font-weight:700;font-size:14px;color:#fff;display:block">إدارة السبيكر</span>
+              <span style="color:rgba(255,255,255,.4);font-size:11px">تعيين وإنهاء الميكروفون</span>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
+        </button>
+
+      </div>
+    </div><!-- /adminMainPage -->
+
+    <!-- ═══ مظهر الغرفة ═══ -->
+    <div id="appearanceSubMenu" class="hidden flex flex-col h-full w-full" style="min-height:100vh">
+      <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
+        <button id="backToAdminFromAppearanceBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
+        <span style="font-weight:700;font-size:18px;color:#fff">مظهر الغرفة</span>
+        <div style="width:40px"></div>
+      </div>
+      <div style="flex:1;padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <button class="bg-theme-option" data-bg="solid-light" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px;color:#fff;font-size:14px;cursor:pointer">☀️ فاتح</button>
+          <button class="bg-theme-option" data-bg="solid-dark"  style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px;color:#fff;font-size:14px;cursor:pointer">🌙 داكن</button>
+          <button class="bg-theme-option" data-bg="pattern-dots" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px;color:#fff;font-size:14px;cursor:pointer">🔵 نقاط</button>
+          <button class="bg-theme-option" data-bg="solid-blue"  style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px;color:#fff;font-size:14px;cursor:pointer">💙 أزرق</button>
+          <button class="bg-theme-option" data-bg="pattern-lines" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px;color:#fff;font-size:14px;cursor:pointer">〰️ خطوط</button>
+          <button class="bg-theme-option" data-bg="solid-purple" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px;color:#fff;font-size:14px;cursor:pointer">💜 بنفسجي</button>
+        </div>
+        <div class="custom-bg-upload-btn" onclick="document.getElementById('customBgFileInput').click()">
+          <i class="fa-solid fa-cloud-arrow-up" style="font-size:24px;display:block;margin-bottom:8px"></i>
+          <span style="font-size:14px">رفع صورة مخصصة للخلفية</span>
+          <input type="file" id="customBgFileInput" accept="image/*" style="display:none" onchange="applyCustomBg(event)">
+        </div>
+        <button onclick="resetRoomBg()" style="width:100%;background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:12px;color:#fca5a5;font-size:14px;cursor:pointer">
+          <i class="fa-solid fa-trash-can"></i> إزالة الخلفية المخصصة
+        </button>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.1);padding:16px;background:rgba(0,0,0,.2)">
+        <button onclick="_adminGoTo('appearanceSubMenu','adminMainPage')" style="width:100%;background:#22c55e;color:#fff;padding:12px;border-radius:12px;border:none;font-weight:700;font-size:15px;cursor:pointer">تطبيق</button>
+      </div>
+    </div>
+
+    <!-- ═══ تعديل رسالة الترحيب ═══ -->
+    <div id="welcomeEditSubMenu" class="hidden flex flex-col h-full w-full" style="min-height:100vh">
+      <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
+        <button id="backToAdminFromWelcomeBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
+        <span style="font-weight:700;font-size:18px;color:#fff">تعديل رسالة الترحيب</span>
+        <div style="width:40px"></div>
+      </div>
+      <div style="flex:1;padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <label style="color:#fff;font-size:13px;font-weight:700;display:block;margin-bottom:8px">نص الرسالة</label>
+          <textarea id="welcomeEditTextarea" style="width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:12px;color:#fff;font-size:14px;min-height:120px;outline:none;font-family:Tajawal,sans-serif;resize:vertical" placeholder="اكتب رسالة الترحيب هنا..."></textarea>
+        </div>
+        <div>
+          <label style="color:#fff;font-size:13px;font-weight:700;display:block;margin-bottom:8px">حجم الخط</label>
+          <div style="display:flex;align-items:center;gap:16px;background:rgba(0,0,0,.2);padding:12px;border-radius:12px">
+            <input id="welcomeFontSizeRange" type="range" min="12" max="28" value="16" style="flex:1;accent-color:#eab308" oninput="document.getElementById('welcomeFontSizePreview').textContent=this.value+'px'">
+            <span id="welcomeFontSizePreview" style="color:#fde047;font-size:14px;background:rgba(234,179,8,.2);padding:2px 8px;border-radius:6px">16px</span>
+          </div>
+        </div>
+        <div>
+          <label style="color:#fff;font-size:13px;font-weight:700;display:block;margin-bottom:8px">معاينة</label>
+          <div class="welcome-preview">
+            <div id="welcomePreviewFrame" class="welcome-frame" style="padding:16px;background:rgba(255,255,255,.05);text-align:center;color:#fff;font-size:16px">رسالة الترحيب ستظهر هنا</div>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.1);padding:16px;background:rgba(0,0,0,.2);display:flex;gap:12px">
+        <button onclick="_adminGoTo('welcomeEditSubMenu','adminMainPage')" style="flex:1;background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);padding:12px;border-radius:12px;border:none;cursor:pointer">إلغاء</button>
+        <button id="saveWelcomeEditBtn" style="flex:2;background:#eab308;color:#fff;padding:12px;border-radius:12px;border:none;font-weight:700;font-size:15px;cursor:pointer">حفظ</button>
+      </div>
+    </div>
+
+    <!-- ═══ السجلات ═══ -->
+    <div id="logsSubMenu" class="hidden flex flex-col h-full w-full" style="min-height:100vh">
+      <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
+        <button id="backToAdminFromLogsBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
+        <span style="font-weight:700;font-size:18px;color:#fff" id="logsTitle">السجلات</span>
+        <div style="width:40px"></div>
+      </div>
+      <div style="flex:1;padding:20px;overflow-y:auto">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="num" style="color:#60a5fa" id="totalVisits">0</div><div class="label">إجمالي الزوار</div></div>
+          <div class="stat-card"><div class="num" style="color:#4ade80" id="onlineNow">0</div><div class="label">متصلون الآن</div></div>
+          <div class="stat-card"><div class="num" style="color:#f87171" id="bannedCount">0</div><div class="label">محظورون</div></div>
+        </div>
+        <div class="log-table-container">
+          <table class="log-table">
+            <thead><tr><th>العضو</th><th>التاريخ</th><th>الوقت</th><th>الحالة</th><th>إجراء</th></tr></thead>
+            <tbody id="logsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ إدارة المشرفين ═══ -->
+    <div id="adminsSubMenu" class="hidden flex flex-col h-full w-full" style="min-height:100vh">
+      <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
+        <button id="backToAdminFromAdminsBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
+        <span style="font-weight:700;font-size:18px;color:#fff">إدارة المشرفين</span>
+        <button id="addAdminBtn" style="color:#fff;font-size:13px;background:#7c3aed;padding:6px 16px;border-radius:12px;border:none;cursor:pointer"><i class="fa-solid fa-plus"></i> إضافة</button>
+      </div>
+      <div style="flex:1;padding:20px;overflow-y:auto">
+        <div class="log-table-container">
+          <table class="log-table">
+            <thead><tr><th>الاسم</th><th>الرتبة</th><th>الإجراءات</th></tr></thead>
+            <tbody id="adminsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ سجل التغييرات ═══ -->
+    <div id="activityLogSubMenu" class="hidden flex flex-col h-full w-full" style="min-height:100vh">
+      <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
+        <button id="backToAdminFromActivityBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
+        <span style="font-weight:700;font-size:18px;color:#fff">سجل التغييرات</span>
+        <button id="clearActivityLogBtn" style="color:#fff;font-size:13px;background:#dc2626;padding:6px 16px;border-radius:12px;border:none;cursor:pointer"><i class="fa-solid fa-trash-can"></i></button>
+      </div>
+      <div style="flex:1;padding:20px;overflow-y:auto">
+        <div class="log-table-container">
+          <table class="log-table">
+            <thead><tr><th>المشرف</th><th>الإجراء</th><th>التفاصيل</th><th>الوقت</th></tr></thead>
+            <tbody id="activityBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ إدارة السبيكر ═══ -->
+    <div id="speakerManagerSubMenu" class="hidden flex flex-col h-full w-full" style="min-height:100vh">
+      <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
+        <button id="backToAdminFromSpeakerBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
+        <span style="font-weight:700;font-size:18px;color:#fff">إدارة السبيكر</span>
+        <div style="width:40px"></div>
+      </div>
+      <div style="flex:1;padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:16px">
+        <div style="background:rgba(255,255,255,.05);border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,.1)">
+          <h4 style="color:#fff;font-weight:700;margin-bottom:12px">المتحدث الحالي</h4>
+          <div style="display:flex;align-items:center;gap:16px">
+            <span id="speakerAdminDisplay" style="color:#fff;font-size:18px">فري مايك</span>
+            <span id="speakerAdminTimer" style="color:#fde047;font-size:14px">--:--</span>
+          </div>
+          <button id="speakerEndBtn" style="margin-top:12px;background:#dc2626;color:#fff;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:14px">
+            <i class="fa-solid fa-microphone-slash"></i> إنهاء الجلسة
+          </button>
+        </div>
+        <div style="background:rgba(255,255,255,.05);border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,.1)">
+          <h4 style="color:#fff;font-weight:700;margin-bottom:12px">تعيين متحدث جديد</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <select id="speakerAssignSelect" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px;color:#fff;font-size:14px;flex:1;min-width:140px;outline:none">
+              <option value="">اختر عضواً</option>
+            </select>
+            <input type="number" id="speakerAssignDuration" placeholder="ثانية" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px;color:#fff;font-size:14px;width:80px;outline:none">
+            <label style="color:#fff;font-size:13px;display:flex;align-items:center;gap:6px">
+              <input type="checkbox" id="speakerAssignUnlimited" checked> مفتوح
+            </label>
+            <button id="speakerAssignBtn" style="background:#16a34a;color:#fff;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:14px">تعيين</button>
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,.05);border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,.1)">
+          <h4 style="color:#fff;font-weight:700;margin-bottom:12px">طابور الانتظار</h4>
+          <div id="speakerQueueAdmin" style="font-size:14px;color:rgba(255,255,255,.6)">لا يوجد طابور</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /flex-col -->
+</div><!-- /adminModal -->
+
+<!-- ═══ مودال إضافة مشرف ═══ -->
+<div id="addAdminModal" class="ban-modal-overlay">
+  <div class="ban-modal-box">
+    <h3><i class="fa-solid fa-user-plus" style="color:#a78bfa"></i> إضافة مشرف</h3>
+    <form id="addAdminForm" style="display:flex;flex-direction:column;gap:14px">
+      <div><label>اسم المستخدم</label><input type="text" id="newAdminName" required placeholder="أدخل الاسم"></div>
+      <div>
+        <label>الرتبة</label>
+        <select id="newAdminRole" style="background:#1f2937;color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 12px;width:100%;margin-top:4px;outline:none">
+          <option value="200">عضو (200)</option>
+          <option value="300">اسم محمي (300)</option>
+          <option value="400">اسم ملكي (400)</option>
+          <option value="500">مشرف (500)</option>
+          <option value="600">مشرف عام (600)</option>
+          <option value="700">ماستر (700)</option>
+          <option value="800">سوبر ماستر (800)</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="cancelAddAdminBtn" class="btn-cancel">إلغاء</button>
+        <button type="submit" class="btn-confirm">إضافة</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══ مودال تغيير كلمة المرور ═══ -->
+<div id="changePasswordModal" class="ban-modal-overlay">
+  <div class="ban-modal-box">
+    <h3><i class="fa-solid fa-key" style="color:#60a5fa"></i> تغيير كلمة المرور</h3>
+    <form id="changePasswordForm" style="display:flex;flex-direction:column;gap:14px">
+      <input type="hidden" id="changePwUsername">
+      <div><label>كلمة المرور الجديدة</label><input type="text" id="changePwInput" required placeholder="أدخل كلمة مرور جديدة"></div>
+      <div class="modal-actions">
+        <button type="button" id="cancelChangePwBtn" class="btn-cancel">إلغاء</button>
+        <button type="submit" class="btn-confirm" style="background:#3b82f6">حفظ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══ مودال اختيار الرتبة ═══ -->
+<div id="roleSelectModal" class="ban-modal-overlay">
+  <div class="ban-modal-box">
+    <h3 id="roleModalTitle">اختر الرتبة</h3>
+    <p id="roleModalDesc" style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:12px"></p>
+    <div id="roleOptionsContainer"></div>
+    <div class="modal-actions">
+      <button id="cancelRoleSelectBtn" class="btn-cancel">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ مودال الحظر ═══ -->
+<div id="banModal" class="ban-modal-overlay">
+  <div class="ban-modal-box">
+    <h3 id="banModalTitle">حظر المستخدم</h3>
+    <p id="banModalDesc" style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:12px">اختر مدة الحظر</p>
+    <div class="duration-options" id="banDurationOptions">
+      <button data-duration="permanent" class="active">مفتوح</button>
+      <button data-duration="1d">يوم</button>
+      <button data-duration="3d">3 أيام</button>
+      <button data-duration="7d">أسبوع</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="banCancelBtn">إلغاء</button>
+      <button class="btn-confirm" id="banConfirmBtn">تأكيد الحظر</button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* admin-main-btn */
+.admin-main-btn {
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  padding:16px;border-radius:16px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  cursor:pointer;transition:background .2s;
+}
+.admin-main-btn:hover,.admin-main-btn:active { background:rgba(255,255,255,.1); }
+</style>
+
+
+<script>
+/* ══════════════════════════════════════════
+   ADMIN PANEL JS — لوحة التحكم الجديدة
+   متوافق مع widbid2 + Socket.io events
+══════════════════════════════════════════ */
+
+/* ── خريطة الرتب ── */
+const RANK_NAMES_ADMIN = {
+  100:'زائر', 200:'عضو', 300:'محمي', 400:'ملكي',
+  500:'مشرف', 600:'مشرف عام', 700:'ماستر', 800:'سوبر ماستر',
+  900:'روت', 1000:'سوبر روت', 1100:'أونر', 1200:'سوبر أونر'
+};
+function _rankName(r) {
+  const steps = [1200,1100,1000,900,800,700,600,500,400,300,200,100];
+  for (const s of steps) if (r >= s) return RANK_NAMES_ADMIN[s] || String(r);
+  return 'زائر';
+}
+function _rankClass(r) {
+  if (r >= 700) return 'master';
+  if (r >= 600) return 'super';
+  if (r >= 500) return 'admin';
+  return 'member';
+}
+
+/* ── فتح/إغلاق لوحة التحكم ── */
+function openAdminModal() {
+  const modal = document.getElementById('adminModal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  modal.classList.add('show');
+  ['adminMainPage','appearanceSubMenu','welcomeEditSubMenu','logsSubMenu',
+   'adminsSubMenu','activityLogSubMenu','speakerManagerSubMenu'].forEach(id => {
+    document.getElementById(id)?.classList.add('hidden');
+  });
+  document.getElementById('adminMainPage')?.classList.remove('hidden');
+}
+
+function closeAdminModal() {
+  const modal = document.getElementById('adminModal');
+  modal?.classList.add('hidden');
+  modal?.classList.remove('show');
+}
+
+function _adminGoTo(hideId, showId, cb) {
+  document.getElementById(hideId)?.classList.add('hidden');
+  document.getElementById(showId)?.classList.remove('hidden');
+  if (cb) cb();
+}
+
+/* ══ renderAdmins ══════════════════════ */
+function renderAdmins() {
+  const tbody = document.getElementById('adminsBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:rgba(255,255,255,.4);padding:24px">جارٍ التحميل...</td></tr>';
+  const users = window._onlineUsers || [];
+  const myRank = parseInt(localStorage.getItem('rank') || '0');
+  const myUser = localStorage.getItem('username') || '';
+  const filtered = users.filter(u => u.username !== myUser);
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:rgba(255,255,255,.4);padding:24px">لا يوجد أعضاء حالياً</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(u => {
+    const r = u.rank || 100;
+    const canAct = myRank > r;
+    const actions = canAct ? `<div class="admin-actions">
+      ${r < 700 ? `<button class="promote-btn" onclick="adminPromote('${u.username}',${r})">ترقية</button>` : ''}
+      ${r > 100 ? `<button class="demote-btn" onclick="adminDemote('${u.username}',${r})">تخفيض</button>` : ''}
+      <button class="delete-btn" onclick="adminKick('${u.username}')">طرد</button>
+      <button class="password-btn" onclick="openChangePw('${u.username}')">حظر</button>
+    </div>` : '<span style="color:rgba(255,255,255,.3);font-size:11px">—</span>';
+    return `<tr>
+      <td style="font-weight:700;color:#fff">${u.username}</td>
+      <td><span class="admin-role-badge ${_rankClass(r)}">${_rankName(r)}</span></td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+function adminPromote(username, currentRank) {
+  const myRank = parseInt(localStorage.getItem('rank') || '0');
+  const next = currentRank < 200 ? 200 : currentRank < 500 ? 500
+    : currentRank < 600 ? 600 : currentRank < 700 ? 700 : null;
+  if (!next || next >= myRank) { showToast('⛔ لا يمكنك الترقية لهذا المستوى'); return; }
+  const rid = localStorage.getItem('room_id');
+  const by  = localStorage.getItem('username');
+  socket?.emit('changeRank', { target: username, rank: next, room_id: rid, by });
+  logActivity(by, 'ترقية', `${username} → ${_rankName(next)}`);
+  showToast(`✅ تمت ترقية ${username}`);
+  setTimeout(renderAdmins, 600);
+}
+
+function adminDemote(username, currentRank) {
+  const prev = currentRank >= 700 ? 600 : currentRank >= 600 ? 500
+    : currentRank >= 500 ? 200 : 100;
+  const rid = localStorage.getItem('room_id');
+  const by  = localStorage.getItem('username');
+  socket?.emit('changeRank', { target: username, rank: prev, room_id: rid, by });
+  logActivity(by, 'تخفيض', `${username} → ${_rankName(prev)}`);
+  showToast(`✅ تم تخفيض ${username}`);
+  setTimeout(renderAdmins, 600);
+}
+
+function adminKick(username) {
+  const rid = localStorage.getItem('room_id');
+  const by  = localStorage.getItem('username');
+  socket?.emit('kickUser', { target: username, room_id: rid, by });
+  logActivity(by, 'طرد', username);
+  showToast(`✅ تم طرد ${username}`);
+  setTimeout(renderAdmins, 600);
+}
+
+function openChangePw(username) {
+  document.getElementById('changePwUsername').value = username;
+  document.getElementById('banModalTitle').textContent = `حظر: ${username}`;
+  window._banTarget = username;
+  document.getElementById('banModal')?.classList.add('active');
+}
+
+/* ══ renderLogs ══════════════════════════ */
+function renderLogs(type) {
+  const titles = { entry:'سجل الدخول', exit:'سجل الخروج', banned:'المحظورون' };
+  document.getElementById('logsTitle').textContent = titles[type] || 'السجلات';
+  const online  = (window._onlineUsers || []).length;
+  const banLog  = JSON.parse(localStorage.getItem('_banLog')   || '[]');
+  const entLog  = JSON.parse(localStorage.getItem('_entryLog') || '[]');
+  document.getElementById('onlineNow').textContent   = online;
+  document.getElementById('bannedCount').textContent = banLog.length;
+  document.getElementById('totalVisits').textContent = entLog.length;
+  const tbody = document.getElementById('logsBody');
+  if (!tbody) return;
+  const map = { entry:'_entryLog', exit:'_exitLog', banned:'_banLog' };
+  const log = JSON.parse(localStorage.getItem(map[type]) || '[]').slice(-100).reverse();
+  if (!log.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.4);padding:24px">لا توجد سجلات</td></tr>';
+    return;
+  }
+  if (type === 'banned') {
+    tbody.innerHTML = log.map(e => `<tr>
+      <td style="font-weight:700;color:#fff">${e.user}</td>
+      <td style="color:rgba(255,255,255,.5);font-size:12px">${e.date||'—'}</td>
+      <td style="color:rgba(255,255,255,.5);font-size:12px">${e.time||'—'}</td>
+      <td><span class="status-badge banned">محظور</span></td>
+      <td><button class="action-btn unban" onclick="adminUnban('${e.user}')">رفع الحظر</button></td>
+    </tr>`).join('');
+  } else {
+    const badge = type === 'entry'
+      ? '<span class="status-badge online">دخل</span>'
+      : '<span class="status-badge offline">غادر</span>';
+    tbody.innerHTML = log.map(e => `<tr>
+      <td style="font-weight:700;color:#fff">${e.user}</td>
+      <td style="color:rgba(255,255,255,.5);font-size:12px">${e.date||'—'}</td>
+      <td style="color:rgba(255,255,255,.5);font-size:12px">${e.time||'—'}</td>
+      <td>${badge}</td>
+      <td>
+        <button class="action-btn kick" onclick="adminKick('${e.user}')">طرد</button>
+      </td>
+    </tr>`).join('');
+  }
+}
+
+function adminUnban(username) {
+  const rid = localStorage.getItem('room_id');
+  const by  = localStorage.getItem('username');
+  socket?.emit('unbanUser', { target: username, room_id: rid, by });
+  let log = JSON.parse(localStorage.getItem('_banLog') || '[]');
+  log = log.filter(e => e.user !== username);
+  localStorage.setItem('_banLog', JSON.stringify(log));
+  logActivity(by, 'رفع حظر', username);
+  showToast(`✅ تم رفع الحظر عن ${username}`);
+  renderLogs('banned');
+}
+
+/* ══ Activity Log ════════════════════════ */
+function logActivity(admin, action, details) {
+  const now = new Date();
+  const entry = {
+    admin: admin || '?', action, details,
+    date: now.toLocaleDateString('ar-EG'),
+    time: now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})
+  };
+  const log = JSON.parse(localStorage.getItem('_activityLog') || '[]');
+  log.push(entry);
+  if (log.length > 300) log.splice(0, log.length - 300);
+  localStorage.setItem('_activityLog', JSON.stringify(log));
+}
+
+function renderActivityLogs() {
+  const tbody = document.getElementById('activityBody');
+  if (!tbody) return;
+  const log = JSON.parse(localStorage.getItem('_activityLog') || '[]').slice(-150).reverse();
+  if (!log.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:rgba(255,255,255,.4);padding:24px">لا توجد سجلات</td></tr>';
+    return;
+  }
+  tbody.innerHTML = log.map(e => `<tr>
+    <td style="color:#c4b5fd;font-weight:700">${e.admin}</td>
+    <td style="color:#fff">${e.action}</td>
+    <td style="color:rgba(255,255,255,.7)">${e.details}</td>
+    <td style="color:rgba(255,255,255,.4);font-size:11px">${e.date} ${e.time}</td>
+  </tr>`).join('');
+}
+
+function clearActivityLogs() {
+  if (!confirm('مسح سجل التغييرات كاملاً؟')) return;
+  localStorage.removeItem('_activityLog');
+  renderActivityLogs();
+  showToast('✅ تم مسح السجل');
+}
+
+/* ══ Speaker Manager ═════════════════════ */
+function initSpeakerManager() {
+  const state = window._speakerState || {};
+  const el    = {
+    name:  document.getElementById('speakerAdminDisplay'),
+    timer: document.getElementById('speakerAdminTimer'),
+    queue: document.getElementById('speakerQueueAdmin'),
+    sel:   document.getElementById('speakerAssignSelect'),
+  };
+  if (el.name)  el.name.textContent  = state.currentSpeaker || 'فري مايك';
+  if (el.timer) el.timer.textContent = state.timeLeft        || '--:--';
+  /* تعبئة قائمة الأعضاء */
+  if (el.sel) {
+    el.sel.innerHTML = '<option value="">اختر عضواً</option>';
+    (window._onlineUsers || []).forEach(u => {
+      const o = document.createElement('option');
+      o.value = u.username;
+      o.textContent = `${u.username} (${_rankName(u.rank)})`;
+      el.sel.appendChild(o);
+    });
+  }
+  /* الطابور */
+  if (el.queue) {
+    const q = state.queue || [];
+    el.queue.innerHTML = q.length
+      ? q.map((u, i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+          <span style="color:#fff">${i+1}. ${u.username || u}</span>
+          <button onclick="adminRemoveQueue('${u.username || u}')" style="color:#f87171;font-size:12px;background:none;border:none;cursor:pointer">إزالة</button>
+        </div>`).join('')
+      : '<span style="color:rgba(255,255,255,.4)">لا يوجد طابور</span>';
+  }
+  /* تحديث تلقائي كل 4 ثوانٍ */
+  clearInterval(window._speakerMgrInt);
+  window._speakerMgrInt = setInterval(() => {
+    const s = window._speakerState || {};
+    if (el.name)  el.name.textContent  = s.currentSpeaker || 'فري مايك';
+    if (el.timer) el.timer.textContent = s.timeLeft        || '--:--';
+  }, 4000);
+}
+
+function adminRemoveQueue(username) {
+  const rid = localStorage.getItem('room_id');
+  socket?.emit('speakerLeaveQueue', { username, room_id: rid });
+  setTimeout(initSpeakerManager, 400);
+}
+
+/* ══ مظهر الغرفة ═════════════════════════ */
+function applyRoomBackground(bg) {
+  const el = document.getElementById('messagesList')?.parentElement
+          || document.querySelector('main');
+  if (!el) return;
+  const themes = {
+    'solid-light':  'background:#f9fafb',
+    'solid-dark':   'background:#0f0f1a',
+    'solid-blue':   'background:#dbeafe',
+    'solid-purple': 'background:#ede9fe',
+    'pattern-dots': 'background-image:radial-gradient(#c084fc 1px,transparent 1px);background-size:20px 20px;background-color:#f3e8ff',
+    'pattern-lines':'background:repeating-linear-gradient(45deg,#f3f4f6 0,#f3f4f6 1px,transparent 0,transparent 50%) 0/20px 20px',
+  };
+  if (themes[bg]) el.style.cssText = themes[bg];
+}
+
+function applyCustomBg(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const el = document.getElementById('messagesList')?.parentElement
+            || document.querySelector('main');
+    if (el) {
+      el.style.backgroundImage = `url('${e.target.result}')`;
+      el.style.backgroundSize  = 'cover';
+      el.style.backgroundPosition = 'center';
+    }
+    localStorage.setItem('customRoomBg', e.target.result);
+    showToast('✅ تم تطبيق الخلفية');
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetRoomBg() {
+  localStorage.removeItem('customRoomBg');
+  localStorage.removeItem('roomBg');
+  const el = document.getElementById('messagesList')?.parentElement
+          || document.querySelector('main');
+  if (el) { el.style.cssText = ''; }
+  showToast('✅ تمت استعادة الخلفية الافتراضية');
+}
+
+/* استعادة الخلفية عند التحميل */
+window.addEventListener('load', () => {
+  const custom = localStorage.getItem('customRoomBg');
+  if (custom) {
+    const el = document.querySelector('main');
+    if (el) { el.style.backgroundImage=`url('${custom}')`;el.style.backgroundSize='cover'; }
+  } else {
+    const bg = localStorage.getItem('roomBg');
+    if (bg) applyRoomBackground(bg);
+  }
+});
+
+/* ══ ربط الأحداث بعد تحميل الصفحة ══════ */
+document.addEventListener('DOMContentLoaded', () => {
+
+  /* إغلاق اللوحة */
+  document.getElementById('closeAdminBtn')?.addEventListener('click', closeAdminModal);
+
+  /* مظهر الغرفة */
+  document.getElementById('goToAppearanceFromAdminBtn')?.addEventListener('click', () =>
+    _adminGoTo('adminMainPage','appearanceSubMenu'));
+  document.getElementById('backToAdminFromAppearanceBtn')?.addEventListener('click', () =>
+    _adminGoTo('appearanceSubMenu','adminMainPage'));
+
+  /* theme buttons */
+  document.querySelectorAll('.bg-theme-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const bg = btn.dataset.bg;
+      applyRoomBackground(bg);
+      localStorage.setItem('roomBg', bg);
+      showToast('✅ تم تغيير الخلفية');
+    });
+  });
+
+  /* رسالة الترحيب */
+  document.getElementById('editWelcomeBtn')?.addEventListener('click', () => {
+    _adminGoTo('adminMainPage','welcomeEditSubMenu');
+    const cur = document.querySelector('#welcomeMsgBox')?.textContent || '';
+    document.getElementById('welcomeEditTextarea').value = cur;
+  });
+  document.getElementById('backToAdminFromWelcomeBtn')?.addEventListener('click', () =>
+    _adminGoTo('welcomeEditSubMenu','adminMainPage'));
+  document.getElementById('saveWelcomeEditBtn')?.addEventListener('click', () => {
+    const txt = document.getElementById('welcomeEditTextarea')?.value?.trim();
+    const sz  = document.getElementById('welcomeFontSizeRange')?.value || 16;
+    const rid = localStorage.getItem('room_id');
+    const by  = localStorage.getItem('username');
+    if (!txt) return;
+    socket?.emit('updateWelcome', { room_id: rid, message: txt, by });
+    const pre = document.getElementById('welcomePreviewFrame');
+    if (pre) { pre.textContent = txt; pre.style.fontSize = sz + 'px'; }
+    showToast('✅ تم حفظ رسالة الترحيب');
+    logActivity(by, 'تعديل الترحيب', txt.slice(0,30) + (txt.length > 30 ? '...' : ''));
+    _adminGoTo('welcomeEditSubMenu','adminMainPage');
+  });
+  /* معاينة حية */
+  document.getElementById('welcomeEditTextarea')?.addEventListener('input', e => {
+    const pre = document.getElementById('welcomePreviewFrame');
+    if (pre) pre.textContent = e.target.value || 'رسالة الترحيب ستظهر هنا';
+  });
+
+  /* سجل الدخول */
+  document.getElementById('goToLogsEntryBtn')?.addEventListener('click', () =>
+    _adminGoTo('adminMainPage','logsSubMenu', () => renderLogs('entry')));
+  document.getElementById('goToLogsExitBtn')?.addEventListener('click', () =>
+    _adminGoTo('adminMainPage','logsSubMenu', () => renderLogs('exit')));
+  document.getElementById('goToLogsBannedBtn')?.addEventListener('click', () =>
+    _adminGoTo('adminMainPage','logsSubMenu', () => renderLogs('banned')));
+  document.getElementById('backToAdminFromLogsBtn')?.addEventListener('click', () =>
+    _adminGoTo('logsSubMenu','adminMainPage'));
+
+  /* إدارة المشرفين */
+  document.getElementById('goToAdminsFromAdminBtn')?.addEventListener('click', () =>
+    _adminGoTo('adminMainPage','adminsSubMenu', renderAdmins));
+  document.getElementById('backToAdminFromAdminsBtn')?.addEventListener('click', () =>
+    _adminGoTo('adminsSubMenu','adminMainPage'));
+
+  /* إضافة مشرف */
+  document.getElementById('addAdminBtn')?.addEventListener('click', () =>
+    document.getElementById('addAdminModal')?.classList.add('active'));
+  document.getElementById('cancelAddAdminBtn')?.addEventListener('click', () =>
+    document.getElementById('addAdminModal')?.classList.remove('active'));
+  document.getElementById('addAdminForm')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = document.getElementById('newAdminName')?.value?.trim();
+    const rank = parseInt(document.getElementById('newAdminRole')?.value);
+    if (!name || !rank) return;
+    const rid = localStorage.getItem('room_id');
+    const by  = localStorage.getItem('username');
+    socket?.emit('changeRank', { target: name, rank, room_id: rid, by });
+    logActivity(by, 'تعيين رتبة', `${name} → ${_rankName(rank)}`);
+    showToast(`✅ تم تعيين ${name} كـ ${_rankName(rank)}`);
+    document.getElementById('addAdminModal')?.classList.remove('active');
+    document.getElementById('addAdminForm')?.reset();
+    setTimeout(renderAdmins, 600);
+  });
+
+  /* سجل التغييرات */
+  document.getElementById('goToLogsActivityBtn')?.addEventListener('click', () =>
+    _adminGoTo('adminMainPage','activityLogSubMenu', renderActivityLogs));
+  document.getElementById('backToAdminFromActivityBtn')?.addEventListener('click', () =>
+    _adminGoTo('activityLogSubMenu','adminMainPage'));
+  document.getElementById('clearActivityLogBtn')?.addEventListener('click', clearActivityLogs);
+
+  /* إدارة السبيكر */
+  document.getElementById('goToSpeakerManagerBtn')?.addEventListener('click', () => {
+    _adminGoTo('adminMainPage','speakerManagerSubMenu');
+    initSpeakerManager();
+  });
+  document.getElementById('backToAdminFromSpeakerBtn')?.addEventListener('click', () => {
+    clearInterval(window._speakerMgrInt);
+    _adminGoTo('speakerManagerSubMenu','adminMainPage');
+  });
+  document.getElementById('speakerAssignBtn')?.addEventListener('click', () => {
+    const sel = document.getElementById('speakerAssignSelect');
+    const unlimited = document.getElementById('speakerAssignUnlimited')?.checked;
+    const dur = parseInt(document.getElementById('speakerAssignDuration')?.value) || 120;
+    const username = sel?.value;
+    if (!username) { showToast('⚠️ اختر عضواً أولاً'); return; }
+    const rid = localStorage.getItem('room_id');
+    const by  = localStorage.getItem('username');
+    if (unlimited) socket?.emit('speakerGrantOpen', { target: username, room_id: rid, by });
+    else           socket?.emit('speakerExtend', { target: username, seconds: dur, room_id: rid, by });
+    logActivity(by, 'تعيين متحدث', username);
+    showToast(`✅ تم تعيين ${username} كمتحدث`);
+  });
+  document.getElementById('speakerEndBtn')?.addEventListener('click', () => {
+    const rid = localStorage.getItem('room_id');
+    const by  = localStorage.getItem('username');
+    socket?.emit('speakerRevoke', { room_id: rid, by });
+    logActivity(by, 'إنهاء السبيكر', '—');
+    showToast('✅ تم إنهاء دور المتحدث');
+    document.getElementById('speakerAdminDisplay').textContent = 'فري مايك';
+    document.getElementById('speakerAdminTimer').textContent   = '--:--';
+  });
+
+  /* مودال تغيير كلمة المرور (حظر) */
+  document.getElementById('cancelChangePwBtn')?.addEventListener('click', () =>
+    document.getElementById('changePasswordModal')?.classList.remove('active'));
+
+  /* مودال اختيار الرتبة */
+  document.getElementById('cancelRoleSelectBtn')?.addEventListener('click', () =>
+    document.getElementById('roleSelectModal')?.classList.remove('active'));
+
+  /* مودال الحظر */
+  document.getElementById('banCancelBtn')?.addEventListener('click', () =>
+    document.getElementById('banModal')?.classList.remove('active'));
+  document.querySelectorAll('#banDurationOptions button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#banDurationOptions button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  document.getElementById('banConfirmBtn')?.addEventListener('click', () => {
+    const target = window._banTarget;
+    if (!target) return;
+    const dur = document.querySelector('#banDurationOptions button.active')?.dataset.duration || 'permanent';
+    const rid = localStorage.getItem('room_id');
+    const by  = localStorage.getItem('username');
+    const durMs = dur === 'permanent' ? null
+      : dur === '1d' ? 86400000
+      : dur === '3d' ? 259200000
+      : dur === '7d' ? 604800000 : null;
+    socket?.emit('banUser', { target, room_id: rid, by, duration: durMs });
+    /* سجّل في localStorage */
+    const now = new Date();
+    const log = JSON.parse(localStorage.getItem('_banLog') || '[]');
+    log.push({ user: target, date: now.toLocaleDateString('ar-EG'), time: now.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) });
+    localStorage.setItem('_banLog', JSON.stringify(log));
+    logActivity(by, 'حظر', `${target} (${dur})`);
+    showToast(`✅ تم حظر ${target}`);
+    document.getElementById('banModal')?.classList.remove('active');
+    window._banTarget = null;
+    setTimeout(renderAdmins, 600);
+  });
+
+  /* ── تسجيل دخول/خروج الأعضاء في localStorage ── */
+  if (typeof socket !== 'undefined') {
+    socket.on('userJoined', d => {
+      if (!d?.username) return;
+      const now = new Date();
+      const log = JSON.parse(localStorage.getItem('_entryLog') || '[]');
+      log.push({ user: d.username, date: now.toLocaleDateString('ar-EG'), time: now.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) });
+      if (log.length > 500) log.splice(0, log.length - 500);
+      localStorage.setItem('_entryLog', JSON.stringify(log));
+    });
+    socket.on('userLeft', d => {
+      if (!d?.username) return;
+      const now = new Date();
+      const log = JSON.parse(localStorage.getItem('_exitLog') || '[]');
+      log.push({ user: d.username, date: now.toLocaleDateString('ar-EG'), time: now.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) });
+      if (log.length > 500) log.splice(0, log.length - 500);
+      localStorage.setItem('_exitLog', JSON.stringify(log));
+    });
+  }
+});
 </script>
 
 </body>
