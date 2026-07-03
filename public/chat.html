@@ -187,6 +187,318 @@
 .modal-actions { display:flex;gap:10px;margin-top:16px;justify-content:flex-end; }
 .role-option-item { display:block;width:100%;padding:10px 16px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:#fff;cursor:pointer;transition:all .2s;text-align:right;margin-bottom:6px; }
 .role-option-item:hover { background:rgba(255,255,255,.12); }
+
+/* ══════════════════════════════════════════════
+   NEW UI OVERRIDE — تحديث شامل للواجهة
+   يُطبَّق فوق chat.css / base.css
+══════════════════════════════════════════════ */
+
+/* ── المتغيرات الجديدة ── */
+:root {
+  --new-primary:  #7C3AED;
+  --new-header:   #6D28D9;
+  --new-toolbar:  #7C3AED;
+  --new-chat-bg:  #EDE9FE;
+  --new-footer:   #FFFFFF;
+  --new-shadow:   0 4px 20px rgba(109,40,217,.18);
+}
+
+/* ══ 1. خلفية الشات — نقاط بنفسجية ══ */
+.chat-bg {
+  position: absolute !important;
+  inset: 0 !important;
+  background-color: #EDE9FE !important;
+  background-image:
+    radial-gradient(#A78BFA 0.6px, transparent 0.6px),
+    radial-gradient(#A78BFA 0.6px, #EDE9FE 0.6px) !important;
+  background-size: 22px 22px !important;
+  background-position: 0 0, 11px 11px !important;
+  z-index: 0 !important;
+}
+.chat-area { position: relative !important; }
+
+/* ══ 2. الهيدر — بنفسجي حديث ══ */
+.room-banner {
+  background: linear-gradient(135deg, #6D28D9 0%, #7C3AED 60%, #8B5CF6 100%) !important;
+}
+.banner-overlay {
+  background: linear-gradient(to bottom,
+    rgba(0,0,0,.1) 0%,
+    rgba(0,0,0,.25) 100%) !important;
+}
+.room-header {
+  box-shadow: 0 3px 16px rgba(109,40,217,.35) !important;
+}
+.header-title {
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  letter-spacing: .3px !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,.3) !important;
+}
+.header-icon {
+  font-size: 20px !important;
+  padding: 6px !important;
+  border-radius: 10px !important;
+  transition: background .15s !important;
+  cursor: pointer !important;
+}
+.header-icon:active { background: rgba(255,255,255,.15) !important; }
+
+/* ══ 3. شريط السبيكر ══ */
+.header-speaker {
+  background: rgba(109,40,217,.55) !important;
+  border-top: 1px solid rgba(255,255,255,.15) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* ══ 4. TOOLBAR 1 — فوتر أبيض ══ */
+.toolbar1 {
+  position: fixed !important;
+  bottom: 42px !important;
+  right: 0 !important; left: 0 !important;
+  height: 58px !important;
+  background: #FFFFFF !important;
+  border-top: 1.5px solid #EDE9FE !important;
+  box-shadow: 0 -4px 20px rgba(109,40,217,.1) !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 10px !important;
+  gap: 8px !important;
+  z-index: 90 !important;
+}
+
+/* زر الإرسال */
+.tb-send {
+  width: 42px !important; height: 42px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9) !important;
+  color: #fff !important;
+  font-size: 18px !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 3px 10px rgba(109,40,217,.4) !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  flex-shrink: 0 !important;
+  transition: transform .15s !important;
+  order: -1 !important;
+}
+.tb-send:active { transform: scale(.93) !important; }
+
+/* حقل الإدخال */
+.msg-input-wrap {
+  flex: 1 !important;
+  background: #F3F0FF !important;
+  border: 1.5px solid #DDD6FE !important;
+  border-radius: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 12px !important;
+  height: 42px !important;
+  transition: border-color .2s !important;
+}
+.msg-input-wrap:focus-within {
+  border-color: #7C3AED !important;
+  background: #fff !important;
+}
+.msg-input {
+  flex: 1 !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  font-size: 14px !important;
+  color: #1A1A2E !important;
+  font-family: 'Tajawal', sans-serif !important;
+}
+.msg-input::placeholder { color: #A78BFA !important; }
+.tb-emoji {
+  font-size: 20px !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+}
+
+/* زر الميك والصور */
+.tb-mic, .tb-image, .tb-chat-btn {
+  width: 40px !important; height: 40px !important;
+  background: #F3F0FF !important;
+  border-radius: 12px !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  font-size: 18px !important;
+  cursor: pointer !important;
+  border: 1.5px solid #DDD6FE !important;
+  flex-shrink: 0 !important;
+  transition: background .15s !important;
+}
+.tb-mic:active, .tb-image:active, .tb-chat-btn:active {
+  background: #DDD6FE !important;
+}
+
+/* ══ 5. TOOLBAR 2 — إيموجي سريع ══ */
+.toolbar2 {
+  position: fixed !important;
+  bottom: 0 !important;
+  right: 0 !important; left: 0 !important;
+  height: 42px !important;
+  background: linear-gradient(90deg, #6D28D9, #7C3AED) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-around !important;
+  padding: 0 12px !important;
+  z-index: 90 !important;
+  box-shadow: none !important;
+}
+.quick-btn {
+  font-size: 22px !important;
+  cursor: pointer !important;
+  padding: 4px 8px !important;
+  border-radius: 10px !important;
+  transition: transform .15s, background .15s !important;
+  line-height: 1 !important;
+}
+.quick-btn:active {
+  transform: scale(1.25) !important;
+  background: rgba(255,255,255,.15) !important;
+}
+
+/* ══ 6. منطقة الرسائل ══ */
+#messages {
+  padding-bottom: 16px !important;
+  padding-top: 8px !important;
+}
+
+/* فقاعات الرسائل */
+.msg-bubble {
+  border-radius: 18px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08) !important;
+  border: none !important;
+}
+.msg-self .msg-bubble  { border-radius: 18px 4px 18px 18px !important; }
+.msg-other .msg-bubble { border-radius: 4px 18px 18px 18px !important; }
+
+/* اسم العضو */
+.msg-username {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  margin-bottom: 2px !important;
+}
+
+/* ══ 7. لوحة الأعضاء ══ */
+.members-bg {
+  background: #FFFFFF !important;
+  box-shadow: 4px 0 20px rgba(109,40,217,.12) !important;
+}
+.members-header {
+  background: linear-gradient(135deg, #6D28D9, #7C3AED) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  padding: 14px 16px !important;
+  box-shadow: 0 2px 8px rgba(109,40,217,.2) !important;
+}
+
+/* بطاقة العضو */
+.member-card {
+  border-radius: 12px !important;
+  margin: 4px 8px !important;
+  border: 1.5px solid #EDE9FE !important;
+  background: #FAF8FF !important;
+  transition: background .15s !important;
+}
+.member-card:active { background: #EDE9FE !important; }
+
+/* ══ 8. الإيموجي بانل ══ */
+.emoji-panel {
+  border-radius: 20px 20px 0 0 !important;
+  box-shadow: 0 -8px 30px rgba(109,40,217,.15) !important;
+  border-top: 2px solid #DDD6FE !important;
+}
+.emoji-tab.active {
+  background: linear-gradient(135deg, #7C3AED, #6D28D9) !important;
+  border-color: #7C3AED !important;
+}
+
+/* ══ 9. إشعارات الدخول/الخروج ══ */
+.sys-msg {
+  background: rgba(109,40,217,.12) !important;
+  border: 1px solid rgba(109,40,217,.2) !important;
+  border-radius: 20px !important;
+  color: #5B21B6 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  padding: 4px 14px !important;
+  margin: 6px auto !important;
+  max-width: 85% !important;
+}
+
+/* ══ 10. شريط الترحيب ══ */
+.welcome-banner {
+  background: linear-gradient(135deg, #7C3AED22, #6D28D911) !important;
+  border: 1.5px solid #DDD6FE !important;
+  border-radius: 16px !important;
+  color: #5B21B6 !important;
+  margin: 8px !important;
+  padding: 14px 16px !important;
+  font-size: 14px !important;
+  text-align: center !important;
+}
+
+/* ══ 11. القائمة الجانبية — تحديث CSS مع الحفاظ على المحتوى ══ */
+.side-menu, #sideMenu {
+  width: 260px !important;
+  top: 54px !important;
+  right: 0 !important;
+  background: rgba(15, 10, 30, 0.82) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  border-radius: 18px 0 0 18px !important;
+  border: 1px solid rgba(139,92,246,.2) !important;
+  box-shadow: -6px 0 40px rgba(109,40,217,.3) !important;
+  transform: translateX(110%) !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  transition: transform .28s cubic-bezier(.22,1,.36,1) !important;
+  transform-origin: right center !important;
+}
+.side-menu.open, #sideMenu.open {
+  transform: translateX(0%) !important;
+  pointer-events: all !important;
+}
+
+/* عناصر القائمة الجانبية */
+.sm-item {
+  padding: 11px 16px !important;
+  border-radius: 12px !important;
+  margin: 2px 6px !important;
+  gap: 10px !important;
+}
+.sm-item:active { background: rgba(139,92,246,.15) !important; }
+.sm-icon { font-size: 16px !important; width: 24px !important; }
+.sm-label { font-size: 14px !important; color: rgba(255,255,255,.88) !important; }
+.sm-divider {
+  background: rgba(139,92,246,.2) !important;
+  margin: 5px 14px !important;
+}
+.sm-section-label {
+  color: rgba(139,92,246,.7) !important;
+  font-size: 10px !important;
+  padding: 6px 16px 3px !important;
+  letter-spacing: .6px !important;
+}
+.sm-profile {
+  background: rgba(139,92,246,.12) !important;
+  border-bottom: 1px solid rgba(139,92,246,.2) !important;
+  padding: 12px 14px !important;
+  margin-bottom: 4px !important;
+  border-radius: 18px 0 0 0 !important;
+}
+.sm-avatar {
+  width: 34px !important; height: 34px !important;
+  border-radius: 10px !important;
+  border: 2px solid rgba(139,92,246,.5) !important;
+}
+.sm-username { font-size: 13px !important; font-weight: 700 !important; }
+.sm-rank-label { font-size: 10px !important; color: #A78BFA !important; }
+
 </style>
 
 </head>
