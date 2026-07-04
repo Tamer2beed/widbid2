@@ -381,62 +381,8 @@
   margin-bottom: 2px !important;
 }
 
-/* ══ 7. لوحة الأعضاء — من اليسار ══ */
-.members-bg {
-  position: fixed !important;
-  top: 0 !important; bottom: 0 !important;
-  left: 0 !important;
-  width: 75vw !important;
-  max-width: 320px !important;
-  background: #FFFFFF !important;
-  box-shadow: 4px 0 24px rgba(109,40,217,.18) !important;
-  z-index: 80 !important;
-  transform: translateX(-100%) !important;
-  transition: transform .3s cubic-bezier(.22,1,.36,1) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-}
-.members-bg.open {
-  transform: translateX(0%) !important;
-}
-/* overlay عند فتح القائمة */
-#membersOverlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.35);
-  z-index: 79;
-  display: none;
-  backdrop-filter: blur(2px);
-}
-#membersOverlay.show { display: block; }
-
-.members-header {
-  background: linear-gradient(135deg, #6D28D9, #7C3AED) !important;
-  color: #fff !important;
-  font-weight: 700 !important;
-  padding: 16px !important;
-  font-size: 15px !important;
-  flex-shrink: 0 !important;
-}
-#membersList {
-  flex: 1 !important;
-  overflow-y: auto !important;
-  padding: 8px !important;
-}
-.member-card {
-  border-radius: 12px !important;
-  border: 1.5px solid #EDE9FE !important;
-  background: #FAF8FF !important;
-  transition: background .15s !important;
-  margin-bottom: 6px !important;
-}
-.member-card:active { background: #EDE9FE !important; }
-/* chat-layer لا تتحرك — members تنزلق فوقها */
-.chat-layer, .chat-layer.shifted {
-  transform: none !important;
-  width: 100% !important;
-  left: 0 !important;
-}
+/* ══ 7. لوحة الأعضاء — يُعالجها JS (لا تتعارض مع chat.css) ══ */
+/* الـ CSS الحقيقي يُحقن عبر JavaScript في وقت التشغيل */
 
 /* ══ 8. الإيموجي بانل ══ */
 .emoji-panel {
@@ -2372,61 +2318,211 @@ document.addEventListener('DOMContentLoaded', () => {
 </body>
 
 <script>
-/* ══ سحب من اليسار — قائمة المتواجدين ══ */
+/* ══════════════════════════════════════════════════════
+   قائمة المتواجدين — كاملة (JS يتحكم بكل شيء)
+   حل: نقل panel إلى body + حقن CSS في وقت التشغيل
+══════════════════════════════════════════════════════ */
 (function(){
-  const EDGE=40, OPEN_T=60, CLOSE_T=60;
-  let sx=0, sy=0, drag=false, isOpen=false;
-  const panel=()=>document.querySelector('.members-bg');
+
+  /* ── حقن CSS في وقت التشغيل (يتغلب على chat.css) ── */
+  function injectStyles(){
+    if(document.getElementById('mp-style')) return;
+    const s=document.createElement('style');
+    s.id='mp-style';
+    s.textContent=`
+      #membersBg {
+        position:fixed!important;top:0!important;bottom:0!important;
+        left:0!important;width:75vw!important;max-width:310px!important;
+        background:#fff!important;
+        box-shadow:4px 0 24px rgba(109,40,217,.2)!important;
+        z-index:200!important;display:flex!important;
+        flex-direction:column!important;overflow:hidden!important;
+        transform:translateX(-100%)!important;
+        transition:transform .3s cubic-bezier(.22,1,.36,1)!important;
+      }
+      #membersBg.mp-open{transform:translateX(0%)!important;}
+      #membersOverlay{
+        position:fixed!important;inset:0!important;
+        background:rgba(0,0,0,.38)!important;z-index:199!important;
+        display:none!important;backdrop-filter:blur(2px)!important;
+      }
+      #membersOverlay.mp-show{display:block!important;}
+      #membersBg .members-header{
+        background:linear-gradient(135deg,#6D28D9,#7C3AED)!important;
+        color:#fff!important;font-weight:700!important;
+        padding:14px 16px!important;font-size:15px!important;
+        flex-shrink:0!important;display:flex!important;
+        align-items:center!important;justify-content:space-between!important;
+      }
+      #membersBg .members-list{flex:1!important;overflow-y:auto!important;padding:8px!important;}
+      #chatLayer,#chatLayer.shifted{transform:none!important;}
+    `;
+    document.head.appendChild(s);
+  }
+
+  /* ── نقل panel إلى body (يخرجه من flex layout) ── */
+  function movePanel(){
+    const p=document.getElementById('membersBg');
+    if(p && p.parentElement!==document.body){
+      document.body.appendChild(p);
+    }
+    /* أضف زر إغلاق داخل header إن لم يكن موجوداً */
+    const h=p?.querySelector('.members-header');
+    if(h && !h.querySelector('#mpCloseBtn')){
+      const btn=document.createElement('button');
+      btn.id='mpCloseBtn';
+      btn.innerHTML='✕';
+      btn.style.cssText='background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:4px 8px;opacity:.8';
+      btn.onclick=closeP;
+      h.appendChild(btn);
+    }
+  }
+
+  /* ── تعبئة قائمة الأعضاء ── */
+  const RANK_N={
+    100:'زائر',200:'عضو',300:'محمي',400:'ملكي',
+    500:'مشرف',600:'مشرف عام',700:'ماستر',800:'سوبر ماستر',
+    900:'روت',1000:'سوبر روت',1100:'أونر',1200:'سوبر أونر'
+  };
+  const RANK_C={
+    1200:'#dc2626',1100:'#b91c1c',1000:'#7c3aed',900:'#6d28d9',
+    800:'#d97706',700:'#b45309',600:'#2563eb',500:'#1d4ed8',
+    400:'#0369a1',300:'#0f766e',200:'#16a34a',100:'#6b7280'
+  };
+  function rName(r){
+    const steps=[1200,1100,1000,900,800,700,600,500,400,300,200,100];
+    for(const s of steps) if(r>=s) return RANK_N[s]||String(r);
+    return 'زائر';
+  }
+  function rColor(r){
+    const steps=[1200,1100,1000,900,800,700,600,500,400,300,200,100];
+    for(const s of steps) if(r>=s) return RANK_C[s]||'#6b7280';
+    return '#6b7280';
+  }
+
+  function renderMembers(){
+    const list=document.getElementById('membersList');
+    const cnt=document.getElementById('membersCount');
+    const users=window._onlineUsers||[];
+    if(cnt) cnt.textContent=`(${users.length})`;
+    if(!list) return;
+    if(!users.length){
+      list.innerHTML='<div style="text-align:center;color:rgba(0,0,0,.3);padding:28px;font-size:13px">لا يوجد أعضاء حالياً</div>';
+      return;
+    }
+    list.innerHTML=users.map(u=>{
+      const r=u.rank||100;
+      const c=rColor(r);
+      const av=u.avatar||'av1.svg';
+      const mic=u.isMicOn?'<span style="font-size:15px;color:#ef4444">🎤</span>':'';
+      return `<div class="member-item" data-username="${u.username}"
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;
+               border-radius:12px;border:1.5px solid #EDE9FE;background:#FAF8FF;
+               margin-bottom:6px;cursor:pointer;"
+        onclick="typeof openUserContext==='function'&&openUserContext('${u.username}',${r})">
+        <img src="/avatars/${av}" style="width:38px;height:38px;border-radius:10px;
+             border:2px solid ${c};object-fit:cover;flex-shrink:0"
+             onerror="this.src='/avatars/av1.svg'">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:13px;color:#1a1a2e;white-space:nowrap;
+                      overflow:hidden;text-overflow:ellipsis">${u.username}</div>
+          <div style="font-size:11px;color:${c};font-weight:600">${rName(r)}</div>
+        </div>${mic}
+      </div>`;
+    }).join('');
+  }
+
+  /* ── فتح / إغلاق ── */
+  let isOpen=false;
+  const panel=()=>document.getElementById('membersBg');
   const ov=()=>document.getElementById('membersOverlay');
 
   function openP(){
     isOpen=true;
-    panel()?.classList.add('open');
-    if(panel()) panel().style.transform='';
-    ov()?.classList.add('show');
+    panel()?.classList.add('mp-open');
+    ov()?.classList.add('mp-show');
+    renderMembers();
   }
   function closeP(){
     isOpen=false;
-    panel()?.classList.remove('open');
-    if(panel()) panel().style.transform='';
-    ov()?.classList.remove('show');
+    panel()?.classList.remove('mp-open');
+    ov()?.classList.remove('mp-show');
+    const p=panel();
+    if(p) p.style.transform='';
   }
 
-  /* تعريف عالمي لاستخدامه من toggleMembers */
+  /* تعريف عالمي */
   window._openMembersPanel=openP;
   window._closeMembersPanel=closeP;
 
-  /* تعديل toggleMembers الأصلي */
-  window.addEventListener('load',()=>{
-    const orig=window.toggleMembers;
+  /* ── تهيئة ── */
+  function init(){
+    injectStyles();
+    movePanel();
+    closeP(); /* تأكد إغلاق القائمة عند البدء */
+
+    /* override toggleMembers */
     window.toggleMembers=()=>{ isOpen?closeP():openP(); };
-  });
+
+    /* إغلاق عند النقر على overlay */
+    const o=ov();
+    if(o) o.addEventListener('click',closeP);
+
+    /* تحديث عند تغيير الأعضاء */
+    if(typeof socket!=='undefined'){
+      socket.on('onlineUsers',()=>{ if(isOpen) renderMembers(); });
+      socket.on('userJoined', ()=>{ if(isOpen) renderMembers(); });
+      socket.on('userLeft',   ()=>{ if(isOpen) renderMembers(); });
+      socket.on('micOn',()=>{ if(isOpen) renderMembers(); });
+      socket.on('micOff',()=>{ if(isOpen) renderMembers(); });
+    }
+  }
+
+  /* ── سحب من الحافة اليسرى ── */
+  const EDGE=42, OPEN_T=55, CLOSE_T=55;
+  let sx=0, sy=0, drag=false, tracking=false;
 
   document.addEventListener('touchstart',e=>{
-    sx=e.touches[0].clientX; sy=e.touches[0].clientY; drag=false;
-    if(!isOpen && sx<EDGE) drag=true;
-    else if(isOpen) drag=true;
+    sx=e.touches[0].clientX; sy=e.touches[0].clientY;
+    drag=false; tracking=false;
+    if(!isOpen && sx<EDGE){ drag=true; tracking=true; }
+    else if(isOpen){ tracking=true; }
   },{passive:true});
 
   document.addEventListener('touchmove',e=>{
-    if(!drag) return;
+    if(!tracking) return;
     const dx=e.touches[0].clientX-sx;
     const dy=Math.abs(e.touches[0].clientY-sy);
-    if(dy>30&&Math.abs(dx)<dy){drag=false;return;}
+    if(dy>25&&Math.abs(dx)<dy){ tracking=false; drag=false; return; }
     const p=panel(); if(!p) return;
-    if(!isOpen&&dx>0) p.style.transform=`translateX(calc(-100% + ${Math.min(dx,p.offsetWidth)}px))`;
-    else if(isOpen&&dx<0) p.style.transform=`translateX(${Math.max(dx,-p.offsetWidth)}px)`;
+    const pw=p.offsetWidth||240;
+    if(!isOpen&&dx>0&&drag){
+      p.style.transform=`translateX(calc(-100% + ${Math.min(dx,pw)}px))`;
+    } else if(isOpen&&dx<0){
+      p.style.transform=`translateX(${Math.max(dx,-pw)}px)`;
+    }
   },{passive:true});
 
   document.addEventListener('touchend',e=>{
-    if(!drag) return; drag=false;
+    if(!tracking){ return; }
+    tracking=false;
     const dx=e.changedTouches[0].clientX-sx;
-    if(!isOpen&&dx>OPEN_T) openP();
-    else if(isOpen&&dx<-CLOSE_T) closeP();
-    else { isOpen?openP():closeP(); }
+    if(!isOpen&&drag&&dx>OPEN_T){ openP(); }
+    else if(isOpen&&dx<-CLOSE_T){ closeP(); }
+    else {
+      const p=panel();
+      if(p) p.style.transform=''; /* إعادة للحالة الصحيحة */
+    }
+    drag=false;
   },{passive:true});
 
-  document.addEventListener('click',e=>{ if(e.target.id==='membersOverlay') closeP(); });
+  /* تشغيل عند تحميل DOM */
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',init);
+  } else {
+    init();
+  }
+
 })();
 </script>
 
