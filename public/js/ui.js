@@ -59,6 +59,77 @@ function rankLabel(rank) {
   return 'زائر';
 }
 
+
+/* ── إعدادات الخط ── */
+function applyFontSettings() {
+  const size   = localStorage.getItem('chatFontSize')   || '14';
+  const weight = localStorage.getItem('chatFontWeight') || '400';
+  const color  = localStorage.getItem('chatFontColor')  || '#222';
+  document.documentElement.style.setProperty('--chat-font-size',   size + 'px');
+  document.documentElement.style.setProperty('--chat-font-weight', weight);
+  document.documentElement.style.setProperty('--chat-font-color',  color);
+}
+/* تطبيق الإعدادات فور تحميل الصفحة */
+applyFontSettings();
+
+function openSettings() {
+  /* نافذة إعدادات الخط */
+  const overlay = document.getElementById('settingsOverlay');
+  if (overlay) { overlay.classList.add('show'); return; }
+
+  /* إنشاء النافذة إن لم تكن موجودة */
+  const box = document.createElement('div');
+  box.id = 'settingsOverlay';
+  box.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-end;justify-content:center';
+  box.innerHTML = `
+    <div style="width:100%;max-width:480px;background:#fff;border-radius:24px 24px 0 0;padding:20px 20px 30px;font-family:Tajawal,sans-serif" dir="rtl">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <span style="font-size:18px;font-weight:700;color:#1a1a2e">الإعدادات</span>
+        <button onclick="document.getElementById('settingsOverlay').classList.remove('show')" style="font-size:22px;background:none;border:none;cursor:pointer;color:#666">✕</button>
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:13px;color:#666;display:block;margin-bottom:6px">حجم الخط</label>
+        <div style="display:flex;align-items:center;gap:12px;background:#f3f0ff;padding:10px 14px;border-radius:12px">
+          <input type="range" min="11" max="26" step="1"
+            value="${localStorage.getItem('chatFontSize')||14}"
+            oninput="
+              document.getElementById('_fsp').textContent=this.value+'px';
+              document.documentElement.style.setProperty('--chat-font-size',this.value+'px');
+            "
+            onchange="localStorage.setItem('chatFontSize',this.value)"
+            style="flex:1;accent-color:#7c3aed">
+          <span id="_fsp" style="color:#7c3aed;font-weight:700;min-width:36px">${localStorage.getItem('chatFontSize')||14}px</span>
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:13px;color:#666;display:block;margin-bottom:6px">سمك الخط</label>
+        <div style="display:flex;gap:8px">
+          <button onclick="document.documentElement.style.setProperty('--chat-font-weight','400');localStorage.setItem('chatFontWeight','400');this.style.background='#7c3aed';this.style.color='#fff';this.nextElementSibling.style.background='#f3f0ff';this.nextElementSibling.style.color='#1a1a2e'"
+            style="flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer;font-family:Tajawal;font-size:14px;background:${localStorage.getItem('chatFontWeight')==='700'?'#f3f0ff':'#7c3aed'};color:${localStorage.getItem('chatFontWeight')==='700'?'#1a1a2e':'#fff'}">رفيع</button>
+          <button onclick="document.documentElement.style.setProperty('--chat-font-weight','700');localStorage.setItem('chatFontWeight','700');this.style.background='#7c3aed';this.style.color='#fff';this.previousElementSibling.style.background='#f3f0ff';this.previousElementSibling.style.color='#1a1a2e'"
+            style="flex:1;padding:10px;border-radius:10px;border:none;cursor:pointer;font-family:Tajawal;font-size:14px;background:${localStorage.getItem('chatFontWeight')==='700'?'#7c3aed':'#f3f0ff'};color:${localStorage.getItem('chatFontWeight')==='700'?'#fff':'#1a1a2e'}">عريض</button>
+        </div>
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:13px;color:#666;display:block;margin-bottom:6px">لون الخط</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${['#222222','#7c3aed','#1d4ed8','#15803d','#dc2626','#c2410c','#0e7490'].map(c=>`
+            <button onclick="document.documentElement.style.setProperty('--chat-font-color','${c}');localStorage.setItem('chatFontColor','${c}')"
+              style="width:32px;height:32px;border-radius:50%;background:${c};border:3px solid ${localStorage.getItem('chatFontColor')===c?'#7c3aed':'transparent'};cursor:pointer"></button>
+          `).join('')}
+        </div>
+      </div>
+      <button onclick="applyFontSettings();document.getElementById('settingsOverlay').classList.remove('show');showToast('✅ تم حفظ الإعدادات')"
+        style="width:100%;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;padding:13px;border-radius:14px;border:none;font-size:15px;font-weight:700;cursor:pointer;font-family:Tajawal">حفظ وتطبيق</button>
+    </div>
+  `;
+  box.classList.add('show');
+  box.style.display = 'none';
+  box.style.cssText += ';display:flex';
+  box.addEventListener('click', e => { if(e.target===box) box.classList.remove('show'); });
+  document.body.appendChild(box);
+}
+
 /* ── قائمة الحالة ── */
 function openStatusMenu() {
   document.getElementById('statusOverlay')?.classList.add('show');
@@ -83,7 +154,7 @@ function setStatus(status, icon, label) {
 let membersVisible = false;
 function toggleMembers() {
   membersVisible = !membersVisible;
-  document.getElementById('chatLayer')?.classList.toggle('shifted', membersVisible);
+  document.getElementById('chatLayer')?.classList.toggle('open', membersVisible);
 }
 
 function setHandBadge(targetUsername, show) {
