@@ -224,49 +224,31 @@ router.post('/guest', async (req, res) => {
 
 /* ════════════════════════════════════════════
    POST /auth/room-entry
-   تسجيل دخول العضو عبر البريد + كلمة مرور الغرفة
+   تسجيل دخول العضو عبر البريد + رتبته الحقيقية
    — يُستخدم في تاب "عضو" فقط
+   — كلمة مرور الغرفة تُفحص لاحقاً في joinRoom (Socket.io)
 ════════════════════════════════════════════ */
 router.post('/room-entry', async (req, res) => {
   const { email, room_id, room_password } = req.body;
 
-  if (!email || !room_id) {
-    return res.status(400).json({ success: false, message: 'بيانات ناقصة' });
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'البريد الإلكتروني مطلوب' });
   }
 
   try {
-    /* 1. البحث عن المستخدم بالبريد */
+    /* البحث عن المستخدم بالبريد */
     const [users] = await db.query(
-      'SELECT id, username, rank, avatar, points FROM users WHERE email = ? AND password_hash IS NOT NULL LIMIT 1',
+      `SELECT id, username, rank, avatar, points
+       FROM users WHERE email = ? AND is_active = 1 LIMIT 1`,
       [email.trim().toLowerCase()]
     );
+
     if (!users.length) {
-      return res.status(401).json({ success: false, message: '⛔ البريد غير مسجّل' });
+      return res.status(401).json({ success: false, message: '⛔ البريد غير مسجّل أو الحساب غير نشط' });
     }
     const user = users[0];
 
-    /* 2. التحقق من كلمة مرور الغرفة */
-    const [rooms] = await db.query(
-      'SELECT id, password FROM rooms WHERE id = ? LIMIT 1',
-      [room_id]
-    );
-    if (!rooms.length) {
-      return res.status(404).json({ success: false, message: '⛔ الغرفة غير موجودة' });
-    }
-    const room = rooms[0];
-
-    if (room.password) {
-      /* الغرفة محمية — تحقق من كلمة المرور */
-      if (!room_password || room_password.trim() !== room.password.trim()) {
-        return res.status(401).json({ success: false, message: '⛔ كلمة مرور الغرفة خاطئة' });
-      }
-    } else if (!room_password) {
-      /* الغرفة عامة لكن المستخدم لم يُدخل كلمة مرور */
-      /* نقبل الدخول بدون مشكلة */
-    }
-
-    /* 3. إنشاء JWT وإعادته */
-    const jwt = require('jsonwebtoken');
+    /* إنشاء JWT */
     const token = jwt.sign(
       { id: user.id, username: user.username },
       JWT_SECRET,
