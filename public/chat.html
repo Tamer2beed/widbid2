@@ -381,19 +381,62 @@
   margin-bottom: 2px !important;
 }
 
-/* ══ 7. لوحة الأعضاء — تجميل فقط بدون تغيير layout ══ */
+/* ══ 7. لوحة الأعضاء — من اليسار ══ */
+.members-bg {
+  position: fixed !important;
+  top: 0 !important; bottom: 0 !important;
+  left: 0 !important;
+  width: 75vw !important;
+  max-width: 320px !important;
+  background: #FFFFFF !important;
+  box-shadow: 4px 0 24px rgba(109,40,217,.18) !important;
+  z-index: 80 !important;
+  transform: translateX(-100%) !important;
+  transition: transform .3s cubic-bezier(.22,1,.36,1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+.members-bg.open {
+  transform: translateX(0%) !important;
+}
+/* overlay عند فتح القائمة */
+#membersOverlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.35);
+  z-index: 79;
+  display: none;
+  backdrop-filter: blur(2px);
+}
+#membersOverlay.show { display: block; }
+
 .members-header {
   background: linear-gradient(135deg, #6D28D9, #7C3AED) !important;
   color: #fff !important;
   font-weight: 700 !important;
+  padding: 16px !important;
+  font-size: 15px !important;
+  flex-shrink: 0 !important;
+}
+#membersList {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 8px !important;
 }
 .member-card {
   border-radius: 12px !important;
   border: 1.5px solid #EDE9FE !important;
   background: #FAF8FF !important;
   transition: background .15s !important;
+  margin-bottom: 6px !important;
 }
 .member-card:active { background: #EDE9FE !important; }
+/* chat-layer لا تتحرك — members تنزلق فوقها */
+.chat-layer, .chat-layer.shifted {
+  transform: none !important;
+  width: 100% !important;
+  left: 0 !important;
+}
 
 /* ══ 8. الإيموجي بانل ══ */
 .emoji-panel {
@@ -1469,6 +1512,8 @@ function handleAvatarFile(e) {
 </script>
 
 
+<div id="membersOverlay"></div>
+
 <!-- ══════════════════════════════════════════
      ADMIN MODAL — لوحة التحكم الجديدة
 ══════════════════════════════════════════ -->
@@ -2325,4 +2370,64 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 </body>
+
+<script>
+/* ══ سحب من اليسار — قائمة المتواجدين ══ */
+(function(){
+  const EDGE=40, OPEN_T=60, CLOSE_T=60;
+  let sx=0, sy=0, drag=false, isOpen=false;
+  const panel=()=>document.querySelector('.members-bg');
+  const ov=()=>document.getElementById('membersOverlay');
+
+  function openP(){
+    isOpen=true;
+    panel()?.classList.add('open');
+    if(panel()) panel().style.transform='';
+    ov()?.classList.add('show');
+  }
+  function closeP(){
+    isOpen=false;
+    panel()?.classList.remove('open');
+    if(panel()) panel().style.transform='';
+    ov()?.classList.remove('show');
+  }
+
+  /* تعريف عالمي لاستخدامه من toggleMembers */
+  window._openMembersPanel=openP;
+  window._closeMembersPanel=closeP;
+
+  /* تعديل toggleMembers الأصلي */
+  window.addEventListener('load',()=>{
+    const orig=window.toggleMembers;
+    window.toggleMembers=()=>{ isOpen?closeP():openP(); };
+  });
+
+  document.addEventListener('touchstart',e=>{
+    sx=e.touches[0].clientX; sy=e.touches[0].clientY; drag=false;
+    if(!isOpen && sx<EDGE) drag=true;
+    else if(isOpen) drag=true;
+  },{passive:true});
+
+  document.addEventListener('touchmove',e=>{
+    if(!drag) return;
+    const dx=e.touches[0].clientX-sx;
+    const dy=Math.abs(e.touches[0].clientY-sy);
+    if(dy>30&&Math.abs(dx)<dy){drag=false;return;}
+    const p=panel(); if(!p) return;
+    if(!isOpen&&dx>0) p.style.transform=`translateX(calc(-100% + ${Math.min(dx,p.offsetWidth)}px))`;
+    else if(isOpen&&dx<0) p.style.transform=`translateX(${Math.max(dx,-p.offsetWidth)}px)`;
+  },{passive:true});
+
+  document.addEventListener('touchend',e=>{
+    if(!drag) return; drag=false;
+    const dx=e.changedTouches[0].clientX-sx;
+    if(!isOpen&&dx>OPEN_T) openP();
+    else if(isOpen&&dx<-CLOSE_T) closeP();
+    else { isOpen?openP():closeP(); }
+  },{passive:true});
+
+  document.addEventListener('click',e=>{ if(e.target.id==='membersOverlay') closeP(); });
+})();
+</script>
+
 </html>
