@@ -1372,10 +1372,10 @@ async function doEnterRoom() {
       if (!d.success) { showToast('⚠️ ' + (d.message || 'اسم المستخدم أو كلمة المرور خاطئة')); return; }
     }
 
-    localStorage.setItem('token',    d.token        || '');
-    localStorage.setItem('user_id',  d.user?.id     || 0);
-    localStorage.setItem('username', d.user?.username || ident);
-    localStorage.setItem('rank',     d.user?.rank   || 100);
+    localStorage.setItem('token',    d.token                      || '');
+    localStorage.setItem('user_id',  d.user_id  || d.user?.id    || 0);
+    localStorage.setItem('username', d.username || d.user?.username || ident);
+    localStorage.setItem('rank',     d.rank     || d.user?.rank   || 100);
     localStorage.setItem('avatar',   _loginAvatar);
     localStorage.setItem('room_id',   room.id);
     localStorage.setItem('room_name', room.name);
