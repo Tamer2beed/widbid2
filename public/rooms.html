@@ -717,6 +717,8 @@ html,body { height:100%; font-family:'Tajawal',sans-serif; background:var(--bg);
     <div id="fields-guest"></div>
 
     <div id="fields-member" style="display:none">
+      <input class="login-input" id="memberPass" type="password"
+             placeholder="كلمة المرور" autocomplete="current-password" required>
       <input class="login-input" id="memberRoomPass" type="password"
              placeholder="كلمة مرور الغرفة (اختياري)">
     </div>
@@ -1339,7 +1341,9 @@ async function doEnterRoom() {
   if (!ident) { showToast('⚠️ أدخل اسم المستخدم'); return; }
 
   if (tab === 'member') {
+    password = document.getElementById('memberPass')?.value || '';
     roomPass = document.getElementById('memberRoomPass')?.value || '';
+    if (!password) { showToast('⚠️ أدخل كلمة المرور'); return; }
   } else if (tab === 'super') {
     password = document.getElementById('superPass')?.value || '';
     roomPass = document.getElementById('superRoomPass')?.value || '';
@@ -1351,8 +1355,8 @@ async function doEnterRoom() {
 
   try {
     let d;
-    if (tab === 'guest' || tab === 'member') {
-      /* تشفير اسم المستخدم بـ SHA-256 للإرسال الآمن */
+    if (tab === 'guest') {
+      /* زائر — دخول بلا كلمة مرور */
       const r = await fetch('/api/auth/guest', {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1361,7 +1365,7 @@ async function doEnterRoom() {
       d = await r.json();
       if (!d.success) { showToast('⚠️ ' + (d.message || 'خطأ')); return; }
     } else {
-      /* عضو خارق — إرسال كلمة المرور بعد تشفير SHA-256 */
+      /* عضو / عضو خارق — تسجيل دخول بكلمة مرور */
       const hashPass = await _sha256(password);
       const r = await fetch('/api/auth/login', {
         method : 'POST',
@@ -1369,7 +1373,7 @@ async function doEnterRoom() {
         body   : JSON.stringify({ email: ident, password: hashPass, hashed: true }),
       });
       d = await r.json();
-      if (!d.success) { showToast('⚠️ ' + (d.message || 'اسم المستخدم أو كلمة المرور خاطئة')); return; }
+      if (!d.success) { showToast('⚠️ ' + (d.message || 'البريد أو كلمة المرور خاطئة')); return; }
     }
 
     localStorage.setItem('token',    d.token                      || '');
