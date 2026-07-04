@@ -374,31 +374,21 @@
 .msg-self .msg-bubble  { border-radius: 18px 4px 18px 18px !important; }
 .msg-other .msg-bubble { border-radius: 4px 18px 18px 18px !important; }
 
-/* اسم العضو */
+/* اسم العضو — بدون !important على font-size ليتحكم settings.js */
 .msg-username {
-  font-size: 12px !important;
+  font-size: inherit;
   font-weight: 700 !important;
   margin-bottom: 2px !important;
 }
 
-/* ══ 7. لوحة الأعضاء ══ */
-.members-bg {
-  background: #FFFFFF !important;
-  box-shadow: 4px 0 20px rgba(109,40,217,.12) !important;
-}
+/* ══ 7. لوحة الأعضاء — تجميل فقط بدون تغيير layout ══ */
 .members-header {
   background: linear-gradient(135deg, #6D28D9, #7C3AED) !important;
   color: #fff !important;
   font-weight: 700 !important;
-  font-size: 15px !important;
-  padding: 14px 16px !important;
-  box-shadow: 0 2px 8px rgba(109,40,217,.2) !important;
 }
-
-/* بطاقة العضو */
 .member-card {
   border-radius: 12px !important;
-  margin: 4px 8px !important;
   border: 1.5px solid #EDE9FE !important;
   background: #FAF8FF !important;
   transition: background .15s !important;
