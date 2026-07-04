@@ -284,7 +284,7 @@ async function runBot(bot) {
       if (_roomIds.length === 0) { await delay(5000); continue; }
     }
 
-    const roomId = pick(_roomIds);
+    const roomId = '102';
     const state  = { active: true, isMicOn: false, timers: [] };
 
     // ── دخول الغرفة ──
