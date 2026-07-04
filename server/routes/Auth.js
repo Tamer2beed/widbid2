@@ -221,4 +221,72 @@ router.post('/guest', async (req, res) => {
   }
 });
 
+
+/* ════════════════════════════════════════════
+   POST /auth/room-entry
+   تسجيل دخول العضو عبر البريد + كلمة مرور الغرفة
+   — يُستخدم في تاب "عضو" فقط
+════════════════════════════════════════════ */
+router.post('/room-entry', async (req, res) => {
+  const { email, room_id, room_password } = req.body;
+
+  if (!email || !room_id) {
+    return res.status(400).json({ success: false, message: 'بيانات ناقصة' });
+  }
+
+  try {
+    /* 1. البحث عن المستخدم بالبريد */
+    const [users] = await db.query(
+      'SELECT id, username, rank, avatar, points FROM users WHERE email = ? AND password_hash IS NOT NULL LIMIT 1',
+      [email.trim().toLowerCase()]
+    );
+    if (!users.length) {
+      return res.status(401).json({ success: false, message: '⛔ البريد غير مسجّل' });
+    }
+    const user = users[0];
+
+    /* 2. التحقق من كلمة مرور الغرفة */
+    const [rooms] = await db.query(
+      'SELECT id, password FROM rooms WHERE id = ? LIMIT 1',
+      [room_id]
+    );
+    if (!rooms.length) {
+      return res.status(404).json({ success: false, message: '⛔ الغرفة غير موجودة' });
+    }
+    const room = rooms[0];
+
+    if (room.password) {
+      /* الغرفة محمية — تحقق من كلمة المرور */
+      if (!room_password || room_password.trim() !== room.password.trim()) {
+        return res.status(401).json({ success: false, message: '⛔ كلمة مرور الغرفة خاطئة' });
+      }
+    } else if (!room_password) {
+      /* الغرفة عامة لكن المستخدم لم يُدخل كلمة مرور */
+      /* نقبل الدخول بدون مشكلة */
+    }
+
+    /* 3. إنشاء JWT وإعادته */
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign(
+      { id: user.id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES }
+    );
+
+    res.json({
+      success:  true,
+      token,
+      user_id:  user.id,
+      username: user.username,
+      rank:     user.rank || 100,
+      points:   user.points || 0,
+      avatar:   user.avatar || 'av1.svg',
+    });
+
+  } catch (err) {
+    console.error('POST /auth/room-entry:', err.message);
+    res.status(500).json({ success: false, message: 'خطأ في السيرفر' });
+  }
+});
+
 module.exports = router;
