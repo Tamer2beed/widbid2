@@ -313,3 +313,39 @@ document.addEventListener('socketReady', () => {
   socket.on('announcement', (d) => showToast(`📢 ${d.text}`));
   socket.on('youAreWarned', (d) => alert(`⚠️ تحذير من ${d.by}:\n${d.reason}`));
 });
+
+
+/* ══ onlineUsers handler — يُعبّئ window._onlineUsers ══
+   مُضاف لتمكين قائمة المتواجدين من قراءة البيانات         */
+socket.on('onlineUsers', (data) => {
+  window._onlineUsers = Array.isArray(data) ? data
+    : (data.users || data.online || data.members || []);
+
+  /* تحديث العدد في كل مكان */
+  const cnt = document.getElementById('membersCount');
+  if (cnt) cnt.textContent = '(' + window._onlineUsers.length + ')';
+
+  /* تحديث القائمة إذا كانت مفتوحة */
+  if (typeof renderMembers === 'function') renderMembers();
+});
+
+socket.on('userJoined', (d) => {
+  if (!d?.username || !window._onlineUsers) return;
+  const exists = window._onlineUsers.some(u => u.username === d.username);
+  if (!exists) window._onlineUsers.push({
+    username: d.username,
+    rank:     d.rank   || 100,
+    avatar:   d.avatar || 'av1.svg',
+  });
+  const cnt = document.getElementById('membersCount');
+  if (cnt) cnt.textContent = '(' + window._onlineUsers.length + ')';
+  if (typeof renderMembers === 'function') renderMembers();
+});
+
+socket.on('userLeft', (d) => {
+  if (!d?.username || !window._onlineUsers) return;
+  window._onlineUsers = window._onlineUsers.filter(u => u.username !== d.username);
+  const cnt = document.getElementById('membersCount');
+  if (cnt) cnt.textContent = '(' + window._onlineUsers.length + ')';
+  if (typeof renderMembers === 'function') renderMembers();
+});
