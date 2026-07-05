@@ -2317,206 +2317,177 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 
+
+
 <script>
-/* ══════════════════════════════════════════════════════
-   قائمة المتواجدين — كاملة (JS يتحكم بكل شيء)
-   حل: نقل panel إلى body + حقن CSS في وقت التشغيل
-══════════════════════════════════════════════════════ */
+/* ══ قائمة المتواجدين — النسخة النهائية ══ */
 (function(){
 
-  /* ── حقن CSS في وقت التشغيل (يتغلب على chat.css) ── */
-  function injectStyles(){
-    if(document.getElementById('mp-style')) return;
+  function injectBase(){
+    if(document.getElementById('mp-base')) return;
     const s=document.createElement('style');
-    s.id='mp-style';
+    s.id='mp-base';
     s.textContent=`
-      #membersBg {
-        position:fixed!important;top:0!important;bottom:0!important;
-        left:0!important;width:75vw!important;max-width:310px!important;
-        background:#fff!important;
-        box-shadow:4px 0 24px rgba(109,40,217,.2)!important;
-        z-index:200!important;display:flex!important;
-        flex-direction:column!important;overflow:hidden!important;
-        transform:translateX(-100%)!important;
-        transition:transform .3s cubic-bezier(.22,1,.36,1)!important;
-      }
-      #membersBg.mp-open{transform:translateX(0%)!important;}
-      #membersOverlay{
-        position:fixed!important;inset:0!important;
-        background:rgba(0,0,0,.38)!important;z-index:199!important;
-        display:none!important;backdrop-filter:blur(2px)!important;
-      }
+      #membersBg { transition:transform .3s cubic-bezier(.22,1,.36,1) !important; }
+      #membersOverlay{position:fixed!important;inset:0!important;background:rgba(0,0,0,.38)!important;z-index:199!important;display:none!important;backdrop-filter:blur(2px)!important;}
       #membersOverlay.mp-show{display:block!important;}
-      #membersBg .members-header{
-        background:linear-gradient(135deg,#6D28D9,#7C3AED)!important;
-        color:#fff!important;font-weight:700!important;
-        padding:14px 16px!important;font-size:15px!important;
-        flex-shrink:0!important;display:flex!important;
-        align-items:center!important;justify-content:space-between!important;
-      }
-      #membersBg .members-list{flex:1!important;overflow-y:auto!important;padding:8px!important;}
-      #chatLayer,#chatLayer.shifted{transform:none!important;}
+      #chatLayer,#chatLayer.open,#chatLayer.shifted{transform:none!important;}
     `;
     document.head.appendChild(s);
   }
 
-  /* ── نقل panel إلى body (يخرجه من flex layout) ── */
+  function forceHide(p){
+    if(!p) return;
+    p.style.setProperty('position','fixed','important');
+    p.style.setProperty('top','0','important');
+    p.style.setProperty('left','0','important');
+    p.style.setProperty('bottom','0','important');
+    p.style.setProperty('width','75vw','important');
+    p.style.setProperty('max-width','310px','important');
+    p.style.setProperty('background','#fff','important');
+    p.style.setProperty('z-index','200','important');
+    p.style.setProperty('display','none','important');
+    p.style.setProperty('flex-direction','column','important');
+    p.style.setProperty('overflow','hidden','important');
+    p.style.setProperty('box-shadow','4px 0 24px rgba(109,40,217,.2)','important');
+  }
+
   function movePanel(){
     const p=document.getElementById('membersBg');
-    if(p && p.parentElement!==document.body){
-      document.body.appendChild(p);
+    if(!p) return;
+    if(p.parentElement!==document.body) document.body.appendChild(p);
+    let h=p.querySelector('.members-header');
+    if(!h){
+      h=document.createElement('div');
+      h.className='members-header';
+      h.innerHTML='<span>\u{1F465} \u{0627}\u{0644}\u{0645}\u{062A}\u{0648}\u{0627}\u{062C}\u{062F}\u{0648}\u{0646} <span id=\"membersCount\"></span></span>';
+      h.style.cssText='background:linear-gradient(135deg,#6D28D9,#7C3AED);color:#fff;font-weight:700;padding:14px 16px;font-size:15px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;';
+      p.prepend(h);
     }
-    /* أضف زر إغلاق داخل header إن لم يكن موجوداً */
-    const h=p?.querySelector('.members-header');
-    if(h && !h.querySelector('#mpCloseBtn')){
+    if(!h.querySelector('#mpCloseBtn')){
       const btn=document.createElement('button');
       btn.id='mpCloseBtn';
-      btn.innerHTML='✕';
-      btn.style.cssText='background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:4px 8px;opacity:.8';
+      btn.textContent='\u2715';
+      btn.style.cssText='background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:2px 8px;';
       btn.onclick=closeP;
       h.appendChild(btn);
     }
   }
 
-  /* ── تعبئة قائمة الأعضاء ── */
-  const RANK_N={
-    100:'زائر',200:'عضو',300:'محمي',400:'ملكي',
-    500:'مشرف',600:'مشرف عام',700:'ماستر',800:'سوبر ماستر',
-    900:'روت',1000:'سوبر روت',1100:'أونر',1200:'سوبر أونر'
-  };
-  const RANK_C={
-    1200:'#dc2626',1100:'#b91c1c',1000:'#7c3aed',900:'#6d28d9',
-    800:'#d97706',700:'#b45309',600:'#2563eb',500:'#1d4ed8',
-    400:'#0369a1',300:'#0f766e',200:'#16a34a',100:'#6b7280'
-  };
-  function rName(r){
-    const steps=[1200,1100,1000,900,800,700,600,500,400,300,200,100];
-    for(const s of steps) if(r>=s) return RANK_N[s]||String(r);
-    return 'زائر';
-  }
-  function rColor(r){
-    const steps=[1200,1100,1000,900,800,700,600,500,400,300,200,100];
-    for(const s of steps) if(r>=s) return RANK_C[s]||'#6b7280';
-    return '#6b7280';
-  }
+  const RC={1200:'#ffffff',1100:'#D4AF37',1000:'#E67E22',900:'#F39C12',800:'#C0392B',700:'#E74C3C',600:'#27AE60',500:'#4A90D9',400:'#FFD700',300:'#E066FF',200:'#FFB6C1',100:'#888888'};
+  const RN={1200:'S.Owner',1100:'Owner',1000:'S.Root',900:'Root',800:'S.Master',700:'Master',600:'S.Admin',500:'Admin',400:'Royal',300:'Protected',200:'Member',100:'Guest'};
+  function rC(r){const k=Object.keys(RC).map(Number).sort((a,b)=>b-a);for(const v of k)if(r>=v)return RC[v];return'#888';}
+  function rN(r){const k=Object.keys(RN).map(Number).sort((a,b)=>b-a);for(const v of k)if(r>=v)return RN[v];return'Guest';}
 
   function renderMembers(){
     const list=document.getElementById('membersList');
-    const cnt=document.getElementById('membersCount');
+    const cnt =document.getElementById('membersCount');
     const users=window._onlineUsers||[];
-    if(cnt) cnt.textContent=`(${users.length})`;
+    if(cnt) cnt.textContent='('+users.length+')';
     if(!list) return;
     if(!users.length){
-      list.innerHTML='<div style="text-align:center;color:rgba(0,0,0,.3);padding:28px;font-size:13px">لا يوجد أعضاء حالياً</div>';
+      list.innerHTML='<div style="text-align:center;color:rgba(0,0,0,.3);padding:28px;font-size:13px">\u0644\u0627 \u064A\u0648\u062C\u062F \u0623\u0639\u0636\u0627\u0621</div>';
       return;
     }
-    list.innerHTML=users.map(u=>{
-      const r=u.rank||100;
-      const c=rColor(r);
-      const av=u.avatar||'av1.svg';
-      const mic=u.isMicOn?'<span style="font-size:15px;color:#ef4444">🎤</span>':'';
-      return `<div class="member-item" data-username="${u.username}"
-        style="display:flex;align-items:center;gap:10px;padding:10px 12px;
-               border-radius:12px;border:1.5px solid #EDE9FE;background:#FAF8FF;
-               margin-bottom:6px;cursor:pointer;"
-        onclick="typeof openUserContext==='function'&&openUserContext('${u.username}',${r})">
-        <img src="/avatars/${av}" style="width:38px;height:38px;border-radius:10px;
-             border:2px solid ${c};object-fit:cover;flex-shrink:0"
-             onerror="this.src='/avatars/av1.svg'">
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:13px;color:#1a1a2e;white-space:nowrap;
-                      overflow:hidden;text-overflow:ellipsis">${u.username}</div>
-          <div style="font-size:11px;color:${c};font-weight:600">${rName(r)}</div>
-        </div>${mic}
-      </div>`;
+    list.innerHTML=users.map(function(u){
+      var r=u.rank||100;
+      var c=rC(r);
+      var av=u.avatar||'av1.svg';
+      var mic=u.isMicOn?'<span style="font-size:14px;color:#ef4444">\uD83C\uDF99</span>':'';
+      return '<div class="member-item" data-username="'+u.username+'" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1.5px solid #EDE9FE;background:#FAF8FF;margin-bottom:6px;cursor:pointer" onclick="typeof showMemberMenu===\'function\'&&showMemberMenu(\''+u.username+"\',"+r+')">'
+        +'<img src="/avatars/'+av+'" style="width:38px;height:38px;border-radius:10px;border:2.5px solid '+c+';object-fit:cover;flex-shrink:0" onerror="this.src=\'/avatars/av1.svg\'">'
+        +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+u.username+'</div>'
+        +'<div style="font-size:11px;color:'+c+';font-weight:600">'+rN(r)+'</div></div>'+mic+'</div>';
     }).join('');
   }
 
-  /* ── فتح / إغلاق ── */
-  let isOpen=false;
-  const panel=()=>document.getElementById('membersBg');
-  const ov=()=>document.getElementById('membersOverlay');
+  var isOpen=false;
+  function panel(){return document.getElementById('membersBg');}
+  function ov(){return document.getElementById('membersOverlay');}
 
   function openP(){
     isOpen=true;
-    panel()?.classList.add('mp-open');
-    ov()?.classList.add('mp-show');
+    var p=panel();
+    if(p){
+      p.style.setProperty('display','flex','important');
+      p.style.setProperty('transform','translateX(-100%)','important');
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          p.style.setProperty('transform','translateX(0%)','important');
+        });
+      });
+    }
+    var o=ov(); if(o) o.classList.add('mp-show');
     renderMembers();
+    setTimeout(function(){ if(isOpen&&!(window._onlineUsers||[]).length) renderMembers(); },800);
   }
+
   function closeP(){
     isOpen=false;
-    panel()?.classList.remove('mp-open');
-    ov()?.classList.remove('mp-show');
-    const p=panel();
-    if(p) p.style.transform='';
+    var p=panel();
+    if(p){
+      p.style.setProperty('transform','translateX(-100%)','important');
+      setTimeout(function(){ if(!isOpen) p.style.setProperty('display','none','important'); },320);
+    }
+    var o=ov(); if(o) o.classList.remove('mp-show');
   }
 
-  /* تعريف عالمي */
-  window._openMembersPanel=openP;
+  window._openMembersPanel =openP;
   window._closeMembersPanel=closeP;
 
-  /* ── تهيئة ── */
   function init(){
-    injectStyles();
+    injectBase();
     movePanel();
-    closeP(); /* تأكد إغلاق القائمة عند البدء */
-
-    /* override toggleMembers */
-    window.toggleMembers=()=>{ isOpen?closeP():openP(); };
-
-    /* إغلاق عند النقر على overlay */
-    const o=ov();
-    if(o) o.addEventListener('click',closeP);
-
-    /* تحديث عند تغيير الأعضاء */
+    forceHide(panel());
+    window.toggleMembers=function(){ isOpen?closeP():openP(); };
+    var o=ov(); if(o) o.addEventListener('click',closeP);
     if(typeof socket!=='undefined'){
-      socket.on('onlineUsers',()=>{ if(isOpen) renderMembers(); });
-      socket.on('userJoined', ()=>{ if(isOpen) renderMembers(); });
-      socket.on('userLeft',   ()=>{ if(isOpen) renderMembers(); });
-      socket.on('micOn',()=>{ if(isOpen) renderMembers(); });
-      socket.on('micOff',()=>{ if(isOpen) renderMembers(); });
+      socket.on('onlineUsers',function(data){
+        window._onlineUsers=Array.isArray(data)?data:(data.users||data.online||data.members||[]);
+        if(isOpen) renderMembers();
+        var cnt=document.getElementById('membersCount');
+        if(cnt) cnt.textContent='('+(window._onlineUsers||[]).length+')';
+      });
+      socket.on('userJoined',function(){ if(isOpen) renderMembers(); });
+      socket.on('userLeft',  function(){ if(isOpen) renderMembers(); });
+      socket.on('micOn',     function(){ if(isOpen) renderMembers(); });
+      socket.on('micOff',    function(){ if(isOpen) renderMembers(); });
     }
+    setTimeout(function(){ if(!isOpen) forceHide(panel()); },200);
+    setTimeout(function(){ if(!isOpen) forceHide(panel()); },1000);
   }
 
-  /* ── سحب من الحافة اليسرى ── */
-  const EDGE=42, OPEN_T=55, CLOSE_T=55;
-  let sx=0, sy=0, drag=false, tracking=false;
+  var EDGE=42,OPEN_T=55,CLOSE_T=55;
+  var sx=0,sy=0,tracking=false,dragOpen=false;
 
-  document.addEventListener('touchstart',e=>{
+  document.addEventListener('touchstart',function(e){
     sx=e.touches[0].clientX; sy=e.touches[0].clientY;
-    drag=false; tracking=false;
-    if(!isOpen && sx<EDGE){ drag=true; tracking=true; }
+    tracking=false; dragOpen=false;
+    if(!isOpen&&sx<EDGE){ tracking=true; dragOpen=true; }
     else if(isOpen){ tracking=true; }
   },{passive:true});
 
-  document.addEventListener('touchmove',e=>{
+  document.addEventListener('touchmove',function(e){
     if(!tracking) return;
-    const dx=e.touches[0].clientX-sx;
-    const dy=Math.abs(e.touches[0].clientY-sy);
-    if(dy>25&&Math.abs(dx)<dy){ tracking=false; drag=false; return; }
-    const p=panel(); if(!p) return;
-    const pw=p.offsetWidth||240;
-    if(!isOpen&&dx>0&&drag){
-      p.style.transform=`translateX(calc(-100% + ${Math.min(dx,pw)}px))`;
-    } else if(isOpen&&dx<0){
-      p.style.transform=`translateX(${Math.max(dx,-pw)}px)`;
-    }
+    var dx=e.touches[0].clientX-sx;
+    var dy=Math.abs(e.touches[0].clientY-sy);
+    if(dy>25&&Math.abs(dx)<dy){ tracking=false; return; }
+    var p=panel(); if(!p) return;
+    var pw=p.offsetWidth||240;
+    if(dragOpen&&dx>0) p.style.setProperty('transform','translateX(calc(-100% + '+Math.min(dx,pw)+'px))','important');
+    else if(isOpen&&dx<0) p.style.setProperty('transform','translateX('+Math.max(dx,-pw)+'px)','important');
   },{passive:true});
 
-  document.addEventListener('touchend',e=>{
-    if(!tracking){ return; }
+  document.addEventListener('touchend',function(e){
+    if(!tracking) return;
     tracking=false;
-    const dx=e.changedTouches[0].clientX-sx;
-    if(!isOpen&&drag&&dx>OPEN_T){ openP(); }
-    else if(isOpen&&dx<-CLOSE_T){ closeP(); }
-    else {
-      const p=panel();
-      if(p) p.style.transform=''; /* إعادة للحالة الصحيحة */
-    }
-    drag=false;
+    var dx=e.changedTouches[0].clientX-sx;
+    if(dragOpen&&dx>OPEN_T) openP();
+    else if(isOpen&&dx<-CLOSE_T) closeP();
+    else { isOpen?openP():closeP(); }
+    dragOpen=false;
   },{passive:true});
 
-  /* تشغيل عند تحميل DOM */
   if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded',init);
   } else {
@@ -2525,5 +2496,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 })();
 </script>
-
 </html>
