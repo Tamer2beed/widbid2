@@ -2470,36 +2470,123 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(function(){ if(!isOpen) forceHide(panel()); },1000);
   }
 
-  var EDGE=42,OPEN_T=55,CLOSE_T=55;
-  var sx=0,sy=0,tracking=false,dragOpen=false;
+  /* ══ نظام السحب الاحترافي ══
+     1. سحب سريع من اليسار → يفتح مباشرة
+     2. سحب بطيء → القائمة تتبع الإصبع بسلاسة
+     3. ضغط على منطقة الشات → يغلق
+  ══════════════════════════════════ */
 
-  document.addEventListener('touchstart',function(e){
-    sx=e.touches[0].clientX; sy=e.touches[0].clientY;
-    tracking=false; dragOpen=false;
-    if(!isOpen&&sx<EDGE){ tracking=true; dragOpen=true; }
-    else if(isOpen){ tracking=true; }
-  },{passive:true});
+  var EDGE = 44;           /* منطقة اللمس من اليسار (px) */
+  var VEL_THRESHOLD = 0.4; /* سرعة الفتح التلقائي (px/ms) */
+  var OPEN_RATIO  = 0.30;  /* نسبة المسافة للفتح التلقائي */
+  var CLOSE_RATIO = 0.30;  /* نسبة المسافة للإغلاق التلقائي */
 
-  document.addEventListener('touchmove',function(e){
-    if(!tracking) return;
-    var dx=e.touches[0].clientX-sx;
-    var dy=Math.abs(e.touches[0].clientY-sy);
-    if(dy>25&&Math.abs(dx)<dy){ tracking=false; return; }
-    var p=panel(); if(!p) return;
-    var pw=p.offsetWidth||240;
-    if(dragOpen&&dx>0) p.style.setProperty('transform','translateX(calc(-100% + '+Math.min(dx,pw)+'px))','important');
-    else if(isOpen&&dx<0) p.style.setProperty('transform','translateX('+Math.max(dx,-pw)+'px)','important');
-  },{passive:true});
+  var ts = { x:0, y:0, t:0, tracking:false, dragging:false, pw:0 };
 
-  document.addEventListener('touchend',function(e){
-    if(!tracking) return;
-    tracking=false;
-    var dx=e.changedTouches[0].clientX-sx;
-    if(dragOpen&&dx>OPEN_T) openP();
-    else if(isOpen&&dx<-CLOSE_T) closeP();
-    else { isOpen?openP():closeP(); }
-    dragOpen=false;
-  },{passive:true});
+  /* ── تعطيل الانيميشن أثناء السحب ── */
+  function disableTransition(p){
+    if(p) p.style.setProperty('transition','none','important');
+  }
+  function enableTransition(p){
+    if(p) p.style.setProperty('transition','transform .28s cubic-bezier(.22,1,.36,1)','important');
+  }
+
+  document.addEventListener('touchstart', function(e){
+    var x = e.touches[0].clientX;
+    var y = e.touches[0].clientY;
+    ts.x = x; ts.y = y; ts.t = Date.now();
+    ts.tracking = false; ts.dragging = false;
+    var p = panel();
+    ts.pw = p ? (p.offsetWidth||240) : 240;
+
+    if(!isOpen && x <= EDGE){
+      ts.tracking = true;
+    } else if(isOpen){
+      ts.tracking = true;
+    }
+  }, {passive:true});
+
+  document.addEventListener('touchmove', function(e){
+    if(!ts.tracking) return;
+    var x = e.touches[0].clientX;
+    var y = e.touches[0].clientY;
+    var dx = x - ts.x;
+    var dy = Math.abs(y - ts.y);
+
+    /* إلغاء إذا الحركة رأسية */
+    if(!ts.dragging && dy > 12 && dy > Math.abs(dx)){
+      ts.tracking = false;
+      return;
+    }
+    ts.dragging = true;
+
+    var p = panel();
+    if(!p) return;
+    disableTransition(p);
+
+    if(!isOpen && dx > 0){
+      /* فتح تدريجي: من -pw إلى 0 */
+      var offset = Math.min(dx, ts.pw);
+      var tx = offset - ts.pw; /* eg. -200 → 0 */
+      p.style.setProperty('display','flex','important');
+      p.style.setProperty('position','fixed','important');
+      p.style.setProperty('left','0','important');
+      p.style.setProperty('right','unset','important');
+      p.style.setProperty('top','0','important');
+      p.style.setProperty('bottom','0','important');
+      p.style.setProperty('width','75vw','important');
+      p.style.setProperty('max-width','310px','important');
+      p.style.setProperty('z-index','200','important');
+      p.style.setProperty('transform','translateX('+tx+'px)','important');
+    } else if(isOpen && dx < 0){
+      /* إغلاق تدريجي: من 0 إلى -pw */
+      var offset2 = Math.max(dx, -ts.pw);
+      p.style.setProperty('transform','translateX('+offset2+'px)','important');
+    }
+  }, {passive:true});
+
+  document.addEventListener('touchend', function(e){
+    if(!ts.tracking) return;
+    ts.tracking = false;
+
+    var endX = e.changedTouches[0].clientX;
+    var dx   = endX - ts.x;
+    var dt   = Date.now() - ts.t;
+    var vel  = dt > 0 ? Math.abs(dx) / dt : 0;
+
+    var p = panel();
+    enableTransition(p);
+
+    if(!isOpen){
+      /* فتح إذا: سريع → أو مسافة كافية */
+      if(ts.dragging && (vel >= VEL_THRESHOLD || dx > ts.pw * OPEN_RATIO)){
+        openP();
+      } else {
+        /* عودة للإغلاق */
+        if(p){
+          p.style.setProperty('transform','translateX(-100%)','important');
+          setTimeout(function(){ if(!isOpen) p.style.setProperty('display','none','important'); },300);
+        }
+      }
+    } else {
+      /* إغلاق إذا: سريع لليسار → أو مسافة كافية */
+      if(ts.dragging && (vel >= VEL_THRESHOLD && dx < 0) || dx < -(ts.pw * CLOSE_RATIO)){
+        closeP();
+      } else {
+        /* عودة للفتح */
+        if(p) p.style.setProperty('transform','translateX(0%)','important');
+      }
+    }
+  }, {passive:true});
+
+  /* ── إغلاق عند الضغط على منطقة الشات ── */
+  document.addEventListener('click', function(e){
+    if(!isOpen) return;
+    var p = panel();
+    if(p && !p.contains(e.target)){
+      closeP();
+    }
+  });
 
   if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded',init);
