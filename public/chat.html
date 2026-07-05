@@ -2407,32 +2407,24 @@ document.addEventListener('DOMContentLoaded', () => {
   function ov(){return document.getElementById('membersOverlay');}
 
   function openP(){
-    isOpen=true;
     var p=panel();
-    if(p){
-      p.style.setProperty('position','fixed','important');
-      p.style.setProperty('top','0','important');
-      p.style.setProperty('left','0','important');
-      p.style.setProperty('right','unset','important');
-      p.style.setProperty('bottom','0','important');
-      p.style.setProperty('width','75vw','important');
-      p.style.setProperty('max-width','310px','important');
-      p.style.setProperty('z-index','200','important');
-      p.style.setProperty('display','flex','important');
-      p.style.setProperty('flex-direction','column','important');
-      p.style.setProperty('background','#fff','important');
-      p.style.setProperty('overflow','hidden','important');
-      p.style.setProperty('box-shadow','4px 0 24px rgba(109,40,217,.2)','important');
+    if(!p) return;
+    enableTransition(p);
+    /* إذا مخفية، ابدأ من -100% ثم animate لـ 0% */
+    if(p.style.getPropertyValue('display')==='none'||!p.style.getPropertyValue('display')){
       p.style.setProperty('transform','translateX(-100%)','important');
-      requestAnimationFrame(function(){
-        requestAnimationFrame(function(){
-          p.style.setProperty('transform','translateX(0%)','important');
-        });
-      });
+      p.style.setProperty('display','flex','important');
+      p.style.setProperty('position','fixed','important');
+      p.style.setProperty('left','0','important'); p.style.setProperty('right','unset','important');
+      p.style.setProperty('top','0','important'); p.style.setProperty('bottom','0','important');
+      p.style.setProperty('width','75vw','important'); p.style.setProperty('max-width','310px','important');
+      p.style.setProperty('z-index','200','important'); p.style.setProperty('flex-direction','column','important');
+      p.style.setProperty('background','#fff','important'); p.style.setProperty('overflow','hidden','important');
+      p.style.setProperty('box-shadow','4px 0 24px rgba(109,40,217,.2)','important');
+      requestAnimationFrame(function(){ snapOpen(p); });
+    } else {
+      snapOpen(p);
     }
-    /* بدون overlay — لا تعتيم للخلفية */
-    renderMembers();
-    setTimeout(function(){ if(isOpen&&!(window._onlineUsers||[]).length) renderMembers(); },800);
   }
 
   function closeP(){
@@ -2470,122 +2462,108 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(function(){ if(!isOpen) forceHide(panel()); },1000);
   }
 
-  /* ══ نظام السحب الاحترافي ══
-     1. سحب سريع من اليسار → يفتح مباشرة
-     2. سحب بطيء → القائمة تتبع الإصبع بسلاسة
-     3. ضغط على منطقة الشات → يغلق
-  ══════════════════════════════════ */
+  /* ══ نظام السحب الاحترافي ══ */
+  var EDGE = 44;
+  var VEL  = 0.25;   /* سرعة السحب الكافية لفتح تلقائي (px/ms) */
 
-  var EDGE = 44;           /* منطقة اللمس من اليسار (px) */
-  var VEL_THRESHOLD = 0.4; /* سرعة الفتح التلقائي (px/ms) */
-  var OPEN_RATIO  = 0.30;  /* نسبة المسافة للفتح التلقائي */
-  var CLOSE_RATIO = 0.30;  /* نسبة المسافة للإغلاق التلقائي */
+  var ts = {x0:0,y0:0,t0:0,pw:240,active:false,cancelled:false,moved:false};
 
-  var ts = { x:0, y:0, t:0, tracking:false, dragging:false, pw:0 };
+  function disableTransition(p){ if(p) p.style.setProperty('transition','none','important'); }
+  function enableTransition(p){  if(p) p.style.setProperty('transition','transform .28s cubic-bezier(.22,1,.36,1)','important'); }
 
-  /* ── تعطيل الانيميشن أثناء السحب ── */
-  function disableTransition(p){
-    if(p) p.style.setProperty('transition','none','important');
+  function snapOpen(p){
+    isOpen=true;
+    p.style.setProperty('display','flex','important');
+    p.style.setProperty('position','fixed','important');
+    p.style.setProperty('left','0','important');
+    p.style.setProperty('right','unset','important');
+    p.style.setProperty('top','0','important');
+    p.style.setProperty('bottom','0','important');
+    p.style.setProperty('width','75vw','important');
+    p.style.setProperty('max-width','310px','important');
+    p.style.setProperty('z-index','200','important');
+    p.style.setProperty('flex-direction','column','important');
+    p.style.setProperty('background','#fff','important');
+    p.style.setProperty('overflow','hidden','important');
+    p.style.setProperty('box-shadow','4px 0 24px rgba(109,40,217,.2)','important');
+    p.style.setProperty('transform','translateX(0%)','important');
+    renderMembers();
+    setTimeout(function(){ if(isOpen&&!(window._onlineUsers||[]).length) renderMembers(); },800);
   }
-  function enableTransition(p){
-    if(p) p.style.setProperty('transition','transform .28s cubic-bezier(.22,1,.36,1)','important');
-  }
 
-  document.addEventListener('touchstart', function(e){
-    var x = e.touches[0].clientX;
-    var y = e.touches[0].clientY;
-    ts.x = x; ts.y = y; ts.t = Date.now();
-    ts.tracking = false; ts.dragging = false;
-    var p = panel();
-    ts.pw = p ? (p.offsetWidth||240) : 240;
+  document.addEventListener('touchstart',function(e){
+    var t=e.touches[0];
+    ts.x0=t.clientX; ts.y0=t.clientY; ts.t0=Date.now();
+    ts.active=false; ts.cancelled=false; ts.moved=false;
+    var p=panel(); ts.pw=p?(p.offsetWidth||240):240;
+    if(!isOpen && t.clientX<=EDGE) ts.active=true;
+    else if(isOpen) ts.active=true;
+  },{passive:true});
 
-    if(!isOpen && x <= EDGE){
-      ts.tracking = true;
-    } else if(isOpen){
-      ts.tracking = true;
-    }
-  }, {passive:true});
-
-  document.addEventListener('touchmove', function(e){
-    if(!ts.tracking) return;
-    var x = e.touches[0].clientX;
-    var y = e.touches[0].clientY;
-    var dx = x - ts.x;
-    var dy = Math.abs(y - ts.y);
-
+  document.addEventListener('touchmove',function(e){
+    if(!ts.active||ts.cancelled) return;
+    var x=e.touches[0].clientX, y=e.touches[0].clientY;
+    var dx=x-ts.x0, dy=Math.abs(y-ts.y0);
     /* إلغاء إذا الحركة رأسية */
-    if(!ts.dragging && dy > 12 && dy > Math.abs(dx)){
-      ts.tracking = false;
+    if(!ts.moved && dy>14 && dy>Math.abs(dx)){
+      ts.cancelled=true;
+      var p=panel();
+      if(p&&!isOpen){ p.style.setProperty('transform','translateX(-100%)','important'); setTimeout(function(){p.style.setProperty('display','none','important');},300); }
       return;
     }
-    ts.dragging = true;
-
-    var p = panel();
-    if(!p) return;
+    ts.moved=true;
+    var p=panel(); if(!p) return;
     disableTransition(p);
-
-    if(!isOpen && dx > 0){
-      /* فتح تدريجي: من -pw إلى 0 */
-      var offset = Math.min(dx, ts.pw);
-      var tx = offset - ts.pw; /* eg. -200 → 0 */
+    if(!isOpen && dx>0){
+      var tx=Math.max(-ts.pw, dx-ts.pw);
       p.style.setProperty('display','flex','important');
       p.style.setProperty('position','fixed','important');
-      p.style.setProperty('left','0','important');
-      p.style.setProperty('right','unset','important');
-      p.style.setProperty('top','0','important');
-      p.style.setProperty('bottom','0','important');
-      p.style.setProperty('width','75vw','important');
-      p.style.setProperty('max-width','310px','important');
-      p.style.setProperty('z-index','200','important');
+      p.style.setProperty('left','0','important'); p.style.setProperty('right','unset','important');
+      p.style.setProperty('top','0','important'); p.style.setProperty('bottom','0','important');
+      p.style.setProperty('width','75vw','important'); p.style.setProperty('max-width','310px','important');
+      p.style.setProperty('z-index','200','important'); p.style.setProperty('flex-direction','column','important');
+      p.style.setProperty('background','#fff','important'); p.style.setProperty('overflow','hidden','important');
+      p.style.setProperty('box-shadow','4px 0 24px rgba(109,40,217,.2)','important');
       p.style.setProperty('transform','translateX('+tx+'px)','important');
-    } else if(isOpen && dx < 0){
-      /* إغلاق تدريجي: من 0 إلى -pw */
-      var offset2 = Math.max(dx, -ts.pw);
-      p.style.setProperty('transform','translateX('+offset2+'px)','important');
+    } else if(isOpen && dx<0){
+      var tx2=Math.max(-ts.pw, dx);
+      p.style.setProperty('transform','translateX('+tx2+'px)','important');
     }
-  }, {passive:true});
+  },{passive:true});
 
-  document.addEventListener('touchend', function(e){
-    if(!ts.tracking) return;
-    ts.tracking = false;
-
-    var endX = e.changedTouches[0].clientX;
-    var dx   = endX - ts.x;
-    var dt   = Date.now() - ts.t;
-    var vel  = dt > 0 ? Math.abs(dx) / dt : 0;
-
-    var p = panel();
+  document.addEventListener('touchend',function(e){
+    if(!ts.active||ts.cancelled){ ts.active=false; return; }
+    ts.active=false;
+    var t=e.changedTouches[0];
+    var dx=t.clientX-ts.x0;
+    var dt=Math.max(1, Date.now()-ts.t0);
+    var vel=Math.abs(dx)/dt;
+    var p=panel();
     enableTransition(p);
 
     if(!isOpen){
-      /* فتح إذا: سريع → أو مسافة كافية */
-      if(ts.dragging && (vel >= VEL_THRESHOLD || dx > ts.pw * OPEN_RATIO)){
-        openP();
+      /* فتح إذا: (سرعة كافية + اتجاه يمين) أو (مسافة كافية بدون velocity) */
+      var fastSwipe = (vel>=VEL && dx>8);
+      var farEnough = (dx >= ts.pw*0.25);
+      if(fastSwipe||farEnough){
+        if(p) snapOpen(p);
       } else {
-        /* عودة للإغلاق */
-        if(p){
-          p.style.setProperty('transform','translateX(-100%)','important');
-          setTimeout(function(){ if(!isOpen) p.style.setProperty('display','none','important'); },300);
-        }
+        if(p){ p.style.setProperty('transform','translateX(-100%)','important'); setTimeout(function(){ if(!isOpen) p.style.setProperty('display','none','important'); },300); }
       }
     } else {
-      /* إغلاق إذا: سريع لليسار → أو مسافة كافية */
-      if(ts.dragging && (vel >= VEL_THRESHOLD && dx < 0) || dx < -(ts.pw * CLOSE_RATIO)){
-        closeP();
-      } else {
-        /* عودة للفتح */
-        if(p) p.style.setProperty('transform','translateX(0%)','important');
-      }
+      /* إغلاق إذا: (سرعة كافية + اتجاه يسار) أو (مسافة كافية) */
+      var fastClose=(vel>=VEL && dx<-8);
+      var farClose=(dx <= -(ts.pw*0.25));
+      if(fastClose||farClose){ closeP(); }
+      else { if(p) p.style.setProperty('transform','translateX(0%)','important'); }
     }
-  }, {passive:true});
+  },{passive:true});
 
-  /* ── إغلاق عند الضغط على منطقة الشات ── */
-  document.addEventListener('click', function(e){
+  /* إغلاق عند الضغط على منطقة الشات */
+  document.addEventListener('click',function(e){
     if(!isOpen) return;
-    var p = panel();
-    if(p && !p.contains(e.target)){
-      closeP();
-    }
+    var p=panel();
+    if(p&&!p.contains(e.target)) closeP();
   });
 
   if(document.readyState==='loading'){
