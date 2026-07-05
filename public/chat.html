@@ -480,6 +480,7 @@
 
 </style>
 
+<style id="mp-early">#membersBg{display:none!important;position:fixed!important;left:0!important;right:unset!important;top:0!important;bottom:0!important;}</style>
 </head>
 <body>
 
@@ -2449,46 +2450,56 @@ document.addEventListener('DOMContentLoaded', () => {
     if(typeof socket!=='undefined'){
       socket.on('onlineUsers',function(data){
         window._onlineUsers=Array.isArray(data)?data:(data.users||data.online||data.members||[]);
-        if(isOpen) renderMembers();
+        /* تحديث العدد دائماً */
         var cnt=document.getElementById('membersCount');
         if(cnt) cnt.textContent='('+(window._onlineUsers||[]).length+')';
+        /* تحديث القائمة دائماً (مفتوحة أو مغلقة) */
+        renderMembers();
       });
-      socket.on('userJoined',function(){ if(isOpen) renderMembers(); });
-      socket.on('userLeft',  function(){ if(isOpen) renderMembers(); });
-      socket.on('micOn',     function(){ if(isOpen) renderMembers(); });
-      socket.on('micOff',    function(){ if(isOpen) renderMembers(); });
+      socket.on('userJoined',function(d){
+        /* أضف الوافد فوراً إن لم تكن الـ onlineUsers وصلت بعد */
+        if(d&&d.username&&window._onlineUsers){
+          var exists=window._onlineUsers.some(function(u){return u.username===d.username;});
+          if(!exists) window._onlineUsers.push({username:d.username,rank:d.rank||100,avatar:d.avatar||'av1.svg'});
+        }
+        if(isOpen) renderMembers();
+      });
+      socket.on('userLeft',function(d){
+        if(d&&d.username&&window._onlineUsers)
+          window._onlineUsers=window._onlineUsers.filter(function(u){return u.username!==d.username;});
+        if(isOpen) renderMembers();
+      });
+      socket.on('micOn', function(d){ if(d&&d.username&&window._onlineUsers){ window._onlineUsers.forEach(function(u){if(u.username===d.username)u.isMicOn=true;}); } if(isOpen) renderMembers(); });
+      socket.on('micOff',function(d){ if(d&&d.username&&window._onlineUsers){ window._onlineUsers.forEach(function(u){if(u.username===d.username)u.isMicOn=false;}); } if(isOpen) renderMembers(); });
     }
+    /* طلب قائمة المتواجدين بعد 800ms (بعد اتصال socket) */
+    setTimeout(function(){
+      if(typeof socket!=='undefined' && !window._onlineUsers){
+        var rid=localStorage.getItem('room_id');
+        if(rid) socket.emit('getOnlineUsers',{room_id:rid});
+      }
+    },800);
     setTimeout(function(){ if(!isOpen) forceHide(panel()); },200);
     setTimeout(function(){ if(!isOpen) forceHide(panel()); },1000);
   }
 
   /* ══ نظام السحب الاحترافي ══ */
   var EDGE = 44;
-  var VEL  = 0.25;   /* سرعة السحب الكافية لفتح تلقائي (px/ms) */
+  var VEL  = 0.22;  /* px/ms */
 
   var ts = {x0:0,y0:0,t0:0,pw:240,active:false,cancelled:false,moved:false};
 
-  function disableTransition(p){ if(p) p.style.setProperty('transition','none','important'); }
-  function enableTransition(p){  if(p) p.style.setProperty('transition','transform .28s cubic-bezier(.22,1,.36,1)','important'); }
+  function _disT(p){ if(p) p.style.setProperty('transition','none','important'); }
+  function _enT(p){  if(p) p.style.setProperty('transition','transform .28s cubic-bezier(.22,1,.36,1)','important'); }
 
-  function snapOpen(p){
-    isOpen=true;
-    p.style.setProperty('display','flex','important');
-    p.style.setProperty('position','fixed','important');
-    p.style.setProperty('left','0','important');
-    p.style.setProperty('right','unset','important');
-    p.style.setProperty('top','0','important');
-    p.style.setProperty('bottom','0','important');
-    p.style.setProperty('width','75vw','important');
-    p.style.setProperty('max-width','310px','important');
-    p.style.setProperty('z-index','200','important');
-    p.style.setProperty('flex-direction','column','important');
-    p.style.setProperty('background','#fff','important');
-    p.style.setProperty('overflow','hidden','important');
-    p.style.setProperty('box-shadow','4px 0 24px rgba(109,40,217,.2)','important');
-    p.style.setProperty('transform','translateX(0%)','important');
-    renderMembers();
-    setTimeout(function(){ if(isOpen&&!(window._onlineUsers||[]).length) renderMembers(); },800);
+  /* ── تنظيف حالة عالقة ── */
+  function _snapToState(){
+    var p=panel(); _enT(p);
+    if(isOpen){
+      if(p) p.style.setProperty('transform','translateX(0%)','important');
+    } else {
+      if(p){ p.style.setProperty('transform','translateX(-100%)','important'); setTimeout(function(){ if(!isOpen) p.style.setProperty('display','none','important'); },300); }
+    }
   }
 
   document.addEventListener('touchstart',function(e){
@@ -2496,6 +2507,12 @@ document.addEventListener('DOMContentLoaded', () => {
     ts.x0=t.clientX; ts.y0=t.clientY; ts.t0=Date.now();
     ts.active=false; ts.cancelled=false; ts.moved=false;
     var p=panel(); ts.pw=p?(p.offsetWidth||240):240;
+    /* cleanup: إذا كانت القائمة في وضع عالق → أصلحها */
+    if(p && !isOpen && p.style.display==='flex'){
+      _enT(p);
+      p.style.setProperty('transform','translateX(-100%)','important');
+      setTimeout(function(){ if(!isOpen) p.style.setProperty('display','none','important'); },300);
+    }
     if(!isOpen && t.clientX<=EDGE) ts.active=true;
     else if(isOpen) ts.active=true;
   },{passive:true});
@@ -2504,16 +2521,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!ts.active||ts.cancelled) return;
     var x=e.touches[0].clientX, y=e.touches[0].clientY;
     var dx=x-ts.x0, dy=Math.abs(y-ts.y0);
-    /* إلغاء إذا الحركة رأسية */
-    if(!ts.moved && dy>14 && dy>Math.abs(dx)){
-      ts.cancelled=true;
-      var p=panel();
-      if(p&&!isOpen){ p.style.setProperty('transform','translateX(-100%)','important'); setTimeout(function(){p.style.setProperty('display','none','important');},300); }
-      return;
+    /* إلغاء إذا الحركة رأسية في البداية فقط */
+    if(!ts.moved){
+      if(dy>12 && dy>Math.abs(dx)){ ts.cancelled=true; _snapToState(); return; }
+      if(Math.abs(dx)<3 && dy<3) return; /* لم تبدأ بعد */
     }
     ts.moved=true;
     var p=panel(); if(!p) return;
-    disableTransition(p);
+    _disT(p);
     if(!isOpen && dx>0){
       var tx=Math.max(-ts.pw, dx-ts.pw);
       p.style.setProperty('display','flex','important');
@@ -2526,9 +2541,15 @@ document.addEventListener('DOMContentLoaded', () => {
       p.style.setProperty('box-shadow','4px 0 24px rgba(109,40,217,.2)','important');
       p.style.setProperty('transform','translateX('+tx+'px)','important');
     } else if(isOpen && dx<0){
-      var tx2=Math.max(-ts.pw, dx);
-      p.style.setProperty('transform','translateX('+tx2+'px)','important');
+      p.style.setProperty('transform','translateX('+Math.max(-ts.pw,dx)+'px)','important');
     }
+  },{passive:true});
+
+  /* ── touchcancel: يطلق عندما المتصفح يسرق اللمس ── */
+  document.addEventListener('touchcancel',function(){
+    if(!ts.active) return;
+    ts.active=false;
+    _snapToState(); /* أعد للحالة الصحيحة تلقائياً */
   },{passive:true});
 
   document.addEventListener('touchend',function(e){
@@ -2536,30 +2557,30 @@ document.addEventListener('DOMContentLoaded', () => {
     ts.active=false;
     var t=e.changedTouches[0];
     var dx=t.clientX-ts.x0;
-    var dt=Math.max(1, Date.now()-ts.t0);
+    var dt=Math.max(1,Date.now()-ts.t0);
     var vel=Math.abs(dx)/dt;
     var p=panel();
-    enableTransition(p);
+    _enT(p);
 
     if(!isOpen){
-      /* فتح إذا: (سرعة كافية + اتجاه يمين) أو (مسافة كافية بدون velocity) */
-      var fastSwipe = (vel>=VEL && dx>8);
-      var farEnough = (dx >= ts.pw*0.25);
-      if(fastSwipe||farEnough){
+      /* فتح: سحب سريع أو مسافة كافية */
+      if((vel>=VEL && dx>6) || dx>=ts.pw*0.22){
         if(p) snapOpen(p);
       } else {
+        /* إغلاق */
         if(p){ p.style.setProperty('transform','translateX(-100%)','important'); setTimeout(function(){ if(!isOpen) p.style.setProperty('display','none','important'); },300); }
       }
     } else {
-      /* إغلاق إذا: (سرعة كافية + اتجاه يسار) أو (مسافة كافية) */
-      var fastClose=(vel>=VEL && dx<-8);
-      var farClose=(dx <= -(ts.pw*0.25));
-      if(fastClose||farClose){ closeP(); }
-      else { if(p) p.style.setProperty('transform','translateX(0%)','important'); }
+      /* إغلاق: سحب سريع يساراً أو مسافة كافية */
+      if((vel>=VEL && dx<-6) || dx<=-(ts.pw*0.22)){
+        closeP();
+      } else {
+        if(p) p.style.setProperty('transform','translateX(0%)','important');
+      }
     }
   },{passive:true});
 
-  /* إغلاق عند الضغط على منطقة الشات */
+  /* إغلاق عند الضغط خارج القائمة */
   document.addEventListener('click',function(e){
     if(!isOpen) return;
     var p=panel();
