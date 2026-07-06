@@ -2389,7 +2389,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if(cnt) cnt.textContent='('+users.length+')';
     if(!list) return;
     if(!users.length){
-      list.innerHTML='<div style="text-align:center;color:rgba(0,0,0,.3);padding:28px;font-size:13px">\u0644\u0627 \u064A\u0648\u062C\u062F \u0623\u0639\u0636\u0627\u0621</div>';
+      /* لا تمسح إذا البيانات لم تصل بعد */
+      if(!list.hasChildNodes()) list.innerHTML='<div style="text-align:center;color:rgba(0,0,0,.3);padding:28px;font-size:13px">لا يوجد أعضاء</div>';
       return;
     }
     list.innerHTML=users.map(function(u){
@@ -2448,38 +2449,7 @@ document.addEventListener('DOMContentLoaded', () => {
     forceHide(panel());
     window.toggleMembers=function(){ isOpen?closeP():openP(); };
     /* لا overlay */
-    if(typeof socket!=='undefined'){
-      socket.on('onlineUsers',function(data){
-        window._onlineUsers=Array.isArray(data)?data:(data.users||data.online||data.members||[]);
-        /* تحديث العدد دائماً */
-        var cnt=document.getElementById('membersCount');
-        if(cnt) cnt.textContent='('+(window._onlineUsers||[]).length+')';
-        /* تحديث القائمة دائماً (مفتوحة أو مغلقة) */
-        renderMembers();
-      });
-      socket.on('userJoined',function(d){
-        /* أضف الوافد فوراً إن لم تكن الـ onlineUsers وصلت بعد */
-        if(d&&d.username&&window._onlineUsers){
-          var exists=window._onlineUsers.some(function(u){return u.username===d.username;});
-          if(!exists) window._onlineUsers.push({username:d.username,rank:d.rank||100,avatar:d.avatar||'av1.svg'});
-        }
-        if(isOpen) renderMembers();
-      });
-      socket.on('userLeft',function(d){
-        if(d&&d.username&&window._onlineUsers)
-          window._onlineUsers=window._onlineUsers.filter(function(u){return u.username!==d.username;});
-        if(isOpen) renderMembers();
-      });
-      socket.on('micOn', function(d){ if(d&&d.username&&window._onlineUsers){ window._onlineUsers.forEach(function(u){if(u.username===d.username)u.isMicOn=true;}); } if(isOpen) renderMembers(); });
-      socket.on('micOff',function(d){ if(d&&d.username&&window._onlineUsers){ window._onlineUsers.forEach(function(u){if(u.username===d.username)u.isMicOn=false;}); } if(isOpen) renderMembers(); });
-    }
-    /* طلب قائمة المتواجدين بعد 800ms (بعد اتصال socket) */
-    setTimeout(function(){
-      if(typeof socket!=='undefined' && !window._onlineUsers){
-        var rid=localStorage.getItem('room_id');
-        if(rid) socket.emit('getOnlineUsers',{room_id:rid});
-      }
-    },800);
+    /* socket.on('onlineUsers') in ui.js sets window._onlineUsers */
     setTimeout(function(){ if(!isOpen) forceHide(panel()); },200);
     setTimeout(function(){ if(!isOpen) forceHide(panel()); },1000);
   }
