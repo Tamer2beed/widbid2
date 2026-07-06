@@ -478,6 +478,13 @@
 .sm-username { font-size: 13px !important; font-weight: 700 !important; }
 .sm-rank-label { font-size: 10px !important; color: #A78BFA !important; }
 
+
+/* ══ Members Handle Tab ══ */
+#membersHandle{position:fixed!important;left:0!important;top:50%!important;transform:translateY(-50%)!important;z-index:198!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;width:28px!important;height:72px!important;background:linear-gradient(180deg,#7C3AED,#6D28D9)!important;border-radius:0 14px 14px 0!important;box-shadow:3px 0 12px rgba(109,40,217,.4)!important;cursor:pointer!important;user-select:none!important;transition:width .2s,opacity .25s!important;}
+#membersHandle:active{width:36px!important;}
+#membersHandle .mh-icon{font-size:14px;line-height:1;}
+#membersHandle .mh-count{font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.25);border-radius:8px;padding:1px 4px;min-width:16px;text-align:center;line-height:1.5;}
+html,body{overscroll-behavior-x:none!important;}
 </style>
 
 <style id="mp-early">#membersBg{display:none!important;position:fixed!important;left:0!important;right:unset!important;top:0!important;bottom:0!important;}</style>
@@ -1461,6 +1468,13 @@ function handleAvatarFile(e) {
 
 <div id="membersOverlay"></div>
 
+<!-- ══ لسان السحب — Members Handle Tab ══ -->
+<div id="membersHandle" title="المتواجدون">
+  <span class="mh-icon">👥</span>
+  <span class="mh-count" id="handleCount">0</span>
+</div>
+
+
 <!-- ══════════════════════════════════════════
      ADMIN MODAL — لوحة التحكم الجديدة
 ══════════════════════════════════════════ -->
@@ -2405,6 +2419,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   }
 
+  /* ── تحديث لسان السحب ── */
+  function updateHandle(){
+    var h=document.getElementById('membersHandle');
+    var c=document.getElementById('handleCount');
+    var n=(window._onlineUsers||[]).length;
+    if(c) c.textContent=n;
+    if(h){
+      if(isOpen) h.classList.add('hidden-tab');
+      else h.classList.remove('hidden-tab');
+    }
+  }
+
   var isOpen=false;
   function panel(){return document.getElementById('membersBg');}
   function ov(){return document.getElementById('membersOverlay');}
@@ -2432,10 +2458,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function closeP(){
     isOpen=false;
+    updateHandle();
     var p=panel();
     if(p){
       p.style.setProperty('transform','translateX(-100%)','important');
-      setTimeout(function(){ if(!isOpen) p.style.setProperty('display','none','important'); },320);
+      setTimeout(function(){
+      if(!isOpen){
+        p.style.setProperty('display','none','important');
+        var _hdl2=document.getElementById('membersHandle');
+        if(_hdl2){_hdl2.style.opacity='';_hdl2.style.pointerEvents='';}
+      }
+    },320);
     }
     /* لا overlay */
   }
@@ -2449,6 +2482,26 @@ document.addEventListener('DOMContentLoaded', () => {
     forceHide(panel());
     window.toggleMembers=function(){ isOpen?closeP():openP(); };
     /* لا overlay */
+    /* ── لسان السحب — نقر يفتح ── */
+    (function(){
+      var hdl=document.getElementById('membersHandle');
+      if(!hdl) return;
+      /* نقرة بسيطة → فتح */
+      hdl.addEventListener('click',function(){ openP(); });
+      /* سحب من اللسان → يعمل كحافة الشاشة */
+      hdl.addEventListener('touchstart',function(e){
+        ts.x0=e.touches[0].clientX; ts.y0=e.touches[0].clientY;
+        ts.t0=Date.now(); ts.pw=_getPW();
+        ts.active=true; ts.cancelled=false; ts.moved=false;
+        e.stopPropagation();
+      },{passive:true});
+    })();
+    updateHandle();
+    /* تحديث عداد اللسان كل ثانيتين */
+    setInterval(function(){
+      var c=document.getElementById('handleCount');
+      if(c) c.textContent=(window._onlineUsers||[]).length;
+    },2000);
     /* socket.on('onlineUsers') in ui.js sets window._onlineUsers */
     setTimeout(function(){ if(!isOpen) forceHide(panel()); },200);
     setTimeout(function(){ if(!isOpen) forceHide(panel()); },1000);
@@ -2475,14 +2528,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function _snapToState(){
     var p=panel(); _enT(p);
+    var hdlEl=document.getElementById('membersHandle');
     if(isOpen){
       if(p) p.style.setProperty('transform','translateX(0%)','important');
+      if(hdlEl) hdlEl.style.opacity='0';
     } else {
       if(p){
         p.style.setProperty('transform','translateX(-100%)','important');
         setTimeout(function(){ if(!isOpen) p.style.setProperty('display','none','important'); },300);
       }
+      if(hdlEl) setTimeout(function(){ hdlEl.style.opacity=''; },320);
     }
+    updateHandle();
   }
 
   /* إعداد كل خصائص الـ panel الثابتة */
