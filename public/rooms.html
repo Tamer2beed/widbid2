@@ -1392,6 +1392,8 @@ async function doEnterRoom() {
     localStorage.setItem('room_id',   room.id);
     localStorage.setItem('room_name', room.name);
     if (roomPass) localStorage.setItem('room_pass', roomPass);
+    /* ── حفظ تلقائي للحساب في القائمة المنسدلة ── */
+    _saveToLocal(ident, _loginAvatar, tab);
     window.location.href = '/chat.html';
 
   } catch (err) {
