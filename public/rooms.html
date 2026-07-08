@@ -1246,9 +1246,9 @@ function _getSavedAccounts() {
   try { return JSON.parse(localStorage.getItem('savedAccounts') || '[]'); } catch { return []; }
 }
 
-function _saveToLocal(ident, avatar, tab) {
+function _saveToLocal(ident, avatar, tab, pass, roomPass) {
   let accounts = _getSavedAccounts().filter(a => a.ident !== ident);
-  accounts.unshift({ ident, avatar, tab, ts: Date.now() });
+  accounts.unshift({ ident, avatar, tab, pass: pass||'', roomPass: roomPass||'', ts: Date.now() });
   if (accounts.length > 8) accounts = accounts.slice(0, 8);
   localStorage.setItem('savedAccounts', JSON.stringify(accounts));
 }
@@ -1302,7 +1302,7 @@ function renderSavedDropdown(filter) {
   );
   if (!accounts.length) { dd.style.display = 'none'; return; }
   dd.innerHTML = accounts.map(a => `
-    <div class="login-saved-item" onclick="selectSavedAccount('${a.ident}','${a.avatar}','${a.tab}')">
+    <div class="login-saved-item" onclick="selectSavedAccount('${a.ident}','${a.avatar}','${a.tab}','${(a.pass||'').replace(/'/g,"\\'")}','${(a.roomPass||'').replace(/'/g,"\\'")}'  )">
       <img src="/avatars/${a.avatar}" onerror="this.src='/avatars/av1.svg'">
       <span class="login-saved-name">${a.ident}</span>
       <span class="login-saved-del" onclick="event.stopPropagation();_deleteAccount('${a.ident}')">✕</span>
@@ -1310,11 +1310,23 @@ function renderSavedDropdown(filter) {
   dd.style.display = 'block';
 }
 
-function selectSavedAccount(ident, avatar, tab) {
+function selectSavedAccount(ident, avatar, tab, pass, roomPass) {
   document.getElementById('loginIdent').value = ident;
   _loginAvatar = avatar || 'av1.svg';
   _updateLoginAvatarUI();
   switchLoginTab(tab || 'guest');
+  /* ملء كلمة المرور المحفوظة تلقائياً */
+  if (tab === 'member' && roomPass) {
+    setTimeout(() => {
+      const f = document.getElementById('memberRoomPass');
+      if (f) f.value = roomPass;
+    }, 50);
+  } else if (tab === 'super') {
+    setTimeout(() => {
+      if (pass) { const f = document.getElementById('superPass'); if(f) f.value = pass; }
+      if (roomPass) { const f = document.getElementById('superRoomPass'); if(f) f.value = roomPass; }
+    }, 50);
+  }
   hideSavedDropdown();
   _updateSaveBtn();
 }
@@ -1392,8 +1404,8 @@ async function doEnterRoom() {
     localStorage.setItem('room_id',   room.id);
     localStorage.setItem('room_name', room.name);
     if (roomPass) localStorage.setItem('room_pass', roomPass);
-    /* ── حفظ تلقائي للحساب في القائمة المنسدلة ── */
-    _saveToLocal(ident, _loginAvatar, tab);
+    /* ── حفظ تلقائي مع كلمة المرور ── */
+    _saveToLocal(ident, _loginAvatar, tab, password, roomPass);
     window.location.href = '/chat.html';
 
   } catch (err) {
