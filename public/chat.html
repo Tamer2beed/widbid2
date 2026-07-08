@@ -2395,6 +2395,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function rC(r){const k=Object.keys(RC).map(Number).sort((a,b)=>b-a);for(const v of k)if(r>=v)return RC[v];return'#888';}
   function rN(r){const k=Object.keys(RN).map(Number).sort((a,b)=>b-a);for(const v of k)if(r>=v)return RN[v];return'Guest';}
 
+  /* ══ خريطة أفاتار → صورة حقيقية ══ */
+  var _AVM={'av1.svg':'https://randomuser.me/api/portraits/men/32.jpg','av2.svg':'https://randomuser.me/api/portraits/women/44.jpg','av3.svg':'https://randomuser.me/api/portraits/men/15.jpg','av4.svg':'https://randomuser.me/api/portraits/women/68.jpg','av5.svg':'https://randomuser.me/api/portraits/men/78.jpg','av6.svg':'https://randomuser.me/api/portraits/women/12.jpg','av7.svg':'https://randomuser.me/api/portraits/men/55.jpg','av8.svg':'https://randomuser.me/api/portraits/women/33.jpg','av9.svg':'https://randomuser.me/api/portraits/men/21.jpg','av10.svg':'https://randomuser.me/api/portraits/women/55.jpg','av11.svg':'https://randomuser.me/api/portraits/men/45.jpg','av12.svg':'https://randomuser.me/api/portraits/women/77.jpg','av13.svg':'https://randomuser.me/api/portraits/men/62.jpg','av14.svg':'https://randomuser.me/api/portraits/women/22.jpg','av15.svg':'https://randomuser.me/api/portraits/men/88.jpg','av16.svg':'https://randomuser.me/api/portraits/women/41.jpg'};
+  function _avImg(av){ return _AVM[av]||_AVM['av1.svg']; }
+
   function renderMembers(){
     const list=document.getElementById('membersList');
     const cnt =document.getElementById('membersCount');
@@ -2402,19 +2406,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if(cnt) cnt.textContent='('+users.length+')';
     if(!list) return;
     if(!users.length){
-      /* لا تمسح إذا البيانات لم تصل بعد */
-      if(!list.hasChildNodes()) list.innerHTML='<div style="text-align:center;color:rgba(0,0,0,.3);padding:28px;font-size:13px">لا يوجد أعضاء</div>';
+      if(!list.hasChildNodes()) list.innerHTML='<div style="text-align:center;color:rgba(0,0,0,.3);padding:28px;font-size:13px">&#x644;&#x627; &#x64A;&#x648;&#x62C;&#x62F; &#x623;&#x639;&#x636;&#x627;&#x621;</div>';
       return;
     }
     list.innerHTML=users.map(function(u){
-      var r=u.rank||100;
-      var c=rC(r);
-      var av=u.avatar||'av1.svg';
-      var mic=u.isMicOn?'<span style="font-size:14px;color:#ef4444">\uD83C\uDF99</span>':'';
-      return '<div class="member-item" data-username="'+u.username+'" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1.5px solid #EDE9FE;background:#FAF8FF;margin-bottom:6px;cursor:pointer" onclick="typeof showMemberMenu===\'function\'&&showMemberMenu(\''+u.username+"\',"+r+')">'
-        +'<img src="/avatars/'+av+'" style="width:38px;height:38px;border-radius:10px;border:2.5px solid '+c+';object-fit:cover;flex-shrink:0" onerror="this.src=\'/avatars/av1.svg\'">'
-        +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+u.username+'</div>'
-        +'<div style="font-size:11px;color:'+c+';font-weight:600">'+rN(r)+'</div></div>'+mic+'</div>';
+      const r=u.rank||100;
+      const c=rC(r);
+      const imgSrc=_avImg(u.avatar||'av1.svg');
+      const mic=u.isMicOn?'<span style="font-size:14px;color:#ef4444;margin-right:2px">&#128483;</span>':'';
+      return '<div class="member-item" data-username="'+u.username
+        +'" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #f0eeff;cursor:pointer;background:#fff;active:background:#f5f0ff"'
+        +' onclick="typeof showMemberMenu==='function'&&showMemberMenu(''+u.username+"',"+r+')">'
+        /* صورة حقيقية تملأ المربع */
+        +'<div style="width:46px;height:46px;flex-shrink:0;border-radius:10px;border:3px solid '+c+';overflow:hidden;box-shadow:0 0 0 1.5px rgba(0,0,0,.07)">'
+        +'<img src="'+imgSrc+'" width="46" height="46" style="width:100%;height:100%;object-fit:cover;object-position:top;display:block"'
+        +' onerror="this.src='https://randomuser.me/api/portraits/men/'+((u.username||'').length%50+1)+'.jpg'">'
+        +'</div>'
+        /* اسم بلون الرتبة — بدون نص الرتبة */
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-weight:700;font-size:14px;color:'+c+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+u.username+'</div>'
+        +'</div>'+mic+'</div>';
     }).join('');
   }
 
