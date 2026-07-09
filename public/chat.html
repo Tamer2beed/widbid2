@@ -1882,10 +1882,65 @@ function _adminGoTo(hideId, showId, cb) {
 }
 
 /* ══ renderAdmins ══════════════════════ */
+/* ══ Rank Picker ══ */
+const _RANKS_LIST = [
+  {v:100,n:'زائر'},{v:200,n:'عضو'},{v:300,n:'محمي'},{v:400,n:'ملكي'},
+  {v:500,n:'مشرف'},{v:600,n:'سوبر مشرف'},{v:700,n:'ماستر'},
+  {v:800,n:'سوبر ماستر'},{v:900,n:'روت'},{v:1000,n:'سوبر روت'}
+];
+const _RANK_COLORS = {100:'#888',200:'#FFB6C1',300:'#E066FF',400:'#FFD700',500:'#4A90D9',600:'#27AE60',700:'#E74C3C',800:'#C0392B',900:'#F39C12',1000:'#E67E22'};
+let _rankPickerCb = null;
+
+function _showRankPicker(title, desc, options, cb) {
+  _rankPickerCb = cb;
+  document.getElementById('roleModalTitle').textContent = title;
+  document.getElementById('roleModalDesc').textContent = desc;
+  document.getElementById('roleOptionsContainer').innerHTML = options.map(r =>
+    `<button class="role-option-item" onclick="_selectRank(${r.v})"
+      style="border-left:4px solid ${_RANK_COLORS[r.v]||'#888'}">
+      <span style="font-weight:700;color:${_RANK_COLORS[r.v]||'#fff'}">${r.n}</span>
+      <span style="color:rgba(255,255,255,.4);font-size:12px;float:left">رتبة ${r.v}</span>
+    </button>`
+  ).join('');
+  document.getElementById('roleSelectModal')?.classList.add('active');
+}
+function _selectRank(rank) {
+  document.getElementById('roleSelectModal')?.classList.remove('active');
+  if (_rankPickerCb) { _rankPickerCb(rank); _rankPickerCb = null; }
+}
+function _applyRankChange(username, rank) {
+  const rid = localStorage.getItem('room_id');
+  const by  = localStorage.getItem('username');
+  socket?.emit('changeRank', { target: username, rank, room_id: rid, by });
+  logActivity(by, 'تغيير رتبة', `${username} → ${_rankName(rank)}`);
+  showToast(`✅ ${username} → ${_rankName(rank)}`);
+  setTimeout(renderAdmins, 700);
+}
+
+/* ══ تجميد المستخدمين ══ */
+const _frozenSet = new Set(JSON.parse(localStorage.getItem('_frozenUsers')||'[]'));
+function adminFreeze(username) {
+  _frozenSet.add(username);
+  localStorage.setItem('_frozenUsers', JSON.stringify([..._frozenSet]));
+  const rid=localStorage.getItem('room_id'), by=localStorage.getItem('username');
+  socket?.emit('freezeUser', { target: username, room_id: rid, by });
+  logActivity(by, 'تجميد', username);
+  showToast('🧊 تم تجميد ' + username);
+  renderAdmins();
+}
+function adminUnfreeze(username) {
+  _frozenSet.delete(username);
+  localStorage.setItem('_frozenUsers', JSON.stringify([..._frozenSet]));
+  const rid=localStorage.getItem('room_id'), by=localStorage.getItem('username');
+  socket?.emit('unfreezeUser', { target: username, room_id: rid, by });
+  logActivity(by, 'فك تجميد', username);
+  showToast('✅ تم فك التجميد عن ' + username);
+  renderAdmins();
+}
+
 function renderAdmins() {
   const tbody = document.getElementById('adminsBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:rgba(255,255,255,.4);padding:24px">جارٍ التحميل...</td></tr>';
   const users = window._onlineUsers || [];
   const myRank = parseInt(localStorage.getItem('rank') || '0');
   const myUser = localStorage.getItem('username') || '';
@@ -1897,14 +1952,21 @@ function renderAdmins() {
   tbody.innerHTML = filtered.map(u => {
     const r = u.rank || 100;
     const canAct = myRank > r;
-    const actions = canAct ? `<div class="admin-actions">
-      ${r < 700 ? `<button class="promote-btn" onclick="adminPromote('${u.username}',${r})">ترقية</button>` : ''}
-      ${r > 100 ? `<button class="demote-btn" onclick="adminDemote('${u.username}',${r})">تخفيض</button>` : ''}
+    const isFrozen = _frozenSet.has(u.username);
+    const frozenBadge = isFrozen
+      ? '<span style="background:#0ea5e9;color:#fff;font-size:10px;padding:2px 8px;border-radius:8px;margin-right:6px">🧊 مجمّد</span>'
+      : '';
+    const actions = canAct ? `<div class="admin-actions" style="flex-wrap:wrap;gap:5px">
+      ${r < myRank ? `<button class="promote-btn" onclick="adminPromote('${u.username}',${r})">▲ ترقية</button>` : ''}
+      ${r > 100    ? `<button class="demote-btn"  onclick="adminDemote('${u.username}',${r})">▼ تخفيض</button>` : ''}
+      <button style="background:${isFrozen?'#22c55e':'#0ea5e9'};padding:2px 8px;border-radius:6px;font-size:10px;border:none;cursor:pointer;color:#fff"
+        onclick="${isFrozen?'adminUnfreeze':'adminFreeze'}('${u.username}')">
+        ${isFrozen ? '❄️ فك تجميد' : '🧊 تجميد'}
+      </button>
       <button class="delete-btn" onclick="adminKick('${u.username}')">طرد</button>
-      <button class="password-btn" onclick="openChangePw('${u.username}')">حظر</button>
     </div>` : '<span style="color:rgba(255,255,255,.3);font-size:11px">—</span>';
     return `<tr>
-      <td style="font-weight:700;color:#fff">${u.username}</td>
+      <td style="font-weight:700;color:#fff">${frozenBadge}${u.username}</td>
       <td><span class="admin-role-badge ${_rankClass(r)}">${_rankName(r)}</span></td>
       <td>${actions}</td>
     </tr>`;
@@ -1913,26 +1975,28 @@ function renderAdmins() {
 
 function adminPromote(username, currentRank) {
   const myRank = parseInt(localStorage.getItem('rank') || '0');
-  const next = currentRank < 200 ? 200 : currentRank < 500 ? 500
-    : currentRank < 600 ? 600 : currentRank < 700 ? 700 : null;
-  if (!next || next >= myRank) { showToast('⛔ لا يمكنك الترقية لهذا المستوى'); return; }
-  const rid = localStorage.getItem('room_id');
-  const by  = localStorage.getItem('username');
-  socket?.emit('changeRank', { target: username, rank: next, room_id: rid, by });
-  logActivity(by, 'ترقية', `${username} → ${_rankName(next)}`);
-  showToast(`✅ تمت ترقية ${username}`);
-  setTimeout(renderAdmins, 600);
+  /* الرتب المتاحة: أعلى من الحالية وأقل من رتبة الأدمن */
+  const options = _RANKS_LIST.filter(r => r.v > currentRank && r.v < myRank);
+  if (!options.length) { showToast('⛔ لا توجد رتب متاحة للترقية'); return; }
+  _showRankPicker(
+    'ترقية: ' + username,
+    'الرتبة الحالية: ' + _rankName(currentRank) + ' ← اختر الرتبة الجديدة',
+    options,
+    (rank) => _applyRankChange(username, rank)
+  );
 }
 
 function adminDemote(username, currentRank) {
-  const prev = currentRank >= 700 ? 600 : currentRank >= 600 ? 500
-    : currentRank >= 500 ? 200 : 100;
-  const rid = localStorage.getItem('room_id');
-  const by  = localStorage.getItem('username');
-  socket?.emit('changeRank', { target: username, rank: prev, room_id: rid, by });
-  logActivity(by, 'تخفيض', `${username} → ${_rankName(prev)}`);
-  showToast(`✅ تم تخفيض ${username}`);
-  setTimeout(renderAdmins, 600);
+  const myRank = parseInt(localStorage.getItem('rank') || '0');
+  /* الرتب المتاحة: أقل من الحالية — لا تشمل نفس رتبة الأدمن أو أعلى */
+  const options = _RANKS_LIST.filter(r => r.v < currentRank).reverse();
+  if (!options.length) { showToast('⛔ لا توجد رتب متاحة للتخفيض'); return; }
+  _showRankPicker(
+    'تخفيض: ' + username,
+    'الرتبة الحالية: ' + _rankName(currentRank) + ' ← اختر الرتبة الجديدة',
+    options,
+    (rank) => _applyRankChange(username, rank)
+  );
 }
 
 function adminKick(username) {
