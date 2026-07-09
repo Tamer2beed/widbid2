@@ -213,6 +213,13 @@ io.on('connection', (socket) => {
 
   /* ─── دخول الغرفة ─────────────────────────── */
   socket.on('joinRoom', async (data) => {
+    /* تحقق من التجميد */
+    const joiningUser = socket.userData?.username || data?.username;
+    if (joiningUser && frozenUsers.has(joiningUser)) {
+      const info = frozenUsers.get(joiningUser);
+      socket.emit('error', `🧊 حسابك مجمّد بواسطة ${info.by} — تواصل مع إدارة الغرفة`);
+      return;
+    }
     const { room_id, username, user_id, rank } = data;
     if (!room_id || !username) return;
 
@@ -1498,6 +1505,33 @@ io.on('connection', (socket) => {
 
 /* ════════ نهاية أحداث الرتب المتقدمة ════════ */
 });
+
+/* ══ نظام التجميد ══ */
+const frozenUsers = new Map(); // username → { by, at }
+
+socket.on('freezeUser', async ({ target, room_id, by }) => {
+  const actorRank  = socket.userData?.rank || 0;
+  const sockets    = await io.in(room_id).fetchSockets();
+  const targetSock = sockets.find(s => s.userData?.username === target);
+  const targetRank = targetSock?.userData?.rank || 0;
+  if (actorRank <= targetRank) {
+    return socket.emit('error', '⛔ لا تملك صلاحية تجميد هذا المستخدم');
+  }
+  frozenUsers.set(target, { by, at: Date.now() });
+  io.to(room_id).emit('systemMessage', `🧊 تم تجميد ${target} بواسطة ${by}`);
+  /* إخراج المستخدم المجمّد من الغرفة */
+  if (targetSock) {
+    targetSock.emit('youAreKicked', { by, reason: 'تم تجميد حسابك مؤقتاً' });
+    targetSock.leave(room_id);
+  }
+});
+
+socket.on('unfreezeUser', async ({ target, room_id, by }) => {
+  frozenUsers.delete(target);
+  io.to(room_id).emit('systemMessage', `✅ تم فك تجميد ${target} بواسطة ${by}`);
+});
+
+
 
 /* ════════════════════════════════════════════════
    تشغيل السيرفر
