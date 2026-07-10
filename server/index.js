@@ -1503,34 +1503,32 @@ io.on('connection', (socket) => {
 
 /* ════ نهاية أحداث [SKILL-AUDIO] ════ */
 
+
+  /* ══ تجميد / فك تجميد الحسابات ══ */
+  socket.on('freezeUser', async ({ target, room_id, by }) => {
+    const actorRank  = socket.userData?.rank || 0;
+    const socks      = await io.in(room_id).fetchSockets();
+    const targetSock = socks.find(s => s.userData?.username === target);
+    const targetRank = targetSock?.userData?.rank || 0;
+    if (actorRank <= targetRank)
+      return socket.emit('error', '⛔ لا تملك صلاحية تجميد هذا المستخدم');
+    frozenUsers.set(target, { by, at: Date.now() });
+    io.to(room_id).emit('systemMessage', `🧊 تم تجميد ${target} بواسطة ${by}`);
+    if (targetSock) {
+      targetSock.emit('youAreKicked', { by, reason: 'تم تجميد حسابك مؤقتاً' });
+      targetSock.leave(room_id);
+    }
+    const users = await buildOnlineUsers(room_id);
+    io.to(room_id).emit('onlineUsers', users);
+  });
+
+  socket.on('unfreezeUser', ({ target, room_id, by }) => {
+    frozenUsers.delete(target);
+    io.to(room_id).emit('systemMessage', `✅ تم فك تجميد ${target} بواسطة ${by}`);
+  });
+
 /* ════════ نهاية أحداث الرتب المتقدمة ════════ */
 });
-
-/* ══ نظام التجميد ══ */
-const frozenUsers = new Map(); // username → { by, at }
-
-socket.on('freezeUser', async ({ target, room_id, by }) => {
-  const actorRank  = socket.userData?.rank || 0;
-  const sockets    = await io.in(room_id).fetchSockets();
-  const targetSock = sockets.find(s => s.userData?.username === target);
-  const targetRank = targetSock?.userData?.rank || 0;
-  if (actorRank <= targetRank) {
-    return socket.emit('error', '⛔ لا تملك صلاحية تجميد هذا المستخدم');
-  }
-  frozenUsers.set(target, { by, at: Date.now() });
-  io.to(room_id).emit('systemMessage', `🧊 تم تجميد ${target} بواسطة ${by}`);
-  /* إخراج المستخدم المجمّد من الغرفة */
-  if (targetSock) {
-    targetSock.emit('youAreKicked', { by, reason: 'تم تجميد حسابك مؤقتاً' });
-    targetSock.leave(room_id);
-  }
-});
-
-socket.on('unfreezeUser', async ({ target, room_id, by }) => {
-  frozenUsers.delete(target);
-  io.to(room_id).emit('systemMessage', `✅ تم فك تجميد ${target} بواسطة ${by}`);
-});
-
 
 
 /* ════════════════════════════════════════════════
