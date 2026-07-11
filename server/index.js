@@ -9,6 +9,10 @@ require('dotenv').config();
 // تاريخ: 2026-06-25
 const { initWorker, getOrCreateRoom, createTransport, sfuRooms, cleanupRoom } = require('./mediasoup');
 const { initBots, getBotUsers } = require('./bots');
+
+/* نظام التجميد — مستوى الـ module */
+const frozenUsers = new Map();
+
 const db          = require('./db');
 const authRoutes  = require('./routes/Auth');
 const roomRoutes  = require('./routes/rooms');
