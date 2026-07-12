@@ -485,6 +485,23 @@
 #membersHandle .mh-icon{font-size:11px;line-height:1;}
 #membersHandle .mh-count{font-size:9px;font-weight:700;color:#fff;background:rgba(255,255,255,.25);border-radius:6px;padding:1px 3px;min-width:14px;text-align:center;line-height:1.5;}
 html,body{overscroll-behavior-x:none!important;}
+
+/* ══ Tailwind-like classes للـ Admin Modal ══ */
+.hidden { display: none !important; }
+#adminModal .flex-col  { display: flex !important; flex-direction: column !important; }
+#adminModal .h-full    { height: 100% !important; }
+#adminModal .w-full    { width: 100% !important; }
+#adminModal .flex-1    { flex: 1 1 0% !important; min-height: 0 !important; }
+#adminModal .shrink-0  { flex-shrink: 0 !important; }
+#adminModal .overflow-y-auto { overflow-y: auto !important; }
+#adminModal .space-y-3 > * + * { margin-top: 12px !important; }
+#adminModal .space-y-4 > * + * { margin-top: 16px !important; }
+/* admin modal sub-pages: كل صفحة تأخذ كامل الـ modal */
+#adminModal > div > div[id] {
+  height: 100vh !important;
+  min-height: 100vh !important;
+  overflow-y: auto !important;
+}
 </style>
 
 <style id="mp-early">#membersBg{display:none!important;position:fixed!important;left:0!important;right:unset!important;top:0!important;bottom:0!important;}</style>
@@ -1862,22 +1879,27 @@ function openAdminModal() {
   if (!modal) return;
   modal.classList.remove('hidden');
   modal.classList.add('show');
+  /* إخفاء كل الصفحات الفرعية أولاً */
   ['adminMainPage','appearanceSubMenu','welcomeEditSubMenu','logsSubMenu',
    'adminsSubMenu','activityLogSubMenu','speakerManagerSubMenu'].forEach(id => {
-    document.getElementById(id)?.classList.add('hidden');
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
   });
-  document.getElementById('adminMainPage')?.classList.remove('hidden');
+  /* إظهار الصفحة الرئيسية */
+  const main = document.getElementById('adminMainPage');
+  if (main) main.style.display = 'flex';
 }
 
 function closeAdminModal() {
   const modal = document.getElementById('adminModal');
-  modal?.classList.add('hidden');
-  modal?.classList.remove('show');
+  if (modal) { modal.classList.add('hidden'); modal.classList.remove('show'); }
 }
 
 function _adminGoTo(hideId, showId, cb) {
-  document.getElementById(hideId)?.classList.add('hidden');
-  document.getElementById(showId)?.classList.remove('hidden');
+  const hideEl = document.getElementById(hideId);
+  const showEl = document.getElementById(showId);
+  if (hideEl) hideEl.style.display = 'none';
+  if (showEl) showEl.style.display = 'flex';
   if (cb) cb();
 }
 
@@ -2509,10 +2531,24 @@ document.addEventListener('DOMContentLoaded', () => {
   function panel(){return document.getElementById('membersBg');}
   function ov(){return document.getElementById('membersOverlay');}
 
+  /* snapOpen: يُطبّق الـ styles النهائية ويفتح القائمة */
+  function snapOpen(p){
+    if(!p) return;
+    isOpen=true;
+    updateHandle();
+    var _h=document.getElementById('membersHandle');
+    if(_h){_h.style.opacity='0';_h.style.pointerEvents='none';}
+    _enT(p);
+    _setupPanel(p, ts.pw || _getPW());
+    p.style.setProperty('transform','translateX(0%)','important');
+    renderMembers();
+    setTimeout(function(){ if(isOpen&&!(window._onlineUsers||[]).length) renderMembers(); },700);
+  }
+
   function openP(){
     var p=panel();
     if(!p) return;
-    enableTransition(p);
+    _enT(p);
     /* إذا مخفية، ابدأ من -100% ثم animate لـ 0% */
     if(p.style.getPropertyValue('display')==='none'||!p.style.getPropertyValue('display')){
       p.style.setProperty('transform','translateX(-100%)','important');
