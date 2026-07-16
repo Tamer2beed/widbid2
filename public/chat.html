@@ -1363,7 +1363,7 @@ function pickLang(code, label) {
 }
 
 /* ══ تطبيق الإعدادات عند تحميل الصفحة ══ */
-document.addEventListener('DOMContentLoaded', () => {
+(function setupAdminListeners(){
   applySettingsToChat();
 });
 </script>
@@ -1606,7 +1606,7 @@ function handleAvatarFile(e) {
     <!-- ═══ مظهر الغرفة ═══ -->
     <div id="appearanceSubMenu" class="hidden flex flex-col h-full w-full" style="min-height:100vh">
       <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
-        <button id="backToAdminFromAppearanceBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
+        <button id="backToAdminFromAppearanceBtn" onclick="_adminGoTo('appearanceSubMenu','adminMainPage')" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
         <span style="font-weight:700;font-size:18px;color:#fff">مظهر الغرفة</span>
         <div style="width:40px"></div>
       </div>
@@ -1636,7 +1636,7 @@ function handleAvatarFile(e) {
     <!-- ═══ تعديل رسالة الترحيب ═══ -->
     <div id="welcomeEditSubMenu" class="hidden flex flex-col h-full w-full" style="min-height:100vh">
       <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
-        <button id="backToAdminFromWelcomeBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
+        <button id="backToAdminFromWelcomeBtn" onclick="_adminGoTo('welcomeEditSubMenu','adminMainPage')" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
         <span style="font-weight:700;font-size:18px;color:#fff">تعديل رسالة الترحيب</span>
         <div style="width:40px"></div>
       </div>
@@ -1668,7 +1668,7 @@ function handleAvatarFile(e) {
     <!-- ═══ السجلات ═══ -->
     <div id="logsSubMenu" class="hidden flex flex-col h-full w-full" style="min-height:100vh">
       <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
-        <button id="backToAdminFromLogsBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
+        <button id="backToAdminFromLogsBtn" onclick="_adminGoTo('logsSubMenu','adminMainPage')" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
         <span style="font-weight:700;font-size:18px;color:#fff" id="logsTitle">السجلات</span>
         <div style="width:40px"></div>
       </div>
@@ -1690,7 +1690,7 @@ function handleAvatarFile(e) {
     <!-- ═══ إدارة المشرفين ═══ -->
     <div id="adminsSubMenu" class="hidden flex flex-col h-full w-full" style="min-height:100vh">
       <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
-        <button id="backToAdminFromAdminsBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
+        <button id="backToAdminFromAdminsBtn" onclick="_adminGoTo('adminsSubMenu','adminMainPage')" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
         <span style="font-weight:700;font-size:18px;color:#fff">إدارة المشرفين</span>
         <button id="addAdminBtn" style="color:#fff;font-size:13px;background:#7c3aed;padding:6px 16px;border-radius:12px;border:none;cursor:pointer"><i class="fa-solid fa-plus"></i> إضافة</button>
       </div>
@@ -1707,7 +1707,7 @@ function handleAvatarFile(e) {
     <!-- ═══ سجل التغييرات ═══ -->
     <div id="activityLogSubMenu" class="hidden flex flex-col h-full w-full" style="min-height:100vh">
       <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
-        <button id="backToAdminFromActivityBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
+        <button id="backToAdminFromActivityBtn" onclick="_adminGoTo('activityLogSubMenu','adminMainPage')" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
         <span style="font-weight:700;font-size:18px;color:#fff">سجل التغييرات</span>
         <button id="clearActivityLogBtn" style="color:#fff;font-size:13px;background:#dc2626;padding:6px 16px;border-radius:12px;border:none;cursor:pointer"><i class="fa-solid fa-trash-can"></i></button>
       </div>
@@ -1724,7 +1724,7 @@ function handleAvatarFile(e) {
     <!-- ═══ إدارة السبيكر ═══ -->
     <div id="speakerManagerSubMenu" class="hidden flex flex-col h-full w-full" style="min-height:100vh">
       <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
-        <button id="backToAdminFromSpeakerBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
+        <button id="backToAdminFromSpeakerBtn" onclick="_adminGoTo('speakerManagerSubMenu','adminMainPage')" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px"><i class="fa-solid fa-arrow-right"></i></button>
         <span style="font-weight:700;font-size:18px;color:#fff">إدارة السبيكر</span>
         <div style="width:40px"></div>
       </div>
@@ -2225,7 +2225,7 @@ window.addEventListener('load', () => {
     const bg = localStorage.getItem('roomBg');
     if (bg) applyRoomBackground(bg);
   }
-});
+})();
 
 /* ══ ربط الأحداث بعد تحميل الصفحة ══════ */
 document.addEventListener('DOMContentLoaded', () => {
@@ -2547,18 +2547,24 @@ document.addEventListener('DOMContentLoaded', () => {
     var p=panel();
     if(!p) return;
     _enT(p);
-    /* إذا مخفية، ابدأ من -100% ثم animate لـ 0% */
-    if(p.style.getPropertyValue('display')==='none'||!p.style.getPropertyValue('display')){
-      p.style.setProperty('transform','translateX(-100%)','important');
+    if(!isOpen){
       p.style.setProperty('display','flex','important');
       p.style.setProperty('position','fixed','important');
-      p.style.setProperty('left','0','important'); p.style.setProperty('right','unset','important');
-      p.style.setProperty('top','0','important'); p.style.setProperty('bottom','0','important');
-      p.style.setProperty('width','75vw','important'); p.style.setProperty('max-width','310px','important');
-      p.style.setProperty('z-index','200','important'); p.style.setProperty('flex-direction','column','important');
-      p.style.setProperty('background','#fff','important'); p.style.setProperty('overflow','hidden','important');
+      p.style.setProperty('left','0','important');
+      p.style.setProperty('right','unset','important');
+      p.style.setProperty('top','0','important');
+      p.style.setProperty('bottom','0','important');
+      p.style.setProperty('width','75vw','important');
+      p.style.setProperty('max-width','310px','important');
+      p.style.setProperty('z-index','200','important');
+      p.style.setProperty('flex-direction','column','important');
+      p.style.setProperty('background','#fff','important');
+      p.style.setProperty('overflow','hidden','important');
       p.style.setProperty('box-shadow','4px 0 24px rgba(109,40,217,.2)','important');
-      requestAnimationFrame(function(){ snapOpen(p); });
+      p.style.setProperty('transform','translateX(-100%)','important');
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){ snapOpen(p); });
+      });
     } else {
       snapOpen(p);
     }
