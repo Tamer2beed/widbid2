@@ -2413,6 +2413,146 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+
+<script>
+/* ══ EMERGENCY FIX — يعمل بعد كل السكريبتات الأخرى ══ */
+(function emergencyFix(){
+
+  /* ─── 1. قائمة المتواجدين: ربط مباشر للـ handle ─── */
+  function _mpOpen(){
+    var p = document.getElementById('membersBg');
+    if (!p) return;
+    /* إعداد Panel */
+    var styles = {
+      display:'flex', position:'fixed', left:'0', right:'unset',
+      top:'0', bottom:'0', width:'75vw', 'max-width':'310px',
+      'z-index':'200', 'flex-direction':'column', background:'#fff',
+      overflow:'hidden', 'box-shadow':'4px 0 24px rgba(109,40,217,.2)',
+      transition:'transform .3s ease'
+    };
+    for(var k in styles) p.style.setProperty(k, styles[k], 'important');
+    /* أظهر اللسان */
+    setTimeout(function(){
+      p.style.setProperty('transform','translateX(0%)','important');
+    }, 20);
+    /* أخفِ الـ handle */
+    var h = document.getElementById('membersHandle');
+    if(h){h.style.opacity='0';h.style.pointerEvents='none';}
+    /* عرض الأعضاء */
+    if(typeof renderMembers==='function') renderMembers();
+    /* علّم القائمة مفتوحة */
+    window._mpIsOpen = true;
+  }
+
+  function _mpClose(){
+    var p = document.getElementById('membersBg');
+    if(!p) return;
+    p.style.setProperty('transition','transform .3s ease','important');
+    p.style.setProperty('transform','translateX(-100%)','important');
+    setTimeout(function(){
+      p.style.setProperty('display','none','important');
+    }, 320);
+    var h = document.getElementById('membersHandle');
+    if(h){h.style.opacity='';h.style.pointerEvents='';}
+    window._mpIsOpen = false;
+  }
+
+  /* تعريف عالمي يُستخدم من الكود الآخر */
+  window.emergencyOpen  = _mpOpen;
+  window.emergencyClose = _mpClose;
+  window.toggleMembers  = function(){ window._mpIsOpen ? _mpClose() : _mpOpen(); };
+  window._openMembersPanel  = _mpOpen;
+  window._closeMembersPanel = _mpClose;
+
+  /* ربط الـ handle */
+  function bindHandle(){
+    var h = document.getElementById('membersHandle');
+    if(h && !h._fixBound){
+      h._fixBound = true;
+      h.onclick = function(e){ e.stopPropagation(); _mpOpen(); };
+    }
+    /* إغلاق عند الضغط خارج القائمة */
+    document.addEventListener('click', function(e){
+      if(!window._mpIsOpen) return;
+      var p = document.getElementById('membersBg');
+      if(p && !p.contains(e.target) && e.target.id !== 'membersHandle') _mpClose();
+    });
+  }
+
+  /* ─── 2. زر الرجوع في لوحة التحكم ─── */
+  function _adminGoTo(hideId, showId){
+    var H = document.getElementById(hideId);
+    var S = document.getElementById(showId);
+    if(H){ H.style.setProperty('display','none','important'); }
+    if(S){
+      S.style.setProperty('display','flex','important');
+      S.style.setProperty('flex-direction','column','important');
+      S.style.setProperty('min-height','100vh','important');
+      S.style.setProperty('width','100%','important');
+      S.style.setProperty('overflow-y','auto','important');
+    }
+  }
+  window._adminGoTo = _adminGoTo;
+
+  function bindAdminBtns(){
+    var map = [
+      ['backToAdminFromAppearanceBtn','appearanceSubMenu','adminMainPage'],
+      ['backToAdminFromWelcomeBtn','welcomeEditSubMenu','adminMainPage'],
+      ['backToAdminFromLogsBtn','logsSubMenu','adminMainPage'],
+      ['backToAdminFromAdminsBtn','adminsSubMenu','adminMainPage'],
+      ['backToAdminFromActivityBtn','activityLogSubMenu','adminMainPage'],
+      ['backToAdminFromSpeakerBtn','speakerManagerSubMenu','adminMainPage'],
+      ['closeAdminBtn','',''],
+      ['goToAppearanceFromAdminBtn','adminMainPage','appearanceSubMenu'],
+      ['editWelcomeBtn','adminMainPage','welcomeEditSubMenu'],
+      ['goToLogsEntryBtn','adminMainPage','logsSubMenu'],
+      ['goToLogsExitBtn','adminMainPage','logsSubMenu'],
+      ['goToLogsBannedBtn','adminMainPage','logsSubMenu'],
+      ['goToAdminsFromAdminBtn','adminMainPage','adminsSubMenu'],
+      ['goToLogsActivityBtn','adminMainPage','activityLogSubMenu'],
+      ['goToSpeakerManagerBtn','adminMainPage','speakerManagerSubMenu'],
+    ];
+    map.forEach(function(m){
+      var el = document.getElementById(m[0]);
+      if(!el || el._fixBound) return;
+      el._fixBound = true;
+      if(m[0] === 'closeAdminBtn'){
+        el.onclick = function(){
+          var modal = document.getElementById('adminModal');
+          if(modal){ modal.style.setProperty('display','none','important'); }
+        };
+      } else {
+        (function(hide, show){
+          el.onclick = function(){ _adminGoTo(hide, show); };
+        })(m[1], m[2]);
+      }
+    });
+  }
+
+  /* تشغيل بعد تحميل الصفحة */
+  function runFix(){
+    bindHandle();
+    bindAdminBtns();
+    /* تأكد من إخفاء members panel عند البدء */
+    var p = document.getElementById('membersBg');
+    if(p && !window._mpIsOpen){
+      p.style.setProperty('display','none','important');
+      p.style.setProperty('transform','translateX(-100%)','important');
+    }
+    window._mpIsOpen = false;
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', runFix);
+  } else {
+    runFix();
+    /* retry بعد 500ms لضمان كل العناصر جاهزة */
+    setTimeout(runFix, 500);
+  }
+
+})();
+</script>
+
 </body>
 
 
