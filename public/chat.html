@@ -2439,7 +2439,16 @@ document.addEventListener('DOMContentLoaded', () => {
     var h = document.getElementById('membersHandle');
     if(h){h.style.opacity='0';h.style.pointerEvents='none';}
     /* عرض الأعضاء */
-    if(typeof renderMembers==='function') renderMembers();
+    /* استخدم النسخة المكشوفة عالمياً */
+    var rm = window.renderMembers || renderMembers;
+    if(typeof rm === 'function'){
+      try { rm(); } catch(e){}
+      /* retry إذا القائمة فارغة */
+      setTimeout(function(){
+        var l=document.getElementById('membersList');
+        if(l && !l.hasChildNodes() && typeof rm==='function') rm();
+      }, 600);
+    }
     /* علّم القائمة مفتوحة */
     window._mpIsOpen = true;
   }
@@ -2759,6 +2768,9 @@ document.addEventListener('DOMContentLoaded', () => {
     /* socket.on('onlineUsers') in ui.js sets window._onlineUsers */
     setTimeout(function(){ if(!isOpen) forceHide(panel()); },200);
     setTimeout(function(){ if(!isOpen) forceHide(panel()); },1000);
+    /* كشف الدوال للنطاق العالمي */
+    window.renderMembers = renderMembers;
+    window._mpSnapOpen   = snapOpen;
   }
 
   /* ══ نظام السحب الاحترافي ══ */
