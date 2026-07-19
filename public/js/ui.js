@@ -326,7 +326,7 @@ socket.on('onlineUsers', (data) => {
   if (cnt) cnt.textContent = '(' + window._onlineUsers.length + ')';
 
   /* تحديث القائمة إذا كانت مفتوحة */
-  if (typeof renderMembers === 'function') renderMembers();
+  var _rm = window.renderMembers; if (typeof _rm === 'function') { try{_rm();}catch(e){} }
 });
 
 socket.on('userJoined', (d) => {
