@@ -9,6 +9,7 @@ require('dotenv').config();
 // تاريخ: 2026-06-25
 const { initWorker, getOrCreateRoom, createTransport, sfuRooms, cleanupRoom } = require('./mediasoup');
 const { initBots, getBotUsers } = require('./bots');
+const rankGuard = require('./middleware/rankGuard');
 
 /* نظام التجميد — مستوى الـ module */
 const frozenUsers = new Map();
@@ -80,9 +81,22 @@ async function buildOnlineUsers(roomId) {
   return [...realUsers, ...botUsers];
 }
 
-// التحقق من صلاحية تنفيذ إجراء على هدف
+/* [S15] دالة الوزن البسيطة أُبقيت للتوافق مع أي استخدام قديم،
+   لكن كل الإجراءات ذات "هدف" تحوّلت لاستخدام rankGuard.canActOn
+   الذي يضيف فحص الحصانة (Lineage + Royal) فوق فحص الوزن هذا. */
 function canActOn(actorRank, targetRank, minActorRank = 500) {
-  return actorRank >= minActorRank && actorRank > targetRank;
+  return rankGuard.weightCheck(actorRank, targetRank, minActorRank);
+}
+
+/* رسالة خطأ عربية موحّدة حسب سبب رفض rankGuard */
+function immunityErrorMessage(reason) {
+  switch (reason) {
+    case 'royal_immunity':   return '🛡️ هذا الحساب محمي ملكياً — لا يمكن اتخاذ أي إجراء بحقه';
+    case 'lineage_immunity': return '🛡️ لا يمكنك اتخاذ إجراء بحق الحساب الذي أنشأك';
+    case 'insufficient_rank':return 'لا يمكنك استهداف شخص برتبة أعلى أو مساوية لك';
+    case 'missing_data':     return 'بيانات ناقصة';
+    default:                 return 'صلاحية غير كافية';
+  }
 }
 
 /* ════════════════════════════════════════════════
@@ -224,13 +238,16 @@ io.on('connection', (socket) => {
       socket.emit('error', `🧊 حسابك مجمّد بواسطة ${info.by} — تواصل مع إدارة الغرفة`);
       return;
     }
-    const { room_id, username, user_id, rank } = data;
+    const { room_id, username, user_id } = data;
     if (!room_id || !username) return;
 
     socket.join(room_id);
 
-    // تحميل الرتبة من DB إذا كان المستخدم مسجلاً
-    const dbRank = user_id ? await getUserRank(user_id) : (rank || 100);
+    /* [SECURITY FIX — S15] رتبة العميل (data.rank) لا تُقرأ أبداً هنا.
+       الرتبة الحقيقية الوحيدة المصدر لها DB عبر user_id.
+       أي مستخدم بدون user_id (زائر) يُثبَّت على Guest (100) دائماً،
+       بغض النظر عمّا يرسله في الـ payload — يمنع انتحال الرتبة بالكامل. */
+    const dbRank = user_id ? await getUserRank(user_id) : 100;
 
     // تخزين بيانات المستخدم على الـ socket
     socket.userData = {
@@ -283,7 +300,7 @@ io.on('connection', (socket) => {
 
   /* ─── إرسال رسالة ─────────────────────────── */
   socket.on('sendMessage', async (data) => {
-    const { room_id, user_id, message, username, rank } = data;
+    const { room_id, user_id, message, username } = data;
     if (!message?.trim() || !room_id) return;
 
     // فحص الكتم
@@ -292,7 +309,9 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const senderRank = socket.userData?.rank || rank || 100;
+    /* [SECURITY FIX — S15] لا نثق برتبة قادمة من العميل (data.rank) إطلاقاً.
+       الرتبة الوحيدة الموثوقة هي المخزّنة على socket.userData عند joinRoom. */
+    const senderRank = socket.userData?.rank || 100;
 
     try {
       let msgId = null;
@@ -388,22 +407,26 @@ io.on('connection', (socket) => {
   socket.on('muteUser', async (data) => {
     const { room_id, target, by } = data;
     const actorRank = socket.userData?.rank || 100;
+    const actorId = socket.userData?.user_id || null;
 
-    // تحقق من الصلاحية
     if (actorRank < 500) {
       socket.emit('error', 'ليس لديك صلاحية الكتم');
       return;
     }
 
-    // إيجاد socket الهدف
     const roomSockets = await io.in(room_id).fetchSockets();
     const targetSocket = roomSockets.find(s => s.userData?.username === target);
-
     if (!targetSocket) { socket.emit('error', 'المستخدم غير موجود'); return; }
 
     const targetRank = targetSocket.userData?.rank || 100;
-    if (!canActOn(actorRank, targetRank)) {
-      socket.emit('error', 'لا يمكنك كتم شخص برتبة أعلى أو مساوية لك');
+    const targetId = targetSocket.userData?.user_id || null;
+
+    const check = await rankGuard.canActOn(
+      { id: actorId, rank: actorRank }, { id: targetId, rank: targetRank }, 500
+    );
+    if (!check.allowed) {
+      socket.emit('error', immunityErrorMessage(check.reason));
+      if (check.alertOwner) io.to(room_id).emit('immunityAlert', { target, by, action: 'mute' });
       return;
     }
 
@@ -432,6 +455,7 @@ io.on('connection', (socket) => {
   socket.on('kickUser', async (data) => {
     const { room_id, target, by } = data;
     const actorRank = socket.userData?.rank || 100;
+    const actorId = socket.userData?.user_id || null;
 
     if (actorRank < 500) {
       socket.emit('error', 'ليس لديك صلاحية الطرد');
@@ -443,8 +467,14 @@ io.on('connection', (socket) => {
     if (!targetSocket) { socket.emit('error', 'المستخدم غير موجود'); return; }
 
     const targetRank = targetSocket.userData?.rank || 100;
-    if (!canActOn(actorRank, targetRank)) {
-      socket.emit('error', 'لا يمكنك طرد شخص برتبة أعلى أو مساوية لك');
+    const targetId = targetSocket.userData?.user_id || null;
+
+    const check = await rankGuard.canActOn(
+      { id: actorId, rank: actorRank }, { id: targetId, rank: targetRank }, 500
+    );
+    if (!check.allowed) {
+      socket.emit('error', immunityErrorMessage(check.reason));
+      if (check.alertOwner) io.to(room_id).emit('immunityAlert', { target, by, action: 'kick' });
       return;
     }
 
@@ -634,12 +664,26 @@ io.on('connection', (socket) => {
   /* ─── تحذير رسمي (Super Admin 600+) ────────── */
   socket.on('warnUser', async (data) => {
     const { room_id, target, reason, by } = data;
-    if ((socket.userData?.rank || 0) < 600) return;
+    const actorRank = socket.userData?.rank || 0;
+    const actorId = socket.userData?.user_id || null;
+    if (actorRank < 600) return;
+
     const roomSockets = await io.in(room_id).fetchSockets();
     const targetSocket = roomSockets.find(s => s.userData?.username === target);
-    if (targetSocket) {
-      targetSocket.emit('youAreWarned', { by, reason });
+    if (!targetSocket) { socket.emit('error', 'المستخدم غير موجود'); return; }
+
+    const targetRank = targetSocket.userData?.rank || 100;
+    const targetId = targetSocket.userData?.user_id || null;
+    const check = await rankGuard.canActOn(
+      { id: actorId, rank: actorRank }, { id: targetId, rank: targetRank }, 600
+    );
+    if (!check.allowed) {
+      socket.emit('error', immunityErrorMessage(check.reason));
+      if (check.alertOwner) io.to(room_id).emit('immunityAlert', { target, by, action: 'warn' });
+      return;
     }
+
+    targetSocket.emit('youAreWarned', { by, reason });
     io.to(room_id).emit('userWarned', { username: target, by });
     // حفظ التحذير في DB اختياري
     try {
@@ -973,9 +1017,30 @@ io.on('connection', (socket) => {
   socket.on('assignRole', async (data) => {
     const { room_id, target, new_rank, by } = data;
     const actorRank = socket.userData?.rank || 0;
+    const actorId = socket.userData?.user_id || null;
     if (actorRank < 700) { socket.emit('error', 'ليس لديك صلاحية تعيين الرتب'); return; }
 
     try {
+      const [targetRows] = await db.query('SELECT id, rank FROM users WHERE username = ?', [target]);
+      if (!targetRows.length) { socket.emit('error', 'المستخدم غير موجود'); return; }
+      const targetId = targetRows[0].id;
+      const targetRank = targetRows[0].rank || 100;
+
+      /* [SECURITY FIX — S15] كانت هذه العملية بلا أي تحقق من رتبة الهدف
+         أو سقف الرتبة الممنوحة — أي Master (700) كان يقدر يرقّي أي شخص
+         حتى SuperOwner (1200). الآن: canAssignRank يمنع منح رتبة >= رتبة الفاعل،
+         ويمنع استهداف من رتبته أعلى أو مساوية، مع فحص الحصانة الكاملة. */
+      const check = await rankGuard.canAssignRank(
+        { id: actorId, rank: actorRank }, { id: targetId, rank: targetRank }, new_rank, 700
+      );
+      if (!check.allowed) {
+        socket.emit('error', check.reason === 'cannot_grant_equal_or_higher_rank'
+          ? 'لا يمكنك منح رتبة أعلى من رتبتك أو مساوية لها'
+          : immunityErrorMessage(check.reason));
+        if (check.alertOwner) io.to(room_id).emit('immunityAlert', { target, by, action: 'assignRole' });
+        return;
+      }
+
       await db.query('UPDATE users SET rank = ? WHERE username = ?', [new_rank, target]);
       // تحديث socket الهدف إذا كان متصلاً
       const roomSockets = await io.in(room_id).fetchSockets();
@@ -988,18 +1053,31 @@ io.on('connection', (socket) => {
   // ── حظر IP (Master 700+) ─────────────────────
   socket.on('banIP', async (data) => {
     const { room_id, target, by } = data;
-    if ((socket.userData?.rank||0) < 700) return;
+    const actorRank = socket.userData?.rank || 0;
+    const actorId = socket.userData?.user_id || null;
+    if (actorRank < 700) return;
     try {
       const roomSockets = await io.in(room_id).fetchSockets();
       const ts = roomSockets.find(s => s.userData?.username === target);
-      if (ts) {
-        await db.query(
-          'INSERT INTO ip_bans (room_id, ip_address, banned_by, expires_at) VALUES (?,?,?,DATE_ADD(NOW(),INTERVAL 24 HOUR))',
-          [room_id, ts.handshake?.address || '0.0.0.0', by]
-        );
-        ts.emit('youAreKicked', { by, reason: 'IP Ban' });
-        ts.leave(room_id);
+      if (!ts) { socket.emit('error', 'المستخدم غير موجود'); return; }
+
+      const targetRank = ts.userData?.rank || 100;
+      const targetId = ts.userData?.user_id || null;
+      const check = await rankGuard.canActOn(
+        { id: actorId, rank: actorRank }, { id: targetId, rank: targetRank }, 700
+      );
+      if (!check.allowed) {
+        socket.emit('error', immunityErrorMessage(check.reason));
+        if (check.alertOwner) io.to(room_id).emit('immunityAlert', { target, by, action: 'banIP' });
+        return;
       }
+
+      await db.query(
+        'INSERT INTO ip_bans (room_id, ip_address, banned_by, expires_at) VALUES (?,?,?,DATE_ADD(NOW(),INTERVAL 24 HOUR))',
+        [room_id, ts.handshake?.address || '0.0.0.0', by]
+      );
+      ts.emit('youAreKicked', { by, reason: 'IP Ban' });
+      ts.leave(room_id);
       io.to(room_id).emit('ipBanned', { target, by });
     } catch (e) { console.error('banIP:', e.message); }
   });
@@ -1007,14 +1085,30 @@ io.on('connection', (socket) => {
   // ── حظر الجهاز (Super Master 800+) ──────────
   socket.on('banDevice', async (data) => {
     const { room_id, target, by } = data;
-    if ((socket.userData?.rank||0) < 800) return;
+    const actorRank = socket.userData?.rank || 0;
+    const actorId = socket.userData?.user_id || null;
+    if (actorRank < 800) return;
     try {
+      const roomSockets = await io.in(room_id).fetchSockets();
+      const ts = roomSockets.find(s => s.userData?.username === target);
+
+      if (ts) {
+        const targetRank = ts.userData?.rank || 100;
+        const targetId = ts.userData?.user_id || null;
+        const check = await rankGuard.canActOn(
+          { id: actorId, rank: actorRank }, { id: targetId, rank: targetRank }, 800
+        );
+        if (!check.allowed) {
+          socket.emit('error', immunityErrorMessage(check.reason));
+          if (check.alertOwner) io.to(room_id).emit('immunityAlert', { target, by, action: 'banDevice' });
+          return;
+        }
+      }
+
       await db.query(
         'INSERT INTO device_bans (username, banned_by, created_at) VALUES (?,?,NOW())',
         [target, by]
       );
-      const roomSockets = await io.in(room_id).fetchSockets();
-      const ts = roomSockets.find(s => s.userData?.username === target);
       if (ts) { ts.emit('youAreKicked', { by, reason: 'Device Ban' }); ts.leave(room_id); }
       io.to(room_id).emit('deviceBanned', { target, by });
     } catch (e) { console.error('banDevice:', e.message); }
@@ -1341,6 +1435,14 @@ io.on('connection', (socket) => {
   socket.on('permanentBan', async (d) => {
     if ((socket.userData?.rank||0) < 1200) return;
     try {
+      // [SECURITY — S15] حتى SuperOwner لا يتجاوز الحصانة الملكية بدون تنبيه
+      const [targetRows] = await db.query('SELECT is_royal FROM users WHERE username = ?', [d.target]);
+      if (targetRows.length && targetRows[0].is_royal) {
+        socket.emit('error', immunityErrorMessage('royal_immunity'));
+        io.emit('immunityAlert', { target: d.target, by: d.by, action: 'permanentBan' });
+        return;
+      }
+
       await db.query('UPDATE users SET is_banned=1, is_active=0 WHERE username=?', [d.target]);
       const allSockets = await io.fetchSockets();
       allSockets.forEach(s => {
@@ -1511,11 +1613,23 @@ io.on('connection', (socket) => {
   /* ══ تجميد / فك تجميد الحسابات ══ */
   socket.on('freezeUser', async ({ target, room_id, by }) => {
     const actorRank  = socket.userData?.rank || 0;
+    const actorId    = socket.userData?.user_id || null;
+    if (actorRank < 500) return socket.emit('error', '⛔ لا تملك صلاحية تجميد المستخدمين');
+
     const socks      = await io.in(room_id).fetchSockets();
     const targetSock = socks.find(s => s.userData?.username === target);
     const targetRank = targetSock?.userData?.rank || 0;
-    if (actorRank <= targetRank)
-      return socket.emit('error', '⛔ لا تملك صلاحية تجميد هذا المستخدم');
+    const targetId   = targetSock?.userData?.user_id || null;
+
+    const check = await rankGuard.canActOn(
+      { id: actorId, rank: actorRank }, { id: targetId, rank: targetRank }, 500
+    );
+    if (!check.allowed) {
+      socket.emit('error', immunityErrorMessage(check.reason));
+      if (check.alertOwner) io.to(room_id).emit('immunityAlert', { target, by, action: 'freeze' });
+      return;
+    }
+
     frozenUsers.set(target, { by, at: Date.now() });
     io.to(room_id).emit('systemMessage', `🧊 تم تجميد ${target} بواسطة ${by}`);
     if (targetSock) {
