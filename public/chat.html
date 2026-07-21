@@ -25,6 +25,7 @@
     line.textContent = msg;
     box.appendChild(line);
   }
+  window._dbgShow = show;
   window.addEventListener('error', function(e){
     show('⚠️ ERROR: ' + e.message + '\n@ ' + (e.filename||'inline') + ':' + e.lineno + ':' + e.colno);
   });
@@ -1925,7 +1926,32 @@ function openAdminModal() {
     if(el){el.style.setProperty('display','none','important');el.style.setProperty('visibility','hidden','important');}
   });
   var main=document.getElementById('adminMainPage');
-  if(main){main.style.removeProperty('visibility');main.style.setProperty('display','flex','important');main.style.setProperty('flex-direction','column','important');main.style.setProperty('flex','1','important');main.style.setProperty('overflow-y','auto','important');main.style.setProperty('width','100%','important');}
+  if(main){
+    main.style.removeProperty('visibility');
+    main.style.setProperty('display','flex','important');
+    main.style.setProperty('flex-direction','column','important');
+    main.style.setProperty('flex','1','important');
+    /* [FIX — S15] overflow-y:auto كان مضبوط هنا على adminMainPage نفسه
+       (اللي يحتوي الهيدر + المحتوى سوا) فيسحب الهيدر مع التمرير.
+       التمرير لازم يصير فقط داخل صندوق المحتوى الداخلي، لا على العنصر كله. */
+    main.style.setProperty('overflow','hidden','important');
+    main.style.setProperty('min-height','0','important');
+    main.style.setProperty('height','100%','important');
+    main.style.setProperty('width','100%','important');
+  }
+  if(window._dbgShow){
+    setTimeout(function(){
+      var hdr = main && main.querySelector(':scope > div:first-child');
+      var r = hdr ? hdr.getBoundingClientRect() : null;
+      var cs = hdr ? getComputedStyle(hdr) : null;
+      window._dbgShow('🔍 header rect: ' + (r?JSON.stringify({t:r.top,l:r.left,w:r.width,h:r.height}):'null')
+        + ' | display=' + (cs?cs.display:'?') + ' visibility=' + (cs?cs.visibility:'?'));
+      var roomHdr = document.getElementById('roomHeader');
+      var rr = roomHdr ? roomHdr.getBoundingClientRect() : null;
+      var rcs = roomHdr ? getComputedStyle(roomHdr) : null;
+      window._dbgShow('🔍 roomHeader z-index=' + (rcs?rcs.zIndex:'?') + ' rect=' + (rr?JSON.stringify({t:rr.top,h:rr.height}):'null'));
+    }, 150);
+  }
 }
 
 function closeAdminModal() {
@@ -1937,7 +1963,18 @@ function _adminGoTo(hideId, showId, cb) {
   var H=document.getElementById(hideId);
   var S=document.getElementById(showId);
   if(H){H.style.setProperty('display','none','important');H.style.setProperty('visibility','hidden','important');}
-  if(S){S.style.removeProperty('visibility');S.style.setProperty('display','flex','important');S.style.setProperty('flex-direction','column','important');S.style.setProperty('min-height','100%','important');S.style.setProperty('width','100%','important');S.style.setProperty('overflow-y','auto','important');}
+  if(S){
+    S.style.removeProperty('visibility');
+    S.style.setProperty('display','flex','important');
+    S.style.setProperty('flex-direction','column','important');
+    S.style.setProperty('width','100%','important');
+    /* [FIX — S15] نفس مشكلة adminMainPage: overflow-y:auto على الصفحة الفرعية
+       نفسها (اللي فيها هيدر الرجوع + المحتوى سوا) يسحب الهيدر مع التمرير.
+       التمرير لازم يصير فقط داخل صندوق المحتوى الداخلي التابع لهذي الصفحة. */
+    S.style.setProperty('overflow','hidden','important');
+    S.style.setProperty('min-height','0','important');
+    S.style.setProperty('height','100%','important');
+  }
   if(cb) setTimeout(cb,30);
 }
 
@@ -2528,20 +2565,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* ─── 2. زر الرجوع في لوحة التحكم ─── */
-  function _adminGoTo(hideId, showId){
-    var H = document.getElementById(hideId);
-    var S = document.getElementById(showId);
-    if(H){ H.style.setProperty('display','none','important'); }
-    if(S){
-      S.style.setProperty('display','flex','important');
-      S.style.setProperty('flex-direction','column','important');
-      S.style.setProperty('min-height','100vh','important');
-      S.style.setProperty('width','100%','important');
-      S.style.setProperty('overflow-y','auto','important');
-    }
-  }
-  window._adminGoTo = _adminGoTo;
+  /* ─── 2. زر الرجوع في لوحة التحكم ───
+     [FIX — S15] كان هنا تعريف مكرر لـ _adminGoTo بنفس علة overflow-y:auto
+     يستبدل النسخة الصحيحة المعرّفة سابقاً بالملف (window._adminGoTo = ...)
+     ويبطل أي إصلاح عليها. حُذف بالكامل — النسخة الوحيدة المعتمدة الآن
+     هي دالة _adminGoTo العامة المعرّفة قرب openAdminModal/closeAdminModal. */
 
   function bindAdminBtns(){
     var map = [
