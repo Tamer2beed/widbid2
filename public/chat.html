@@ -114,8 +114,16 @@
   -webkit-backdrop-filter: blur(24px) !important;
   border: 1px solid rgba(255,255,255,.1) !important;
 }
-#adminModal { position:fixed;inset:0;z-index:200;display:none;flex-direction:column;overflow-y:auto; }
+#adminModal { position:fixed;inset:0;z-index:200;display:none;flex-direction:column;overflow:hidden; }
 #adminModal.show { display:flex; }
+/* [SECURITY/LAYOUT FIX — S15] أصناف Tailwind (flex/flex-col/h-full/w-full) مو محمّلة
+   بالمشروع أصلاً وكانت بلا أي تأثير — هذا كان يكسر تخطيط الهيدر ويخلي التمرير
+   يسحبه للخارج. نعرّف هنا CSS حقيقي بدلها لضمان بقاء الهيدر ثابتاً دائماً. */
+#adminModal > div,
+#adminModal .flex.flex-col.h-full.w-full {
+  display:flex !important; flex-direction:column !important;
+  width:100% !important; height:100% !important; min-height:0 !important;
+}
 /* جداول السجلات */
 .log-table-container { overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,.08); }
 .log-table { width:100%;border-collapse:collapse;font-size:13px;color:rgba(255,255,255,.85);text-align:right; }
