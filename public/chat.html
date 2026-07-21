@@ -1956,31 +1956,14 @@ function openAdminModal() {
     main.style.setProperty('height','100%','important');
     main.style.setProperty('width','100%','important');
   }
-  if(window._dbgShow){
-    setTimeout(function(){
-      var hdr = main && main.querySelector(':scope > div:first-child');
-      var r = hdr ? hdr.getBoundingClientRect() : null;
-      var cs = hdr ? getComputedStyle(hdr) : null;
-      window._dbgShow('🔍 header rect: ' + (r?JSON.stringify({t:r.top,l:r.left,w:r.width,h:r.height}):'null')
-        + ' | display=' + (cs?cs.display:'?') + ' visibility=' + (cs?cs.visibility:'?')
-        + ' opacity=' + (cs?cs.opacity:'?'));
-      var elAtPoint = document.elementFromPoint(200, 25);
-      window._dbgShow('🎯 العنصر الحقيقي بنقطة (200,25): <' + (elAtPoint?elAtPoint.tagName:'?') + ' id="' + (elAtPoint?elAtPoint.id:'?') + '" class="' + (elAtPoint?elAtPoint.className:'?') + '">');
-      var modalEl = document.getElementById('adminModal');
-      var mcs = modalEl ? getComputedStyle(modalEl) : null;
-      window._dbgShow('🔍 adminModal: display=' + (mcs?mcs.display:'?') + ' z-index=' + (mcs?mcs.zIndex:'?') + ' position=' + (mcs?mcs.position:'?') + ' opacity=' + (mcs?mcs.opacity:'?'));
-      var roomHdr = document.getElementById('roomHeader');
-      var rr = roomHdr ? roomHdr.getBoundingClientRect() : null;
-      var rcs = roomHdr ? getComputedStyle(roomHdr) : null;
-      window._dbgShow('🔍 roomHeader z-index=' + (rcs?rcs.zIndex:'?') + ' rect=' + (rr?JSON.stringify({t:rr.top,h:rr.height}):'null'));
-    }, 150);
-  }
 }
+window.openAdminModal = openAdminModal;
 
 function closeAdminModal() {
   var modal=document.getElementById('adminModal');
   if(modal){modal.style.setProperty('display','none','important');modal.classList.add('hidden');modal.classList.remove('show');}
 }
+window.closeAdminModal = closeAdminModal;
 
 function _adminGoTo(hideId, showId, cb) {
   var H=document.getElementById(hideId);
@@ -1998,18 +1981,9 @@ function _adminGoTo(hideId, showId, cb) {
     S.style.setProperty('min-height','0','important');
     S.style.setProperty('height','100%','important');
   }
-  if(window._dbgShow){
-    setTimeout(function(){
-      var hdr = S && S.querySelector(':scope > div:first-child');
-      var r = hdr ? hdr.getBoundingClientRect() : null;
-      var cs = hdr ? getComputedStyle(hdr) : null;
-      window._dbgShow('🔍 subpage(' + showId + ') header rect h=' + (r?r.height:'null')
-        + ' display=' + (cs?cs.display:'?') + ' | S display=' + (S?getComputedStyle(S).display:'?')
-        + ' S height=' + (S?S.getBoundingClientRect().height:'?'));
-    }, 150);
-  }
   if(cb) setTimeout(cb,30);
 }
+window._adminGoTo = _adminGoTo;
 
 /* ══ renderAdmins ══════════════════════ */
 /* ══ Rank Picker ══ */
