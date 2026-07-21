@@ -1945,7 +1945,13 @@ function openAdminModal() {
       var r = hdr ? hdr.getBoundingClientRect() : null;
       var cs = hdr ? getComputedStyle(hdr) : null;
       window._dbgShow('🔍 header rect: ' + (r?JSON.stringify({t:r.top,l:r.left,w:r.width,h:r.height}):'null')
-        + ' | display=' + (cs?cs.display:'?') + ' visibility=' + (cs?cs.visibility:'?'));
+        + ' | display=' + (cs?cs.display:'?') + ' visibility=' + (cs?cs.visibility:'?')
+        + ' opacity=' + (cs?cs.opacity:'?'));
+      var elAtPoint = document.elementFromPoint(200, 25);
+      window._dbgShow('🎯 العنصر الحقيقي بنقطة (200,25): <' + (elAtPoint?elAtPoint.tagName:'?') + ' id="' + (elAtPoint?elAtPoint.id:'?') + '" class="' + (elAtPoint?elAtPoint.className:'?') + '">');
+      var modalEl = document.getElementById('adminModal');
+      var mcs = modalEl ? getComputedStyle(modalEl) : null;
+      window._dbgShow('🔍 adminModal: display=' + (mcs?mcs.display:'?') + ' z-index=' + (mcs?mcs.zIndex:'?') + ' position=' + (mcs?mcs.position:'?') + ' opacity=' + (mcs?mcs.opacity:'?'));
       var roomHdr = document.getElementById('roomHeader');
       var rr = roomHdr ? roomHdr.getBoundingClientRect() : null;
       var rcs = roomHdr ? getComputedStyle(roomHdr) : null;
