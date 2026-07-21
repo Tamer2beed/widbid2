@@ -1922,6 +1922,15 @@ function _rankClass(r) {
 function openAdminModal() {
   var modal=document.getElementById('adminModal');
   if(!modal) return;
+  /* [FIX — S15، السبب الجذري الحقيقي] adminModal كان متداخل جوا #mainArea
+     بدل ما يكون طفل مباشر لـ body. لأنه position:fixed جوا حاوية بلا
+     z-index خاص فيها، فـ z-index:200 حقه يتقارن فقط مع إخوته جوا mainArea،
+     مو مع roomHeader (z-index:100) مباشرة — فيخسر رغم إن رقمه أعلى.
+     الحل: ننقله ليصير طفل مباشر لـ body، فيدخل بنفس stacking context
+     الحقيقي اللي فيه roomHeader، ويفوز فيه بفضل z-index الأعلى فعلياً. */
+  if (modal.parentElement !== document.body) {
+    document.body.appendChild(modal);
+  }
   modal.style.setProperty('display','flex','important');
   modal.style.setProperty('position','fixed','important');
   modal.style.setProperty('inset','0','important');
