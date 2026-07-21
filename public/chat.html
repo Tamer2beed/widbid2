@@ -11,9 +11,15 @@
     if(!document.body){ setTimeout(function(){show(msg);}, 50); return; }
     if(!box){
       box = document.createElement('div');
-      box.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#c00;color:#fff;font-size:11px;line-height:1.5;padding:8px;direction:ltr;white-space:pre-wrap;max-height:45vh;overflow:auto;font-family:monospace;box-shadow:0 2px 8px rgba(0,0,0,.5)';
+      box.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#c00;color:#fff;font-size:11px;line-height:1.5;padding:8px 30px 8px 8px;direction:ltr;white-space:pre-wrap;max-height:35vh;overflow:auto;font-family:monospace;box-shadow:0 2px 8px rgba(0,0,0,.5)';
+      var closeBtn = document.createElement('div');
+      closeBtn.textContent = '✕';
+      closeBtn.style.cssText = 'position:absolute;top:4px;left:8px;cursor:pointer;font-size:16px;font-weight:bold;padding:4px 8px;background:rgba(255,255,255,.2);border-radius:4px';
+      closeBtn.onclick = function(){ box.style.display='none'; };
       document.documentElement.appendChild(box);
+      box.appendChild(closeBtn);
     }
+    box.style.display='block';
     var line = document.createElement('div');
     line.style.cssText = 'border-bottom:1px solid rgba(255,255,255,.3);padding:4px 0';
     line.textContent = msg;
@@ -2259,7 +2265,7 @@ window.addEventListener('load', () => {
     const bg = localStorage.getItem('roomBg');
     if (bg) applyRoomBackground(bg);
   }
-})();
+});
 
 /* ══ ربط الأحداث بعد تحميل الصفحة ══════ */
 document.addEventListener('DOMContentLoaded', () => {
