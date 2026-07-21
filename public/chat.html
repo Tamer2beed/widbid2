@@ -1496,7 +1496,7 @@ function handleAvatarFile(e) {
     <!-- ═══ الصفحة الرئيسية ═══ -->
     <div id="adminMainPage" class="flex flex-col h-full w-full" style="min-height:100vh">
       <div style="background:rgba(0,0,0,.2);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 16px;flex-shrink:0">
-        <button id="closeAdminBtn" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px">
+        <button id="closeAdminBtn" onclick="closeAdminModal()" style="color:#fff;font-size:20px;background:none;border:none;cursor:pointer;padding:8px">
           <i class="fa-solid fa-arrow-right"></i>
         </button>
         <span style="font-weight:700;font-size:18px;color:#fff">لوحة التحكم</span>
@@ -1504,7 +1504,7 @@ function handleAvatarFile(e) {
       </div>
       <div style="flex:1;padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:12px">
 
-        <button id="goToAppearanceFromAdminBtn" class="admin-main-btn">
+        <button id="goToAppearanceFromAdminBtn" onclick="_adminGoTo('adminMainPage','appearanceSubMenu')" class="admin-main-btn">
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:40px;height:40px;border-radius:12px;background:rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center;color:#4ade80">
               <i class="fa-solid fa-palette"></i></div>
@@ -1516,7 +1516,7 @@ function handleAvatarFile(e) {
           <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
         </button>
 
-        <button id="editWelcomeBtn" class="admin-main-btn">
+        <button id="editWelcomeBtn" onclick="_adminGoTo('adminMainPage','welcomeEditSubMenu')" class="admin-main-btn">
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:40px;height:40px;border-radius:12px;background:rgba(251,191,36,.2);display:flex;align-items:center;justify-content:center;color:#fbbf24">
               <i class="fa-solid fa-message"></i></div>
@@ -1528,7 +1528,7 @@ function handleAvatarFile(e) {
           <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
         </button>
 
-        <button id="goToLogsEntryBtn" class="admin-main-btn">
+        <button id="goToLogsEntryBtn" onclick="_adminGoTo('adminMainPage','logsSubMenu');renderLogs('entry')" class="admin-main-btn">
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:40px;height:40px;border-radius:12px;background:rgba(96,165,250,.2);display:flex;align-items:center;justify-content:center;color:#60a5fa">
               <i class="fa-solid fa-right-to-bracket"></i></div>
@@ -1540,7 +1540,7 @@ function handleAvatarFile(e) {
           <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
         </button>
 
-        <button id="goToLogsExitBtn" class="admin-main-btn">
+        <button id="goToLogsExitBtn" onclick="_adminGoTo('adminMainPage','logsSubMenu');renderLogs('exit')" class="admin-main-btn">
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:40px;height:40px;border-radius:12px;background:rgba(251,146,60,.2);display:flex;align-items:center;justify-content:center;color:#fb923c">
               <i class="fa-solid fa-right-from-bracket"></i></div>
@@ -1552,7 +1552,7 @@ function handleAvatarFile(e) {
           <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
         </button>
 
-        <button id="goToLogsBannedBtn" class="admin-main-btn">
+        <button id="goToLogsBannedBtn" onclick="_adminGoTo('adminMainPage','logsSubMenu');renderLogs('banned')" class="admin-main-btn">
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:40px;height:40px;border-radius:12px;background:rgba(248,113,113,.2);display:flex;align-items:center;justify-content:center;color:#f87171">
               <i class="fa-solid fa-ban"></i></div>
@@ -1564,7 +1564,7 @@ function handleAvatarFile(e) {
           <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
         </button>
 
-        <button id="goToAdminsFromAdminBtn" class="admin-main-btn">
+        <button id="goToAdminsFromAdminBtn" onclick="_adminGoTo('adminMainPage','adminsSubMenu');renderAdmins()" class="admin-main-btn">
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:40px;height:40px;border-radius:12px;background:rgba(244,114,182,.2);display:flex;align-items:center;justify-content:center;color:#f472b6">
               <i class="fa-solid fa-user-tie"></i></div>
@@ -1576,7 +1576,7 @@ function handleAvatarFile(e) {
           <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
         </button>
 
-        <button id="goToLogsActivityBtn" class="admin-main-btn">
+        <button id="goToLogsActivityBtn" onclick="_adminGoTo('adminMainPage','activityLogSubMenu');renderActivityLogs()" class="admin-main-btn">
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:40px;height:40px;border-radius:12px;background:rgba(129,140,248,.2);display:flex;align-items:center;justify-content:center;color:#818cf8">
               <i class="fa-solid fa-clock-rotate-left"></i></div>
@@ -1588,7 +1588,7 @@ function handleAvatarFile(e) {
           <i class="fa-solid fa-chevron-left" style="color:rgba(255,255,255,.3);font-size:12px"></i>
         </button>
 
-        <button id="goToSpeakerManagerBtn" class="admin-main-btn">
+        <button id="goToSpeakerManagerBtn" onclick="_adminGoTo('adminMainPage','speakerManagerSubMenu')" class="admin-main-btn">
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:40px;height:40px;border-radius:12px;background:rgba(251,191,36,.2);display:flex;align-items:center;justify-content:center;color:#fbbf24">
               <i class="fa-solid fa-microphone"></i></div>
