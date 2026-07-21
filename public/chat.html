@@ -2,6 +2,32 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<script>
+/* [DEBUG — S15] أداة تشخيص مؤقتة: تعرض أي خطأ JS كشريط أحمر بأعلى الشاشة
+   لأنه ما فيه Console متاح بالهاتف. تُحذف بعد حل المشاكل الحالية. */
+(function(){
+  var box = null;
+  function show(msg){
+    if(!document.body){ setTimeout(function(){show(msg);}, 50); return; }
+    if(!box){
+      box = document.createElement('div');
+      box.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#c00;color:#fff;font-size:11px;line-height:1.5;padding:8px;direction:ltr;white-space:pre-wrap;max-height:45vh;overflow:auto;font-family:monospace;box-shadow:0 2px 8px rgba(0,0,0,.5)';
+      document.documentElement.appendChild(box);
+    }
+    var line = document.createElement('div');
+    line.style.cssText = 'border-bottom:1px solid rgba(255,255,255,.3);padding:4px 0';
+    line.textContent = msg;
+    box.appendChild(line);
+  }
+  window.addEventListener('error', function(e){
+    show('⚠️ ERROR: ' + e.message + '\n@ ' + (e.filename||'inline') + ':' + e.lineno + ':' + e.colno);
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    show('⚠️ PROMISE REJECTED: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+  });
+})();
+</script>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>WidBid</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
