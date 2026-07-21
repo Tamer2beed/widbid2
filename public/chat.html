@@ -148,6 +148,14 @@
   border: 1px solid rgba(255,255,255,.1) !important;
 }
 #adminModal { position:fixed;inset:0;z-index:200;display:none;flex-direction:column;overflow:hidden; }
+#adminModal.glass-menu {
+  /* [FIX — S15] backdrop-filter:blur() فشل بالرسم الفعلي على هذا الجهاز رغم
+     إن العنصر أعلى منطقياً بالـ DOM (أثبتناها بـ elementFromPoint) — خلفية
+     صلبة بلا شفافية ولا ضبابية تضمن الرسم الصحيح على كل الأجهزة. */
+  background: #14141e !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
 #adminModal.show { display:flex; }
 /* [SECURITY/LAYOUT FIX — S15] أصناف Tailwind (flex/flex-col/h-full/w-full) مو محمّلة
    بالمشروع أصلاً وكانت بلا أي تأثير — هذا كان يكسر تخطيط الهيدر ويخلي التمرير
