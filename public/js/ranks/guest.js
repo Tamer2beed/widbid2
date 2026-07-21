@@ -52,7 +52,12 @@ function showMemberMenu(name, rank) {
 
   // الإجراءات المتاحة لـ Guest
   const actions = [
-    { icon:'💬', label:'رسالة خاصة', fn:() => openPrivateChat(name) },
+    { icon:'💬', label:'رسالة خاصة', fn:() => {
+      /* [FIX — S15] openPrivateChat() كانت غير معرّفة بأي مكان بالمشروع،
+         تسبب انهيار السكربت بالكامل عند الضغط. الميزة لسا مو مبنية —
+         رسالة مؤقتة لحد ما تُنفَّذ فعلياً بجلسة قادمة. */
+      if (typeof showToast === 'function') showToast('🚧 الرسائل الخاصة قيد التطوير');
+    } },
   ];
 
   // إضافة إجراءات الرتب الأعلى (تُضاف من ملفاتها)
