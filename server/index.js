@@ -666,7 +666,7 @@ io.on('connection', (socket) => {
     const { room_id, target, reason, by } = data;
     const actorRank = socket.userData?.rank || 0;
     const actorId = socket.userData?.user_id || null;
-    if (actorRank < 600) return;
+    if (actorRank < 600) { socket.emit('error', 'ليس لديك صلاحية التحذير'); return; }
 
     const roomSockets = await io.in(room_id).fetchSockets();
     const targetSocket = roomSockets.find(s => s.userData?.username === target);
@@ -1055,7 +1055,7 @@ io.on('connection', (socket) => {
     const { room_id, target, by } = data;
     const actorRank = socket.userData?.rank || 0;
     const actorId = socket.userData?.user_id || null;
-    if (actorRank < 700) return;
+    if (actorRank < 700) { socket.emit('error', 'ليس لديك صلاحية حظر IP'); return; }
     try {
       const roomSockets = await io.in(room_id).fetchSockets();
       const ts = roomSockets.find(s => s.userData?.username === target);
@@ -1087,7 +1087,7 @@ io.on('connection', (socket) => {
     const { room_id, target, by } = data;
     const actorRank = socket.userData?.rank || 0;
     const actorId = socket.userData?.user_id || null;
-    if (actorRank < 800) return;
+    if (actorRank < 800) { socket.emit('error', 'ليس لديك صلاحية حظر الجهاز'); return; }
     try {
       const roomSockets = await io.in(room_id).fetchSockets();
       const ts = roomSockets.find(s => s.userData?.username === target);
