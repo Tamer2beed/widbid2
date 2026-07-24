@@ -1,0 +1,22 @@
+<footer class="bg-white border-t border-purple-100 h-16 flex items-center px-3 gap-2 fixed bottom-0 left-0 right-0 z-40">
+    <button id="sendBtn" class="w-11 h-11 rounded-xl bg-purple-600 text-white flex items-center justify-center cursor-pointer shadow-md hover:bg-purple-700 active:scale-95 transition-all shrink-0"><i class="fa-solid fa-paper-plane text-sm transform rotate-180"></i></button>
+    <div class="flex-1 bg-gray-100 rounded-xl flex items-center px-3 h-11 border border-transparent focus-within:border-purple-300 focus-within:bg-white transition-all">
+        <input id="chatInput" type="text" placeholder="اكتب رسالتك هنا..." class="flex-1 bg-transparent border-none outline-none pr-1 text-sm text-gray-800 placeholder-gray-400 h-full">
+        <button id="emojiBtn" class="text-gray-400 hover:text-purple-600 p-1 cursor-pointer"><i class="fa-regular fa-face-smile text-lg"></i></button>
+    </div>
+    <div class="relative">
+        <button id="moreOptionsBtn" class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 text-lg flex items-center justify-center cursor-pointer hover:bg-purple-100 shrink-0"><i class="fa-solid fa-ellipsis"></i></button>
+        <div id="moreOptionsMenu" class="status-menu-popup absolute left-0 bottom-14 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+            <button id="sendImageBtn" class="w-full text-right px-4 py-2.5 text-xs text-gray-700 hover:bg-purple-50 flex items-center gap-2.5"><i class="fa-solid fa-image text-gray-400 text-sm"></i><span>إرسال صورة</span></button>
+            <button id="clearChatBtn" class="w-full text-right px-4 py-2.5 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2.5"><i class="fa-solid fa-trash-can text-red-400 text-sm"></i><span>مسح المحادثة</span></button>
+        </div>
+    </div>
+    <div class="relative">
+        <button id="micRequestBtn" class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 text-lg flex items-center justify-center cursor-pointer hover:bg-purple-100 shrink-0 transition-all" title="اطلب السبيكر"><i class="fa-solid fa-microphone"></i></button>
+        <span id="micQueueBadge" class="hidden absolute -top-1 -left-1 bg-amber-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center"></span>
+    </div>
+    <div id="emojiPicker" class="status-menu-popup absolute left-0 bottom-20 w-64 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-50 grid grid-cols-6 gap-2">
+        <button class="emoji-btn text-2xl p-1 hover:bg-purple-50 rounded-lg">😀</button><button class="emoji-btn text-2xl p-1 hover:bg-purple-50 rounded-lg">😂</button><button class="emoji-btn text-2xl p-1 hover:bg-purple-50 rounded-lg">😍</button><button class="emoji-btn text-2xl p-1 hover:bg-purple-50 rounded-lg">😭</button><button class="emoji-btn text-2xl p-1 hover:bg-purple-50 rounded-lg">😡</button><button class="emoji-btn text-2xl p-1 hover:bg-purple-50 rounded-lg">👍</button>
+        <button class="emoji-btn text-2xl p-1 hover:bg-purple-50 rounded-lg">🎉</button><button class="emoji-btn text-2xl p-1 hover:bg-purple-50 rounded-lg">🔥</button><button class="emoji-btn text-2xl p-1 hover:bg-purple-50 rounded-lg">❤️</button><button class="emoji-btn text-2xl p-1 hover:bg-purple-50 rounded-lg">🥺</button><button class="emoji-btn text-2xl p-1 hover:bg-purple-50 rounded-lg">👋</button><button class="emoji-btn text-2xl p-1 hover:bg-purple-50 rounded-lg">💪</button>
+    </div>
+</footer>
