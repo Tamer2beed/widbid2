@@ -121,7 +121,13 @@ function wbConnect(roomId, username, userId) {
   /* قائمة المتواجدين الحقيقية — تستبدل mockUsersList بالكامل */
   wbSocket.on('onlineUsers', (users) => {
     if (typeof mockUsersList === 'undefined') return;
-    const me = mockUsersList.find((u) => u.id === 'me') || (typeof ME_USER !== 'undefined' ? ME_USER : null);
+    /* [FIX] كنا نحتفظ بهوية "أنا" الوهمية القديمة (ME_USER) بدل الاسم
+       الحقيقي المتصل فيه — الآن نبني "أنا" من بيانات السيرفر الحقيقية
+       (لو موجودة بالقائمة)، وإلا نرجع للهوية الافتراضية كخيار احتياطي. */
+    const meFromServer = users.find((u) => u.username === username);
+    const me = meFromServer
+      ? wbAdaptUser(meFromServer, true)
+      : (mockUsersList.find((u) => u.id === 'me') || (typeof ME_USER !== 'undefined' ? ME_USER : null));
     const adapted = users
       .filter((u) => u.username !== username)
       .map((u) => wbAdaptUser(u, false));
