@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>محاكاة تطبيق الدردشة الاحترافي</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html, body {
+            width: 100%; margin: 0; padding: 0; overflow: hidden; background: #f3e8ff; font-family: sans-serif;
+            height: 100vh; height: 100dvh;
+        }
+        .chat-bg { background: #f3e8ff; background-image: radial-gradient(#c084fc 0.5px, transparent 0.5px), radial-gradient(#c084fc 0.5px, #f3e8ff 0.5px); background-size: 20px 20px; background-position: 0 0, 10px 10px; opacity: 0.8; }
+        .glass-menu { background: rgba(30,30,35,0.9) !important; backdrop-filter: blur(25px) !important; -webkit-backdrop-filter: blur(25px) !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+        .status-menu-popup { display: none !important; }
+        .status-menu-popup.show { display: block !important; opacity: 1 !important; visibility: visible !important; }
+        .online-panel-container { position: fixed; top: 3.5rem; bottom: 4rem; left: 0; width: 75%; background: rgba(255,255,255,0.98); z-index: 50; box-shadow: 4px 0 15px rgba(0,0,0,0.15); transform: translateX(-100%); transition: transform 0.3s ease-out; }
+        .online-panel-container.active { transform: translateX(0%); }
+
+        #sideMenu {
+            position: fixed; top: 3.5rem; right: 0; width: 225px;
+            background: rgba(20, 20, 30, 0.9) !important;
+            backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px 0 0 16px;
+            box-shadow: -4px 0 30px rgba(0, 0, 0, 0.35);
+            z-index: 55; padding: 8px 6px;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            max-height: calc(100dvh - 7.5rem);
+            overflow-y: auto;
+        }
+        #sideMenu.active { transform: translateX(0%); }
+        #sideMenu .menu-item {
+            display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 10px;
+            color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 400; cursor: pointer;
+            transition: background 0.2s; margin: 1px 0; text-align: right; border: none; background: transparent; width: 100%;
+        }
+        #sideMenu .menu-item:hover { background: rgba(255,255,255,0.08); }
+        #sideMenu .menu-item i { width: 18px; text-align: center; font-size: 14px; color: rgba(255,255,255,0.6); }
+        #sideMenu .menu-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 10px; }
+        #sideMenu .menu-header { color: rgba(255,255,255,0.3); font-size: 10px; padding: 6px 14px 2px; letter-spacing: 0.5px; font-weight: 500; }
+
+        #notification-area { position: fixed; bottom: 4.5rem; left: 50%; transform: translateX(-50%); z-index: 999; width: 90%; max-width: 400px; pointer-events: none; }
+        .notification-join, .notification-leave { animation: notifFadeIn 0.4s ease-out, notifFadeOut 0.5s ease-in 3s forwards; direction: rtl; text-align: center; margin: 0 auto; padding: 8px 16px; border-radius: 12px; font-size: 14px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .notification-join { background: rgba(22,163,74,0.9); color: #fff; }
+        .notification-leave { background: rgba(239,68,68,0.9); color: #fff; }
+        @keyframes notifFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes notifFadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
+
+        #speakerWidget .speaker-box { transition: all 0.25s ease; }
+        #speakerWidget.speaker-active .speaker-box { background: rgba(239,68,68,0.35) !important; box-shadow: 0 0 10px rgba(239,68,68,0.5); }
+        #speakerAdminMenu { position: absolute; top: 100%; left: 0; margin-top: 8px; width: 190px; }
+
+        footer { padding-bottom: env(safe-area-inset-bottom); box-sizing: content-box; }
+        .status-option-item:hover { background: rgba(255,255,255,0.08); }
+
+        .admin-menu-item { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 14px; border-radius: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); text-align: right; color: white; cursor: pointer; }
+        .admin-menu-item:hover { background: rgba(255,255,255,0.1); }
+        .admin-icon-box { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; flex-shrink: 0; }
+        .log-auto-clear-select { background: rgba(0,0,0,0.3); color: white; font-size: 12px; border-radius: 10px; padding: 8px; border: 1px solid rgba(255,255,255,0.1); }
+        .log-auto-clear-select option { background: #1a1a2e; color: white; }
+        .stat-card-clickable { cursor: pointer; transition: all 0.2s; }
+        .stat-card-clickable:active { transform: scale(0.97); }
+        .promote-role-option.selected { border-color: #a855f7 !important; box-shadow: 0 0 0 1px #a855f7; }
+        .mini-num-input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 8px; color: white; font-size: 14px; text-align: center; outline: none; width: 100%; }
+        #memberContextModal { transition: background-color 0.3s ease; }
+        #memberContextModal .member-context-panel {
+            background: rgba(25,20,35,0.5) !important;
+            backdrop-filter: blur(14px) !important; -webkit-backdrop-filter: blur(14px) !important;
+            border: 1px solid rgba(255,255,255,0.06) !important;
+            border-radius: 16px !important;
+            transform: scale(0.95); opacity: 0;
+            transition: transform 0.2s cubic-bezier(0.22,1,0.36,1), opacity 0.18s ease;
+        }
+        #memberContextModal.panel-visible .member-context-panel { transform: translateY(0) scale(1); opacity: 1; }
+        #memberContextModal .member-context-panel button { padding-top: 10px !important; padding-bottom: 10px !important; font-size: 13px !important; }
+    
+        .mention-tag { color:#7c3aed; font-weight:700; cursor:pointer; }
+        .mentionable-name { cursor:pointer; }
+        .mention-highlight-flash { animation: mentionFlash 1.5s ease; }
+        @keyframes mentionFlash { 0%,100% { background-color: transparent; } 25%,60% { background-color: rgba(147,51,234,0.18); } }
+        #scrollToBottomBtn { position:fixed; left:1rem; bottom:5rem; z-index:35; width:42px; height:42px; border-radius:14px; background:#9333ea; color:white; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.25); }
+        .reply-quote-block { display:block; border-right:3px solid #9333ea; background:rgba(147,51,234,0.08); border-radius:8px; padding:4px 8px; margin-bottom:6px; cursor:pointer; }
+        .reply-quote-sender { display:block; font-size:10px; font-weight:700; color:#9333ea; }
+        .reply-quote-text { display:block; font-size:11px; color:#6b7280; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+        #replyPreviewBar { border-right:3px solid #9333ea; }
+        #messageActionsModal .message-actions-panel {
+            background: rgba(25,20,35,0.5) !important; backdrop-filter: blur(14px) !important; -webkit-backdrop-filter: blur(14px) !important;
+            border: 1px solid rgba(255,255,255,0.06) !important; border-radius: 16px !important;
+            transform: scale(0.95); opacity: 0; transition: transform 0.2s cubic-bezier(0.22,1,0.36,1), opacity 0.18s ease;
+        }
+        #messageActionsModal.panel-visible .message-actions-panel { transform: scale(1); opacity: 1; }
+    
+    
+        .super-master-glow { animation: superMasterPulse 1.8s ease-in-out infinite; }
+        @keyframes superMasterPulse {
+            0%, 100% { text-shadow: 0 0 3px #ef4444, 0 0 6px #ef4444; }
+            50% { text-shadow: 0 0 6px #ef4444, 0 0 12px #ef4444, 0 0 18px #ef4444; }
+        }
+    </style>
+</head>
+<body class="font-sans flex flex-col h-full w-full relative select-none">
+
+    <div id="loginScreen" class="hidden fixed inset-0 z-[100] flex flex-col bg-gradient-to-b from-purple-900 to-slate-900">
+        <div class="flex items-center justify-center h-20 shrink-0">
+            <span class="text-white text-2xl font-bold tracking-widest">الجلسة الليبية</span>
+        </div>
+        <div class="flex-1 flex flex-col justify-center px-5 pb-10 overflow-y-auto">
+            <div class="flex rounded-2xl overflow-hidden border border-white/10 mb-6">
+                <button class="login-tab-btn flex-1 py-3 text-sm font-bold text-white/70" data-tab="guest">زائر</button>
+                <button class="login-tab-btn flex-1 py-3 text-sm font-bold text-white/70" data-tab="member">عضو</button>
+                <button class="login-tab-btn flex-1 py-3 text-sm font-bold text-white/70" data-tab="registered">عضو مميز</button>
+            </div>
+
+            <div class="flex items-center gap-3 mb-4">
+                <button id="openAvatarPickerBtn" class="shrink-0 w-16 h-16 rounded-2xl overflow-hidden border-2 border-purple-400">
+                    <img id="loginAvatarPreview" src="" class="w-full h-full object-cover">
+                </button>
+                <input id="loginUsernameInput" type="text" placeholder="اسم المستخدم" class="flex-1 bg-white/10 border border-white/15 rounded-xl p-3 text-white placeholder-white/40 outline-none">
+            </div>
+
+            <input id="loginNamePasswordInput" type="password" placeholder="كلمة المرور" class="hidden w-full bg-white/10 border border-white/15 rounded-xl p-3 text-white placeholder-white/40 outline-none mb-4">
+            <input id="loginRoomPasswordInput" type="password" placeholder="كلمة مرور الغرفة" class="hidden w-full bg-white/10 border border-white/15 rounded-xl p-3 text-white placeholder-white/40 outline-none mb-4">
+
+            <div class="flex items-center justify-between mb-4">
+                <label class="flex items-center gap-2 text-white/60 text-xs cursor-pointer">
+                    <input id="rememberLoginCheckbox" type="checkbox" class="w-4 h-4 accent-purple-500">
+                    حفظ بيانات الدخول (مشفّرة بالكامل)
+                </label>
+                <button id="openSavedAccountsBtn" type="button" class="text-purple-300 text-xs underline">حساباتي المحفوظة</button>
+            </div>
+            <div class="flex gap-3 mt-2">
+                <button id="loginCancelBtn" class="flex-1 bg-white/10 border border-white/15 text-white/70 rounded-xl p-3 text-sm">إلغاء</button>
+                <button id="loginSubmitBtn" class="flex-1 bg-purple-600 text-white rounded-xl p-3 text-sm font-bold">دخول</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="avatarPickerModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.7);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-white font-bold text-base">اختر صورتك الشخصية</span>
+                <button id="closeAvatarPickerBtn" class="text-white/60 text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="avatarGrid" class="grid grid-cols-5 gap-3 mb-4"></div>
+            <!-- [PHASE 1] خيار "تحميل صورة مخصصة" أُزيل — السيرفر الحقيقي (WidBid)
+                 يدعم بس 16 أفاتار جاهزة من public/avatars/av1.svg → av16.svg،
+                 ما فيه endpoint لرفع صور حرة حالياً. -->
+        </div>
+    </div>
+    <div id="header-component"></div>
+
+    <div id="onlineUsersPanel" class="online-panel-container flex flex-col overflow-y-auto">
+        <div class="bg-purple-600 text-white flex items-center justify-center h-14 px-4 shadow-md shrink-0">
+            <span class="font-bold text-base">المتواجدون الآن</span>
+        </div>
+        <div id="onlineUsersList" class="flex-1 p-3 flex flex-col space-y-2"></div>
+    </div>
+
+    <main id="chatContainer" class="flex-1 chat-bg overflow-y-auto flex flex-col relative w-full pt-[3.5rem] pb-[4rem] px-4 space-y-3">
+        <div id="messagesList" class="flex flex-col w-full space-y-3"></div>
+    </main>
+
+    <div id="notification-area"></div>
+
+    <button id="scrollToBottomBtn" class="hidden relative"><i class="fa-solid fa-arrow-down"></i><span id="scrollToBottomCount" class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center border border-white"></span></button>
+
+    <div id="footer-component"></div>
+
+    <div id="sideMenu">
+        <div class="menu-header">الحساب</div>
+        <button class="menu-item" id="menuStatus"><i class="fa-solid fa-circle"></i> الحالة</button>
+        <button class="menu-item" id="menuSettings"><i class="fa-solid fa-gear"></i> الإعدادات</button>
+        <div class="menu-divider"></div>
+        <div class="menu-header">المزيد</div>
+        <button class="menu-item" id="menuAddFav"><i class="fa-regular fa-star"></i> أضف المفضلة</button>
+        <button class="menu-item" id="menuClearText"><i class="fa-solid fa-eraser"></i> مسح النص</button>
+        <button class="menu-item" id="menuReport"><i class="fa-regular fa-flag"></i> تبليغ</button>
+        <button class="menu-item" id="menuAdminPanel"><i class="fa-solid fa-user-shield"></i> لوحة التحكم</button>
+        <div class="menu-divider"></div>
+        <button class="menu-item text-red-400 hover:bg-red-500/10" id="menuLogout"><i class="fa-solid fa-right-from-bracket text-red-400"></i> خروج</button>
+    </div>
+
+    <div id="statusModal" class="hidden fixed inset-0 flex items-end justify-center z-[60]" style="background: rgba(0,0,0,0.5);">
+        <div class="glass-menu w-full max-w-md rounded-t-3xl p-4 pb-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-white font-bold text-base">اختر حالتك</span>
+                <button id="closeStatusModalBtn" class="text-white/60 text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="divide-y divide-white/5">
+                <button class="status-option-item w-full flex items-center gap-3 py-3 text-white" data-status="متصل" data-color="#22c55e"><i class="fa-solid fa-circle text-green-500 text-sm w-5"></i> متصل</button>
+                <button class="status-option-item w-full flex items-center gap-3 py-3 text-white" data-status="مشغول" data-color="#ef4444"><i class="fa-solid fa-circle-minus text-red-500 text-sm w-5"></i> مشغول</button>
+                <button class="status-option-item w-full flex items-center gap-3 py-3 text-white" data-status="مكالمة هاتفية" data-color="#3b82f6"><i class="fa-solid fa-phone text-blue-400 text-sm w-5"></i> مكالمة هاتفية</button>
+                <button class="status-option-item w-full flex items-center gap-3 py-3 text-white" data-status="في السيارة" data-color="#f59e0b"><i class="fa-solid fa-car text-amber-400 text-sm w-5"></i> في السيارة</button>
+                <button class="status-option-item w-full flex items-center gap-3 py-3 text-white" data-status="الصلاة" data-color="#10b981"><i class="fa-solid fa-mosque text-emerald-400 text-sm w-5"></i> الصلاة</button>
+                <button class="status-option-item w-full flex items-center gap-3 py-3 text-white" data-status="نائم" data-color="#6366f1"><i class="fa-solid fa-moon text-indigo-400 text-sm w-5"></i> نائم</button>
+                <button class="status-option-item w-full flex items-center gap-3 py-3 text-white" data-status="مع الحبيب" data-color="#ec4899"><i class="fa-solid fa-heart text-pink-400 text-sm w-5"></i> مع الحبيب</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="repeatBannedModal" class="hidden fixed inset-0 flex items-center justify-center z-[70] p-4" style="background:rgba(0,0,0,0.6);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5 max-h-[70vh] flex flex-col">
+            <div class="flex items-center justify-between mb-3 shrink-0">
+                <span class="text-white font-bold text-base">حُظروا أكثر من مرة</span>
+                <button id="closeRepeatBannedBtn" class="text-white/60 text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="repeatBannedList" class="space-y-2 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="promoteModal" class="hidden fixed inset-0 flex items-center justify-center z-[70] p-4" style="background:rgba(0,0,0,0.6);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
+            <h3 class="text-white font-bold text-base mb-1">ترقية العضو</h3>
+            <p id="promoteModalSubtitle" class="text-white/50 text-xs mb-4"></p>
+            <div id="promoteRoleOptions" class="space-y-2 mb-4"></div>
+            <div id="promotePasswordContainer" class="hidden mb-4">
+                <label class="text-white/60 text-xs block mb-1">كلمة مرور المشرف الجديدة</label>
+                <input id="promotePasswordInput" type="password" placeholder="أدخل كلمة مرور" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none">
+            </div>
+            <div class="flex gap-2">
+                <button id="cancelPromoteBtn" class="flex-1 bg-white/5 border border-white/10 text-white/70 rounded-xl p-3 text-sm">إلغاء</button>
+                <button id="confirmPromoteBtn" class="flex-1 bg-purple-600 text-white rounded-xl p-3 text-sm font-bold">تأكيد</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmActionModal" class="hidden fixed inset-0 flex items-center justify-center z-[70] p-4" style="background:rgba(0,0,0,0.6);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5 text-center">
+            <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-red-500/20 flex items-center justify-center"><i class="fa-solid fa-triangle-exclamation text-red-400 text-2xl"></i></div>
+            <h3 id="confirmModalTitle" class="text-white font-bold text-base mb-1"></h3>
+            <p id="confirmModalMessage" class="text-white/50 text-xs mb-5"></p>
+            <div class="flex gap-2">
+                <button id="cancelConfirmModalBtn" class="flex-1 bg-white/5 border border-white/10 text-white/70 rounded-xl p-3 text-sm">إلغاء</button>
+                <button id="confirmModalConfirmBtn" class="flex-1 rounded-xl p-3 text-sm font-bold text-white bg-red-600">تأكيد</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tempBanModal" class="hidden fixed inset-0 flex items-center justify-center z-[70] p-4" style="background:rgba(0,0,0,0.6);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
+            <h3 class="text-white font-bold text-base mb-1">حظر مؤقت</h3>
+            <p id="tempBanModalSubtitle" class="text-white/50 text-xs mb-4"></p>
+            <div class="flex gap-2 mb-5">
+                <div class="flex-1"><label class="text-white/50 text-[11px] block mb-1">أيام</label><input id="tempBanDays" type="number" min="0" value="1" class="mini-num-input"></div>
+                <div class="flex-1"><label class="text-white/50 text-[11px] block mb-1">ساعات</label><input id="tempBanHours" type="number" min="0" max="23" value="0" class="mini-num-input"></div>
+                <div class="flex-1"><label class="text-white/50 text-[11px] block mb-1">دقائق</label><input id="tempBanMinutes" type="number" min="0" max="59" value="0" class="mini-num-input"></div>
+            </div>
+            <div class="flex gap-2">
+                <button id="cancelTempBanBtn" class="flex-1 bg-white/5 border border-white/10 text-white/70 rounded-xl p-3 text-sm">إلغاء</button>
+                <button id="confirmTempBanBtn" class="flex-1 bg-amber-600 text-white rounded-xl p-3 text-sm font-bold">تأكيد الحظر</button>
+            </div>
+        </div>
+    </div>
+    <div id="adminModal" class="hidden fixed inset-0 z-[60] flex flex-col glass-menu overflow-y-auto">
+
+        <div id="adminMainPage" class="flex flex-col h-full w-full">
+            <div class="border-b border-white/10 flex items-center justify-between h-14 px-4 bg-black/20 shrink-0">
+                <button id="closeAdminBtn" class="text-white text-xl p-2"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="font-bold text-lg text-white">لوحة التحكم</span>
+                <div class="w-10"></div>
+            </div>
+            <div class="flex-1 p-4 overflow-y-auto space-y-3">
+                <button class="admin-menu-item" id="goToAppearanceBtn">
+                    <div class="flex items-center gap-3"><div class="admin-icon-box" style="background:#16a34a;"><i class="fa-solid fa-palette"></i></div><div><span class="font-bold text-sm block">مظهر الغرفة</span><span class="text-white/40 text-[11px]">تغيير خلفية الشات والهيدر</span></div></div>
+                    <i class="fa-solid fa-chevron-left text-white/30 text-xs"></i>
+                </button>
+                <button class="admin-menu-item" id="goToWelcomeBtn">
+                    <div class="flex items-center gap-3"><div class="admin-icon-box" style="background:#ca8a04;"><i class="fa-solid fa-message"></i></div><div><span class="font-bold text-sm block">تعديل رسالة الترحيب</span><span class="text-white/40 text-[11px]">النص والإطار والخيارات</span></div></div>
+                    <i class="fa-solid fa-chevron-left text-white/30 text-xs"></i>
+                </button>
+                <button class="admin-menu-item" id="goToLoginLogsBtn">
+                    <div class="flex items-center gap-3"><div class="admin-icon-box" style="background:#2563eb;"><i class="fa-solid fa-right-to-bracket"></i></div><div><span class="font-bold text-sm block">سجل الدخول</span><span class="text-white/40 text-[11px]">تفاعلي وحيّ</span></div></div>
+                    <i class="fa-solid fa-chevron-left text-white/30 text-xs"></i>
+                </button>
+                <button class="admin-menu-item" id="goToLogoutLogsBtn">
+                    <div class="flex items-center gap-3"><div class="admin-icon-box" style="background:#d97706;"><i class="fa-solid fa-right-from-bracket"></i></div><div><span class="font-bold text-sm block">سجل الخروج</span><span class="text-white/40 text-[11px]">تفاعلي وحيّ</span></div></div>
+                    <i class="fa-solid fa-chevron-left text-white/30 text-xs"></i>
+                </button>
+                <button class="admin-menu-item" id="goToBannedBtn">
+                    <div class="flex items-center gap-3"><div class="admin-icon-box" style="background:#dc2626;"><i class="fa-solid fa-ban"></i></div><div><span class="font-bold text-sm block">المحظورون</span><span class="text-white/40 text-[11px]">عداد تنازلي وتمديد/فك</span></div></div>
+                    <i class="fa-solid fa-chevron-left text-white/30 text-xs"></i>
+                </button>
+                <button class="admin-menu-item" id="goToAdminsBtn">
+                    <div class="flex items-center gap-3"><div class="admin-icon-box" style="background:#db2777;"><i class="fa-solid fa-user-tie"></i></div><div><span class="font-bold text-sm block">إدارة المشرفين</span><span class="text-white/40 text-[11px]">الرتب، الترقية، الإضافة</span></div></div>
+                    <i class="fa-solid fa-chevron-left text-white/30 text-xs"></i>
+                </button>
+                <button class="admin-menu-item" id="goToActivityLogBtn">
+                    <div class="flex items-center gap-3"><div class="admin-icon-box" style="background:#4f46e5;"><i class="fa-solid fa-clock-rotate-left"></i></div><div><span class="font-bold text-sm block">سجل التغييرات</span><span class="text-white/40 text-[11px]">جميع إجراءات المشرفين</span></div></div>
+                    <i class="fa-solid fa-chevron-left text-white/30 text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="adminAppearanceSubMenu" class="hidden flex flex-col h-full w-full">
+            <div class="border-b border-white/10 flex items-center justify-between h-14 px-4 bg-black/20 shrink-0">
+                <button id="backFromAppearanceBtn" class="text-white text-xl p-2"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="font-bold text-lg text-white">مظهر الغرفة</span><div class="w-10"></div>
+            </div>
+            <div class="flex-1 p-4 flex flex-col space-y-5">
+                <div>
+                    <label class="text-white/70 text-xs font-bold block mb-2">مظهر خلفية الدردشة</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button class="chat-theme-btn bg-white/5 border border-white/10 rounded-xl p-3 text-white text-xs" data-theme="dots">نقاط (افتراضي)</button>
+                        <button class="chat-theme-btn bg-white/5 border border-white/10 rounded-xl p-3 text-white text-xs" data-theme="dark">داكن</button>
+                        <button class="chat-theme-btn bg-white/5 border border-white/10 rounded-xl p-3 text-white text-xs" data-theme="blue">أزرق فاتح</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-white/70 text-xs font-bold block mb-2">إدارة المحادثة</label>
+                    <button id="adminClearAllBtn" class="w-full bg-red-500/20 border border-red-500/30 rounded-xl p-3 text-red-300 text-sm hover:bg-red-500/30"><i class="fa-solid fa-trash-can ml-2"></i> مسح كل الرسائل</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="adminWelcomeSubMenu" class="hidden flex flex-col h-full w-full">
+            <div class="border-b border-white/10 flex items-center justify-between h-14 px-4 bg-black/20 shrink-0">
+                <button id="backFromWelcomeBtn" class="text-white text-xl p-2"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="font-bold text-lg text-white">تعديل رسالة الترحيب</span><div class="w-10"></div>
+            </div>
+            <div class="flex-1 p-6 flex items-center justify-center text-center text-white/40 text-sm">هذا القسم قيد الإعداد — بانتظار التفاصيل</div>
+        </div>
+
+        <div id="adminLoginLogsSubMenu" class="hidden flex flex-col h-full w-full">
+            <div class="border-b border-white/10 flex items-center justify-between h-14 px-4 bg-black/20 shrink-0">
+                <button id="backFromLoginLogsBtn" class="text-white text-xl p-2"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="font-bold text-lg text-white">سجل الدخول</span><div class="w-10"></div>
+            </div>
+            <div class="flex-1 p-4 overflow-y-auto space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div id="logsOnlineCard" class="stat-card-clickable bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                        <div id="logsOnlineCount" class="text-3xl font-bold text-green-400">0</div>
+                        <div class="text-white/40 text-xs mt-1">متصلون الآن</div>
+                    </div>
+                    <div class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                        <div id="logsTotalCount" class="text-3xl font-bold text-blue-400">0</div>
+                        <div class="text-white/40 text-xs mt-1">إجمالي الزوار</div>
+                    </div>
+                </div>
+                <button id="loginShowAllBtn" class="hidden w-full bg-white/5 border border-white/10 rounded-xl p-2 text-white/70 text-xs"><i class="fa-solid fa-xmark ml-1"></i> عرض الكل (إلغاء الفلترة)</button>
+                <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl p-3">
+                    <label class="text-white/60 text-xs shrink-0">مسح تلقائي بعد:</label>
+                    <select id="loginAutoClearSelect" class="log-auto-clear-select flex-1">
+                        <option value="0">معطل</option>
+                        <option value="1">يوم واحد</option>
+                        <option value="3">3 أيام</option>
+                        <option value="7">أسبوع</option>
+                        <option value="15">15 يوم</option>
+                    </select>
+                </div>
+                <button id="clearLoginLogsBtn" class="w-full bg-red-500/20 border border-red-500/30 rounded-xl p-3 text-red-300 text-sm hover:bg-red-500/30"><i class="fa-solid fa-trash-can ml-2"></i> مسح سجل الدخول بالكامل</button>
+                <div id="loginLogsList" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <div id="adminLogoutLogsSubMenu" class="hidden flex flex-col h-full w-full">
+            <div class="border-b border-white/10 flex items-center justify-between h-14 px-4 bg-black/20 shrink-0">
+                <button id="backFromLogoutLogsBtn" class="text-white text-xl p-2"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="font-bold text-lg text-white">سجل الخروج</span><div class="w-10"></div>
+            </div>
+            <div class="flex-1 p-4 overflow-y-auto space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                        <div id="logoutTotalCount" class="text-3xl font-bold text-blue-400">0</div>
+                        <div class="text-white/40 text-xs mt-1">إجمالي الزوار</div>
+                    </div>
+                    <div class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                        <div id="logoutOnlineCount" class="text-3xl font-bold text-green-400">0</div>
+                        <div class="text-white/40 text-xs mt-1">متصلون الآن</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl p-3">
+                    <label class="text-white/60 text-xs shrink-0">مسح تلقائي بعد:</label>
+                    <select id="logoutAutoClearSelect" class="log-auto-clear-select flex-1">
+                        <option value="0">معطل</option>
+                        <option value="1">يوم واحد</option>
+                        <option value="3">3 أيام</option>
+                        <option value="7">أسبوع</option>
+                        <option value="15">15 يوم</option>
+                    </select>
+                </div>
+                <button id="clearLogoutLogsBtn" class="w-full bg-red-500/20 border border-red-500/30 rounded-xl p-3 text-red-300 text-sm hover:bg-red-500/30"><i class="fa-solid fa-trash-can ml-2"></i> مسح سجل الخروج بالكامل</button>
+                <div id="logoutLogsList" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <div id="adminBannedSubMenu" class="hidden flex flex-col h-full w-full">
+            <div class="border-b border-white/10 flex items-center justify-between h-14 px-4 bg-black/20 shrink-0">
+                <button id="backFromBannedBtn" class="text-white text-xl p-2"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="font-bold text-lg text-white">المحظورون</span><div class="w-10"></div>
+            </div>
+            <div class="flex-1 p-4 overflow-y-auto space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                        <div id="bannedTotalCount" class="text-3xl font-bold text-red-400">0</div>
+                        <div class="text-white/40 text-xs mt-1">عدد المحظورين</div>
+                    </div>
+                    <div id="bannedRepeatCard" class="stat-card-clickable bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                        <div id="bannedRepeatCount" class="text-3xl font-bold text-amber-400">0</div>
+                        <div class="text-white/40 text-xs mt-1">حُظروا أكثر من مرة</div>
+                    </div>
+                </div>
+                <div id="bannedList" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <div id="adminManageAdminsSubMenu" class="hidden flex flex-col h-full w-full">
+            <div class="border-b border-white/10 flex items-center justify-between h-14 px-4 bg-black/20 shrink-0">
+                <button id="backFromAdminsBtn" class="text-white text-xl p-2"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="font-bold text-lg text-white">إدارة المشرفين</span>
+                <button id="addAdminBtn" class="text-white text-xs bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-xl"><i class="fa-solid fa-plus ml-1"></i>إضافة</button>
+            </div>
+            <div class="flex-1 p-4 overflow-y-auto space-y-3">
+                <div id="adminAccountsList" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <div id="adminActivityLogSubMenu" class="hidden flex flex-col h-full w-full">
+            <div class="border-b border-white/10 flex items-center justify-between h-14 px-4 bg-black/20 shrink-0">
+                <button id="backFromActivityLogBtn" class="text-white text-xl p-2"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="font-bold text-lg text-white">سجل التغييرات</span><div class="w-10"></div>
+            </div>
+            <div class="flex-1 p-4 overflow-y-auto space-y-4">
+                <button id="clearActivityLogBtn" class="w-full bg-red-500/20 border border-red-500/30 rounded-xl p-3 text-red-300 text-sm hover:bg-red-500/30"><i class="fa-solid fa-trash-can ml-2"></i> مسح سجل التغييرات بالكامل</button>
+                <div id="activityLogList" class="space-y-3"></div>
+            </div>
+        </div>
+
+    </div>
+    <div id="settingsModal" class="hidden fixed inset-0 flex flex-col z-50 overflow-y-auto glass-menu">
+        <div id="settingsMainMenu" class="flex flex-col h-full w-full">
+            <div class="border-b border-white/10 flex items-center justify-between h-14 px-4 bg-black/20">
+                <button id="closeSettingsBtn" class="text-white text-xl p-2"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="font-bold text-lg text-white">الإعدادات</span>
+                <div class="w-10"></div>
+            </div>
+            <div class="flex-1 p-4 flex flex-col space-y-2">
+                <button id="goToFontSettingsBtn" class="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 text-right text-white hover:bg-white/10">
+                    <div class="flex items-center gap-3"><i class="fa-solid fa-font text-purple-400"></i><span class="font-bold text-sm">إعدادات الخط</span></div>
+                    <i class="fa-solid fa-chevron-left text-white/30 text-xs"></i>
+                </button>
+                <button id="goToPMSettingsBtn" class="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 text-right text-white hover:bg-white/10">
+                    <div class="flex items-center gap-3"><i class="fa-solid fa-envelope text-blue-400"></i><span class="font-bold text-sm">الرسائل الخاصة</span></div>
+                    <i class="fa-solid fa-chevron-left text-white/30 text-xs"></i>
+                </button>
+            </div>
+        </div>
+        <div id="fontSettingsSubMenu" class="hidden flex flex-col h-full w-full">
+            <div class="border-b border-white/10 flex items-center justify-between h-14 px-4 bg-black/20">
+                <button id="backToMainMenuBtn" class="text-white text-xl p-2"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="font-bold text-lg text-white">إعدادات الخط</span><div class="w-10"></div>
+            </div>
+            <div class="flex-1 p-5 flex flex-col space-y-6 overflow-y-auto">
+                <div><label class="text-white text-sm">حجم الخط</label><div class="flex items-center gap-4 bg-black/20 p-3 rounded-xl"><input id="fontSizeRange" type="range" min="12" max="32" value="14" class="flex-1 accent-purple-500"><span id="fontSizePreview" class="text-purple-300 text-sm bg-purple-500/20 px-2 rounded">14px</span></div></div>
+                <div><label class="text-white text-sm">سمك الخط</label><div class="flex bg-black/20 p-1 rounded-xl"><button id="fontWeightNormalBtn" class="flex-1 py-2 text-sm rounded-lg text-white">خط رفيع</button><button id="fontWeightBoldBtn" class="flex-1 py-2 text-sm rounded-lg text-white">خط عريض</button></div></div>
+                <div><label class="text-white text-sm">لون الخط</label><div class="bg-black/20 p-4 rounded-xl space-y-4"><div class="relative w-full h-5 rounded-md" style="background:linear-gradient(to left,red,yellow,green,cyan,blue,magenta,red)"><input id="hueRange" type="range" min="0" max="360" value="0" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer"></div><div class="grid grid-cols-5 gap-3" id="colorPaletteContainer"><button data-color="#1f2937" class="w-8 h-8 rounded-full bg-gray-800"></button><button data-color="#9333ea" class="w-8 h-8 rounded-full bg-purple-600"></button><button data-color="#2563eb" class="w-8 h-8 rounded-full bg-blue-600"></button><button data-color="#16a34a" class="w-8 h-8 rounded-full bg-green-600"></button><button data-color="#dc2626" class="w-8 h-8 rounded-full bg-red-600"></button></div></div></div>
+                <div class="bg-white/5 border border-white/10 rounded-xl p-4"><p id="fontLivePreview" class="text-sm" style="color:#1f2937;">معاينة حية</p></div>
+            </div>
+            <div class="border-t border-white/10 p-4 bg-black/20"><button id="saveSettingsBtn" class="w-full bg-purple-600 text-white py-3 rounded-xl font-bold">حفظ وتطبيق</button></div>
+        </div>
+        <div id="pmSettingsSubMenu" class="hidden flex flex-col h-full w-full">
+            <div class="border-b border-white/10 flex items-center justify-between h-14 px-4 bg-black/20">
+                <button id="backToMainMenuFromPMBtn" class="text-white text-xl p-2"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="font-bold text-lg text-white">الرسائل الخاصة</span><div class="w-10"></div>
+            </div>
+            <div class="flex-1 p-5 flex flex-col space-y-4">
+                <label class="text-white text-sm font-bold"><i class="fa-solid fa-shield-halved text-blue-400"></i> خيارات استقبال الخاص</label>
+                <div class="bg-black/20 rounded-xl divide-y divide-white/5 overflow-hidden">
+                    <label class="flex items-center justify-between p-4 text-white"><div><span class="text-sm">رفض جميع الرسائل الخاصة</span><span class="text-white/40 text-[11px] block">سيتم إغلاق الخاص لديك تماماً</span></div><input type="radio" name="pmPrivacyOption" value="block_all" class="w-5 h-5 accent-blue-500"></label>
+                    <label class="flex items-center justify-between p-4 text-white"><div><span class="text-sm">قبول فقط من الأعضاء والمسجلين</span><span class="text-white/40 text-[11px] block">يسمح للحسابات المسجلة فقط بمراسلتك</span></div><input type="radio" name="pmPrivacyOption" value="members_only" checked class="w-5 h-5 accent-blue-500"></label>
+                    <label class="flex items-center justify-between p-4 text-white"><div><span class="text-sm">قبول جميع الرسائل الخاصة</span><span class="text-white/40 text-[11px] block">فتح الخاص لاستقبال الرسائل من الجميع دون قيود</span></div><input type="radio" name="pmPrivacyOption" value="allow_all" class="w-5 h-5 accent-blue-500"></label>
+                </div>
+            </div>
+            <div class="border-t border-white/10 p-4 bg-black/20"><button id="savePMSettingsBtn" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">حفظ إعدادات الخصوصية</button></div>
+        </div>
+    </div>
+
+    <div id="addAdminModal" class="hidden fixed inset-0 flex items-center justify-center z-[70] p-4" style="background:rgba(0,0,0,0.6);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
+            <h3 class="text-white font-bold text-base mb-4">إضافة مشرف جديد</h3>
+            <label class="text-white/60 text-xs block mb-1">الاسم</label>
+            <input id="newAdminNameInput" type="text" placeholder="اسم العضو" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-4">
+            <label class="text-white/60 text-xs block mb-2">الرتبة</label>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <button class="new-admin-role-option p-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm text-center" data-role="member" style="--role-color:#d9b98a;">Member</button>
+                <button class="new-admin-role-option p-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm text-center" data-role="admin" style="--role-color:#3b82f6;">Admin</button>
+                <button class="new-admin-role-option p-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm text-center" data-role="super_admin" style="--role-color:#22c55e;">Super Admin</button>
+                <button class="new-admin-role-option hidden p-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm text-center" data-role="master" style="--role-color:#dc2626;">Master</button>
+            </div>
+            <div id="newAdminNamePasswordContainer" class="hidden mb-4">
+                <label class="text-white/60 text-xs block mb-1">كلمة مرور الاسم</label>
+                <input id="newAdminNamePasswordInput" type="password" placeholder="كلمة مرور الاسم" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none">
+            </div>
+            <label class="text-white/60 text-xs block mb-1">كلمة المرور</label>
+            <input id="newAdminPasswordInput" type="password" placeholder="كلمة المرور" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-5">
+            <div class="flex gap-2">
+                <button id="cancelAddAdminBtn" class="flex-1 bg-white/5 border border-white/10 text-white/70 rounded-xl p-3 text-sm">إلغاء</button>
+                <button id="submitAddAdminBtn" class="flex-1 bg-purple-600 text-white rounded-xl p-3 text-sm font-bold">إضافة</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="masterColorModal" class="hidden fixed inset-0 flex items-center justify-center z-[80] p-4" style="background:rgba(0,0,0,0.65);">
+        <div class="glass-menu w-full max-w-xs rounded-2xl p-5 text-center">
+            <h3 class="text-white font-bold text-base mb-4">اختر لون رتبة Master</h3>
+            <div class="flex justify-center gap-4 mb-5">
+                <button class="master-color-option w-16 h-16 rounded-full border-4 border-transparent" data-color="red" style="background:#dc2626;"></button>
+                <button class="master-color-option w-16 h-16 rounded-full border-4 border-transparent" data-color="pink" style="background:#ec4899;"></button>
+            </div>
+            <div class="flex gap-2">
+                <button id="cancelMasterColorBtn" class="flex-1 bg-white/5 border border-white/10 text-white/70 rounded-xl p-3 text-sm">إلغاء</button>
+                <button id="confirmMasterColorBtn" class="flex-1 bg-purple-600 text-white rounded-xl p-3 text-sm font-bold">تأكيد</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .new-admin-role-option.selected { border-color: var(--role-color) !important; box-shadow: 0 0 0 2px var(--role-color); }
+        .master-color-option.selected { border-color: white !important; }
+    </style>
+    <style>
+        .login-tab-btn { background: rgba(255,255,255,0.05); transition: all 0.2s; }
+        .login-tab-btn.active { background: #9333ea; color: white; }
+    </style>
+
+    <div id="changePasswordModal" class="hidden fixed inset-0 flex items-center justify-center z-[80] p-4" style="background:rgba(0,0,0,0.65);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
+            <h3 class="text-white font-bold text-base mb-1">تغيير كلمة المرور</h3>
+            <p id="changePasswordSubtitle" class="text-white/50 text-xs mb-4"></p>
+            <input id="newPasswordInput" type="password" placeholder="كلمة المرور الجديدة" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-5">
+            <div class="flex gap-2">
+                <button id="cancelChangePasswordBtn" class="flex-1 bg-white/5 border border-white/10 text-white/70 rounded-xl p-3 text-sm">إلغاء</button>
+                <button id="confirmChangePasswordBtn" class="flex-1 bg-blue-600 text-white rounded-xl p-3 text-sm font-bold">حفظ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="forcedPasswordChangeModal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.8);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
+            <h3 class="text-white font-bold text-base mb-1">يجب تغيير كلمتي المرور</h3>
+            <p id="forcedChangeSubtitle" class="text-white/50 text-xs mb-4"></p>
+            <label class="text-white/60 text-xs block mb-1">كلمة مرور الاسم الجديدة</label>
+            <input id="forcedNewNamePassword" type="password" placeholder="كلمة مرور الاسم الجديدة" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-4">
+            <label class="text-white/60 text-xs block mb-1">كلمة مرور الغرفة الجديدة</label>
+            <input id="forcedNewRoomPassword" type="password" placeholder="كلمة مرور الغرفة الجديدة" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-5">
+            <button id="submitForcedChangeBtn" class="w-full bg-purple-600 text-white rounded-xl p-3 text-sm font-bold">حفظ ومتابعة</button>
+        </div>
+    </div>
+
+    <div id="roomsScreen" class="fixed inset-0 z-[100] flex flex-col bg-gradient-to-b from-purple-900 to-slate-900">
+        <div class="flex items-center justify-center h-16 shrink-0 border-b border-white/10">
+            <span class="text-white text-lg font-bold">اختر غرفة</span>
+        </div>
+        <div id="roomsList" class="flex-1 overflow-y-auto p-4"></div>
+    </div>
+
+    <div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:9999; background:#dc2626; color:white; padding:10px; font-size:11px; direction:ltr; text-align:left; max-height:40vh; overflow-y:auto; white-space:pre-wrap; word-break:break-all; font-family:monospace;"></div>
+    <script>
+        function showJsError(msg) {
+            const el = document.getElementById('errorBanner');
+            if (!el) return;
+            el.style.display = 'block';
+            el.textContent += (el.textContent ? '\n\n---\n\n' : '') + msg;
+        }
+        window.addEventListener('error', (e) => showJsError('ERROR: ' + e.message + '\nFile: ' + e.filename + ':' + e.lineno));
+        window.addEventListener('unhandledrejection', (e) => showJsError('PROMISE REJECTION: ' + (e.reason && e.reason.message ? e.reason.message : e.reason)));
+    </script>
+    <div id="savedAccountsModal" class="hidden fixed inset-0 flex items-center justify-center z-[130] p-4" style="background:rgba(0,0,0,0.7);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5 max-h-[70vh] flex flex-col">
+            <div class="flex items-center justify-between mb-3 shrink-0">
+                <span class="text-white font-bold text-base">حساباتي المحفوظة</span>
+                <button id="closeSavedAccountsBtn" class="text-white/60 text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="savedAccountsList" class="space-y-2 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="deviceBindModal" class="hidden fixed inset-0 flex items-center justify-center z-[85] p-4" style="background:rgba(0,0,0,0.65);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-1">
+                <span id="deviceBindTitle" class="text-white font-bold text-base"></span>
+                <button id="closeDeviceBindBtn" class="text-white/60 text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-white/40 text-xs mb-3">الأجهزة المربوطة: <span id="deviceBindCount">0/3</span></p>
+            <div id="deviceBindList" class="mb-4"></div>
+            <button id="deviceBindAddCurrentBtn" class="hidden w-full bg-indigo-600 text-white rounded-xl p-3 text-sm font-bold"><i class="fa-solid fa-link ml-2"></i> ربط هذا الجهاز</button>
+        </div>
+    </div>
+
+    <script src="js/crypto.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/chat.js"></script>
+    <!-- [PHASE 2] الاتصال الحقيقي بسيرفر WidBid — يتطلب تشغيل هذي الصفحة
+         من نفس سيرفر WidBid نفسه (public/) عشان socket.io يلقى نقطة
+         الاتصال تلقائياً، مو من مستودع widgemi كملفات مستقلة. -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/socket-bridge.js"></script>
+    <script src="js/speaker.js"></script>
+    <script src="js/logs.js"></script>
+    <script src="js/device-binding.js"></script>
+    <script src="js/admins.js"></script>
+    <script src="js/login.js"></script>
+    <div id="forcedSinglePasswordChangeModal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.8);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
+            <h3 class="text-white font-bold text-base mb-1">يجب تغيير كلمة المرور</h3>
+            <p id="forcedSingleChangeSubtitle" class="text-white/50 text-xs mb-4"></p>
+            <input id="forcedSingleNewPassword" type="password" placeholder="كلمة المرور الجديدة" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-5">
+            <button id="submitForcedSingleChangeBtn" class="w-full bg-purple-600 text-white rounded-xl p-3 text-sm font-bold">حفظ ومتابعة</button>
+        </div>
+    </div>
+
+    <div id="memberContextModal" class="hidden fixed inset-0 z-[75]" style="background:rgba(0,0,0,0.25);">
+        <div class="member-context-panel p-3">
+            <div class="flex items-center justify-between mb-3">
+                <span id="memberContextName" class="text-white font-bold text-base"></span>
+                <button id="closeMemberContextBtn" class="text-white/60 text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div id="memberContextMainPanel" class="divide-y divide-white/5">
+                <button id="memberContextMentionBtn" class="w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-at ml-2"></i> ذكر</button>
+                <button id="memberContextClearMsgBtn" class="hidden w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-eraser ml-2"></i> مسح النص</button>
+                <button id="memberContextClearMsgAllBtn" class="hidden w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-broom ml-2"></i> مسح النص للجميع</button>
+                <button id="memberContextPrivateChatBtn" class="w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-comment-dots ml-2"></i> محادثة خاصة</button>
+                <button id="memberContextProfileBtn" class="w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-id-card ml-2"></i> مشاهدة الملف الشخصي</button>
+                <button id="memberContextIgnoreBtn" class="w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-volume-xmark ml-2"></i> تجاهل</button>
+                <button id="memberContextReportBtn" class="w-full flex items-center py-3 text-red-400 text-sm"><i class="fa-regular fa-flag ml-2"></i> تبليغ</button>
+                <button id="memberContextAdminEntryBtn" class="hidden w-full flex items-center justify-between py-3 text-amber-300 text-sm"><span><i class="fa-solid fa-user-shield ml-2"></i> خيارات المشرف</span><i class="fa-solid fa-chevron-left text-xs"></i></button>
+            </div>
+
+            <div id="memberContextAdminPanel" class="hidden divide-y divide-white/5">
+                <button id="memberContextAdminBackBtn" class="w-full flex items-center py-3 text-white/60 text-sm"><i class="fa-solid fa-arrow-right ml-2"></i> رجوع</button>
+                <button id="memberContextKickMicBtn" class="w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-microphone-slash ml-2"></i> سحب المايك</button>
+                <button id="memberContextExtendMicBtn" class="w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-clock-rotate-left ml-2"></i> تحديث وقت التكلم</button>
+                <button id="memberContextOpenMicBtn" class="w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-infinity ml-2"></i> وقت تكلم مفتوح</button>
+                <button id="memberContextClearQueueBtn" class="w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-broom ml-2"></i> سحب المايك من الجميع إلا هذا</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="memberProfileModal" class="hidden fixed inset-0 flex items-center justify-center z-[80] p-4" style="background:rgba(0,0,0,0.65);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5 text-center">
+            <button id="closeMemberProfileBtn" class="absolute text-white/60 text-xl" style="top:14px; left:14px;"><i class="fa-solid fa-xmark"></i></button>
+            <img id="profileAvatar" src="" class="w-24 h-24 rounded-2xl object-cover mx-auto mb-3 border-2 border-purple-400">
+            <div id="profileName" class="text-white font-bold text-lg mb-1"></div>
+            <span id="profileRoleBadge" class="text-[11px] px-3 py-1 rounded-full font-bold mb-2" style="display:none;"></span>
+            <div id="profileStatus" class="text-white/50 text-sm mt-2"></div>
+        </div>
+    </div>
+
+    <script src="js/rooms.js"></script>
+    <div id="pmListModal" class="hidden fixed inset-0 z-[85] flex flex-col bg-white">
+        <div class="bg-purple-600 text-white flex items-center justify-between h-14 px-4 shadow-md shrink-0">
+            <button id="closePmListBtn" class="text-white text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
+            <span class="font-bold text-base">الرسائل الخاصة</span>
+            <div class="w-6"></div>
+        </div>
+        <div id="pmListItems" class="flex-1 overflow-y-auto p-3"></div>
+    </div>
+
+    <div id="pmConversationModal" class="hidden fixed inset-0 z-[90] flex flex-col bg-white">
+        <div class="bg-purple-600 text-white flex items-center gap-3 h-14 px-3 shadow-md shrink-0">
+            <button id="backFromPmConvBtn" class="text-white text-xl p-1"><i class="fa-solid fa-arrow-right"></i></button>
+            <img id="pmConvAvatar" src="" class="w-9 h-9 rounded-xl object-cover border-2 border-white/50">
+            <span id="pmConvName" class="font-bold text-sm flex-1"></span>
+            <button id="closePmConvBtn" class="text-white text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="pmConvBody" class="flex-1 overflow-y-auto p-3 bg-gray-50"></div>
+        <div class="flex items-center gap-2 p-3 border-t border-gray-100 bg-white">
+            <button id="pmConvSendBtn" class="w-11 h-11 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0"><i class="fa-solid fa-paper-plane text-sm transform rotate-180"></i></button>
+            <input id="pmConvInput" type="text" placeholder="اكتب رسالتك هنا..." class="flex-1 bg-gray-100 rounded-xl px-3 h-11 outline-none text-sm text-gray-800">
+        </div>
+    </div>
+
+    <script src="js/members.js"></script>
+    <script src="js/pm.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
