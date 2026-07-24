@@ -1,0 +1,26 @@
+<header id="mainHeader" class="bg-purple-600 text-white flex items-center justify-between h-14 px-3 shadow-md fixed top-0 left-0 right-0 z-40">
+    <div class="flex items-center gap-1 shrink-0">
+        <button id="menuBtn" class="text-white text-xl p-2 cursor-pointer hover:bg-black/10 rounded-full"><i class="fa-solid fa-bars"></i></button>
+        <button id="onlineUsersToggleBtn" class="text-white text-xl p-2 cursor-pointer hover:bg-black/10 rounded-full"><i class="fa-solid fa-users"></i></button>
+        <button id="pmToggleBtn" class="relative text-white text-xl p-2 cursor-pointer hover:bg-black/10 rounded-full">
+            <i class="fa-solid fa-envelope"></i>
+            <span id="pmUnreadBadge" class="hidden absolute top-0 left-0 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center border border-purple-600">0</span>
+        </button>
+    </div>
+    <span class="font-bold text-base tracking-wide truncate px-1">الجلسة الليبية</span>
+    <div id="speakerWidget" class="relative cursor-pointer select-none shrink-0">
+        <div class="speaker-box flex items-center gap-1.5 bg-black/25 hover:bg-black/35 rounded-full pl-2.5 pr-1.5 py-1 max-w-[125px]">
+            <i id="speakerIcon" class="fa-solid fa-microphone text-white/60 text-sm shrink-0"></i>
+            <div class="flex flex-col leading-none overflow-hidden">
+                <span id="speakerName" class="text-white text-[11px] font-bold truncate">فري مايك</span>
+                <span id="speakerTimer" class="text-white/70 text-[9px] truncate"></span>
+            </div>
+        </div>
+        <span id="speakerQueueCount" class="hidden absolute -top-1.5 -left-1.5 text-[8px] bg-amber-500 text-white rounded-full px-1.5 py-0.5 whitespace-nowrap shadow"></span>
+        <div id="speakerAdminMenu" class="status-menu-popup bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+            <button id="speakerGrantOpenBtn" class="w-full text-right px-4 py-2 text-xs text-gray-700 hover:bg-purple-50 flex items-center gap-2"><i class="fa-solid fa-infinity text-amber-500"></i> منح وقت مفتوح</button>
+            <button id="speakerExtendBtn" class="w-full text-right px-4 py-2 text-xs text-gray-700 hover:bg-purple-50 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-blue-500"></i> تمديد 30 ثانية</button>
+            <button id="speakerEndBtn" class="w-full text-right px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"><i class="fa-solid fa-microphone-slash"></i> إنهاء الدور الآن</button>
+        </div>
+    </div>
+</header>
