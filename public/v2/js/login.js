@@ -142,7 +142,9 @@ function removeSavedAccount(key) {
 /* [PHASE 3] إعادة كتابة كاملة — تتصل الآن بمسارات المصادقة الحقيقية
    بدل نظام adminAccounts المحلي الوهمي (الوظائف القديمة أُبقيت أسفل
    الملف كمرجع خامل، غير مستدعاة من هنا). */
+let wbLoginInProgress = false;
 async function attemptLogin() {
+    if (wbLoginInProgress) return; /* [FIX] يمنع ضغطة مزدوجة تسبب طلبين متزامنين */
     const params = new URLSearchParams(window.location.search);
     const roomId = params.get('room_id');
     if (!roomId) {
@@ -154,7 +156,7 @@ async function attemptLogin() {
         if (typeof showNotification === 'function') showNotification(currentLoginTab === 'guest' ? 'يرجى إدخال اسم المستخدم' : 'يرجى إدخال البريد الإلكتروني', 'leave');
         return;
     }
-
+    wbLoginInProgress = true;
     try {
         let res, data;
         if (currentLoginTab === 'guest') {
@@ -187,6 +189,8 @@ async function attemptLogin() {
     } catch (err) {
         console.error('[login] فشل الاتصال بالسيرفر:', err);
         if (typeof showNotification === 'function') showNotification('⚠️ تعذّر الاتصال بالسيرفر', 'leave');
+    } finally {
+        wbLoginInProgress = false;
     }
 }
 
