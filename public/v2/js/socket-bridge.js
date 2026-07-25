@@ -161,15 +161,8 @@ function wbSendMessage(text) {
   });
 }
 
-/* ── نقطة البداية — يقرأ room_id من رابط الصفحة كخطوة مبدئية مؤقتة
-   (?room_id=134) لحد ما يُربط تسجيل الدخول الحقيقي بالكامل. ── */
-document.addEventListener('DOMContentLoaded', () => {
-  const params = new URLSearchParams(window.location.search);
-  const roomId = params.get('room_id');
-  const username = params.get('username') || (typeof ME_USER !== 'undefined' ? ME_USER.name : null);
-  if (roomId && username && username !== 'أنا') {
-    wbConnect(roomId, username, params.get('user_id'));
-  } else {
-    console.log('[socket-bridge] بانتظار معاملات الاتصال — أضف ?room_id=134&username=اسمك بالرابط للاختبار');
-  }
-});
+/* [PHASE 3] الاتصال التلقائي بمعاملات الرابط (؟room_id=..&username=..) كان
+   للاختبار السريع بالمرحلة 2 فقط. الآن شاشة الدخول الحقيقية (login.js →
+   finishLoginReal) هي المسؤولة عن استدعاء wbConnect() بعد نجاح المصادقة
+   الفعلية عبر السيرفر — ما نحتاج اتصال تلقائي هنا بعد الآن (كان بيسبب
+   اتصال مزدوج لو تُرك). */
