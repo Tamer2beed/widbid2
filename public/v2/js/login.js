@@ -43,16 +43,20 @@ function switchLoginTab(tab) {
     document.querySelectorAll('.login-tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
     const namePwInput = document.getElementById('loginNamePasswordInput');
     const roomPwInput = document.getElementById('loginRoomPasswordInput');
+    const mainInput = document.getElementById('loginUsernameInput');
     if (tab === 'guest') {
         namePwInput?.classList.add('hidden');
         roomPwInput?.classList.add('hidden');
+        if (mainInput) mainInput.placeholder = 'اسم المستخدم';
     } else if (tab === 'member') {
         namePwInput?.classList.add('hidden');
         roomPwInput?.classList.remove('hidden');
-        if (roomPwInput) roomPwInput.placeholder = 'كلمة المرور';
+        if (roomPwInput) roomPwInput.placeholder = 'كلمة مرور الغرفة (اختياري)';
+        if (mainInput) mainInput.placeholder = 'البريد الإلكتروني';
     } else if (tab === 'registered') {
         roomPwInput?.classList.remove('hidden');
         if (roomPwInput) roomPwInput.placeholder = 'كلمة المرور';
+        if (mainInput) mainInput.placeholder = 'البريد الإلكتروني';
         updateRegisteredPasswordFields();
     }
 }
@@ -85,44 +89,11 @@ function clearSavedLoginCredentials(name) {
     } catch (e) {}
 }
 
+/* [PHASE 3 — STUB] كانت تسجّل الدخول تلقائياً بمقارنة كلمات مرور مشفّرة
+   محلياً مقابل نظام adminAccounts الوهمي. الدخول التلقائي الحقيقي يحتاج
+   تخزين JWT + التحقق منه عبر GET /api/auth/verify — ميزة لاحقة منفصلة.
+   حالياً: نعطّلها لتجنب أي محاولة دخول تلقائي على بيانات وهمية. */
 async function tryAutoLogin() {
-    const map = loadSavedAccountsMap();
-    const lastKey = localStorage.getItem('lastLoginAccountKey');
-    const saved = lastKey ? map[lastKey] : null;
-    if (!saved || !saved.name) return false;
-
-    switchLoginTab(saved.tab || 'guest');
-    const ui = document.getElementById('loginUsernameInput');
-    if (ui) ui.value = saved.name;
-    if (saved.avatar) selectLoginAvatar(saved.avatar);
-    const rememberBox = document.getElementById('rememberLoginCheckbox');
-    if (rememberBox) rememberBox.checked = true;
-    updateRegisteredPasswordFields();
-
-    if (saved.tab === 'guest') {
-        if (saved.name.toLowerCase() === 'master') return false;
-        if (typeof findAccountByName === 'function' && findAccountByName(saved.name)) return false;
-        finishLogin(saved.name, 'member', false, null, false, true);
-        return true;
-    }
-
-    if (typeof adminAccounts === 'undefined' || typeof findAccountByName !== 'function') return false;
-    const account = findAccountByName(saved.name);
-    if (!account || account.mustChangePassword) return false;
-
-    if (saved.tab === 'member' && account.role !== 'super_master' && saved.roomHash) {
-        if (saved.roomHash === account.passwordHash) {
-            finishLogin(saved.name, account.role, account.role !== 'member', account.id, true, true);
-            return true;
-        }
-    }
-    if (saved.tab === 'registered' && saved.name.toLowerCase() === 'master' && account.role === 'super_master' && saved.roomHash && saved.nameHash) {
-        if (saved.roomHash === account.roomPasswordHash && saved.nameHash === account.namePasswordHash) {
-            finishLogin(saved.name, account.role, true, account.id, true, true);
-            return true;
-        }
-    }
-    clearSavedLoginCredentials(saved.name);
     return false;
 }
 
@@ -168,63 +139,72 @@ function removeSavedAccount(key) {
     renderSavedAccountsList();
 }
 
+/* [PHASE 3] إعادة كتابة كاملة — تتصل الآن بمسارات المصادقة الحقيقية
+   بدل نظام adminAccounts المحلي الوهمي (الوظائف القديمة أُبقيت أسفل
+   الملف كمرجع خامل، غير مستدعاة من هنا). */
 async function attemptLogin() {
-    const name = document.getElementById('loginUsernameInput')?.value.trim();
-    if (!name) { if (typeof showNotification === 'function') showNotification('يرجى إدخال اسم المستخدم', 'leave'); return; }
-
-    if (currentLoginTab === 'guest') {
-        if (name.toLowerCase() === 'master') { if (typeof showNotification === 'function') showNotification('⛔ هذا الاسم محجوز للنظام', 'leave'); return; }
-        if (typeof findAccountByName === 'function' && findAccountByName(name)) { if (typeof showNotification === 'function') showNotification('⛔ هذا الاسم محجوز لعضو مسجّل — استخدم تبويب عضو أو عضو مميز', 'leave'); return; }
-        saveLoginCredentials(name, null, null);
-        finishLogin(name, 'member', false, null, false);
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get('room_id');
+    if (!roomId) {
+        if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد رقم غرفة بالرابط (?room_id=...)', 'leave');
+        return;
+    }
+    const mainValue = document.getElementById('loginUsernameInput')?.value.trim();
+    if (!mainValue) {
+        if (typeof showNotification === 'function') showNotification(currentLoginTab === 'guest' ? 'يرجى إدخال اسم المستخدم' : 'يرجى إدخال البريد الإلكتروني', 'leave');
         return;
     }
 
-    if (typeof adminAccounts === 'undefined' || typeof findAccountByName !== 'function') {
-        if (typeof showNotification === 'function') showNotification('النظام غير جاهز بعد، حاول مجدداً', 'leave');
-        return;
-    }
-    const account = findAccountByName(name);
-
-    if (currentLoginTab === 'member') {
-        const pw = document.getElementById('loginRoomPasswordInput')?.value.trim();
-        if (!pw) { if (typeof showNotification === 'function') showNotification('يرجى إدخال كلمة المرور', 'leave'); return; }
-        if (!account || account.role === 'super_master') { if (typeof showNotification === 'function') showNotification('اسم المستخدم غير موجود — إذا كان "master" استخدم تبويب عضو مميز', 'leave'); return; }
-        const hash = await hashPassword(pw);
-        if (hash !== account.passwordHash) { if (typeof showNotification === 'function') showNotification('كلمة المرور غير صحيحة', 'leave'); return; }
-        if (typeof isCurrentDeviceBound === 'function' && !isCurrentDeviceBound(account)) { if (typeof showNotification === 'function') showNotification('⛔ هذا الحساب مربوط بأجهزة أخرى، لا يمكن الدخول من هذا الجهاز', 'leave'); return; }
-        if (account.mustChangePassword) { openForcedSingleChange(account, name); return; }
-        saveLoginCredentials(name, hash, null);
-        finishLogin(name, account.role, account.role !== 'member', account.id, true);
-        return;
-    }
-
-    if (currentLoginTab === 'registered') {
-        if (name.toLowerCase() === 'master') {
-            const namePw = document.getElementById('loginNamePasswordInput')?.value.trim();
-            const roomPw = document.getElementById('loginRoomPasswordInput')?.value.trim();
-            if (!namePw || !roomPw) { if (typeof showNotification === 'function') showNotification('يرجى إدخال كلمتي المرور', 'leave'); return; }
-            if (!account || account.role !== 'super_master') { if (typeof showNotification === 'function') showNotification('بيانات الدخول غير صحيحة', 'leave'); return; }
-            const nameHash = await hashPassword(namePw);
-            const roomHash = await hashPassword(roomPw);
-            if (nameHash !== account.namePasswordHash || roomHash !== account.roomPasswordHash) { if (typeof showNotification === 'function') showNotification('بيانات الدخول غير صحيحة', 'leave'); return; }
-            if (typeof isCurrentDeviceBound === 'function' && !isCurrentDeviceBound(account)) { if (typeof showNotification === 'function') showNotification('⛔ هذا الحساب مربوط بأجهزة أخرى، لا يمكن الدخول من هذا الجهاز', 'leave'); return; }
-            if (account.mustChangePassword) {
-                loggedInAccountId = account.id;
-                document.getElementById('forcedChangeSubtitle').textContent = `مرحباً ${name} — يجب تعيين كلمتي مرور جديدتين ومختلفتين قبل المتابعة`;
-                document.getElementById('forcedNewNamePassword').value = '';
-                document.getElementById('forcedNewRoomPassword').value = '';
-                window.__pendingLoginDisplayName = name;
-                document.getElementById('forcedPasswordChangeModal')?.classList.remove('hidden');
-                return;
-            }
-            saveLoginCredentials(name, roomHash, nameHash);
-            finishLogin(name, account.role, true, account.id, true);
+    try {
+        let res, data;
+        if (currentLoginTab === 'guest') {
+            res = await fetch('/api/auth/guest', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: mainValue, room_id: roomId }),
+            });
+            data = await res.json();
+            if (!data.success) { if (typeof showNotification === 'function') showNotification(data.message || 'فشل الدخول', 'leave'); return; }
+            finishLoginReal(data.user.username, data.user.rank, data.user.id, data.token, roomId, data.user.avatar);
             return;
         }
-        if (typeof showNotification === 'function') showNotification('تبويب "عضو مميز" مخصص فقط للاسم المحجوز master — استخدم تبويب "عضو" لبقية الحسابات', 'leave');
-        return;
+
+        const pw = document.getElementById('loginRoomPasswordInput')?.value.trim();
+        if (currentLoginTab === 'registered') {
+            if (!pw) { if (typeof showNotification === 'function') showNotification('يرجى إدخال كلمة المرور', 'leave'); return; }
+            res = await fetch('/api/auth/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: mainValue, password: pw }),
+            });
+        } else { /* member */
+            res = await fetch('/api/auth/room-entry', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: mainValue, room_id: roomId, room_password: pw || '' }),
+            });
+        }
+        data = await res.json();
+        if (!data.success) { if (typeof showNotification === 'function') showNotification(data.message || 'بيانات الدخول غير صحيحة', 'leave'); return; }
+        finishLoginReal(data.username, data.rank, data.user_id, data.token, roomId, data.avatar);
+    } catch (err) {
+        console.error('[login] فشل الاتصال بالسيرفر:', err);
+        if (typeof showNotification === 'function') showNotification('⚠️ تعذّر الاتصال بالسيرفر', 'leave');
     }
+}
+
+/* تسجيل دخول ناجح حقيقي — يحفظ التوكن ويبدأ الاتصال الفعلي بـ Socket.io */
+function finishLoginReal(username, rank, userId, token, roomId, avatar) {
+    if (typeof ME_USER !== 'undefined') {
+        ME_USER.name = username;
+        ME_USER.id = 'me';
+        if (avatar) ME_USER.avatar = avatar.startsWith('http') || avatar.startsWith('data:') ? avatar : `/avatars/${avatar}`;
+    }
+    try { localStorage.setItem('widbid_jwt', token); } catch (e) {}
+    document.getElementById('loginScreen')?.classList.add('hidden');
+    if (typeof wbConnect === 'function') {
+        wbConnect(roomId, username, userId || null);
+    } else {
+        console.error('[login] wbConnect غير معرّفة — تأكد socket-bridge.js محمّل قبل login.js');
+    }
+    if (typeof showNotification === 'function') showNotification(`👋 أهلاً بك ${username}`, 'join');
 }
 
 function openForcedSingleChange(account, displayName) {
@@ -292,7 +272,13 @@ async function initLoginScreen() {
         renderAvatarGrid();
         // [PHASE 1] عنصر customAvatarInput أُزيل من index.html — رفع صور حر غير مدعوم بالسيرفر الحقيقي.
         document.getElementById('loginUsernameInput')?.addEventListener('input', updateRegisteredPasswordFields);
-        await tryAutoLogin();
+        const autoLoggedIn = await tryAutoLogin();
+        /* [PHASE 3] ما فيه دخول تلقائي حقيقي بعد (tryAutoLogin معطّلة عمداً) —
+           نظهر شاشة الدخول دائماً لحد ما نبني نظام تحقق جلسة حقيقي (JWT
+           محفوظ + GET /api/auth/verify). */
+        if (!autoLoggedIn) {
+            document.getElementById('loginScreen')?.classList.remove('hidden');
+        }
     } catch (err) {
         console.error('فشل تهيئة شاشة الدخول (initLoginScreen):', err);
     }
