@@ -89,6 +89,13 @@ function wbConnect(roomId, username, userId) {
     console.error('[socket-bridge] مكتبة socket.io-client غير محمّلة — أضف <script src="/socket.io/socket.io.js"> قبل هذا الملف');
     return;
   }
+  /* [FIX] حماية ضد اتصال مزدوج من نفس الصفحة (مثلاً ضغطة مزدوجة على
+     زر "دخول" بالجوال) — كانت تسبب اشتراكين بنفس الحساب فتظهر
+     الرسائل والقائمة مكررة. */
+  if (wbSocket && wbSocket.connected) {
+    console.warn('[socket-bridge] فيه اتصال نشط مسبقاً — تجاهلت محاولة اتصال ثانية');
+    return;
+  }
   wbRoomId = roomId;
   wbUsername = username;
   wbSocket = io();
