@@ -135,6 +135,13 @@ function wbConnect(roomId, username, userId) {
     const me = meFromServer
       ? wbAdaptUser(meFromServer, true)
       : (mockUsersList.find((u) => u.id === 'me') || (typeof ME_USER !== 'undefined' ? ME_USER : null));
+    /* [FIX] ME_USER (الكائن العام المستخدم بكل فحوصات الصلاحية بالواجهة،
+       بما فيها لوحة إدارة المشرفين) ما كان يتحدّث أبداً برتبته الحقيقية
+       — نزامنه هنا مباشرة كل مرة توصل onlineUsers. */
+    if (meFromServer && typeof ME_USER !== 'undefined') {
+      ME_USER.rank = meFromServer.rank;
+      ME_USER.rankName = WB_RANK_NAMES[meFromServer.rank] || '—';
+    }
     const adapted = users
       .filter((u) => u.username !== username)
       .map((u) => wbAdaptUser(u, false));
