@@ -360,30 +360,9 @@ async function initEventHandlers() {
                 if (target.closest('#confirmChangePasswordBtn')) { await submitChangePassword(); return; }
                 if (target.id === 'changePasswordModal') { document.getElementById('changePasswordModal').classList.add('hidden'); return; }
 
-                /* إدارة المشرفين */
-                if (target.closest('#addAdminBtn')) { openAddAdminModal(); return; }
-                if (target.closest('#cancelAddAdminBtn')) { document.getElementById('addAdminModal')?.classList.add('hidden'); return; }
-                if (target.id === 'addAdminModal') { document.getElementById('addAdminModal').classList.add('hidden'); return; }
-                const newAdminRoleOpt = target.closest('.new-admin-role-option');
-                if (newAdminRoleOpt) {
-                    document.querySelectorAll('.new-admin-role-option').forEach(el => el.classList.remove('selected'));
-                    newAdminRoleOpt.classList.add('selected');
-                    newAdminSelectedRole = newAdminRoleOpt.dataset.role;
-                    if (typeof updateAddAdminPasswordFields === 'function') updateAddAdminPasswordFields();
-                    return;
-                }
-                if (target.closest('#submitAddAdminBtn')) { await submitAddAdmin(); return; }
-
-                const masterColorOpt = target.closest('.master-color-option');
-                if (masterColorOpt) {
-                    document.querySelectorAll('.master-color-option').forEach(el => el.classList.remove('selected'));
-                    masterColorOpt.classList.add('selected');
-                    masterColorSelected = masterColorOpt.dataset.color;
-                    return;
-                }
-                if (target.closest('#cancelMasterColorBtn')) { document.getElementById('masterColorModal')?.classList.add('hidden'); pendingNewAdminData = null; return; }
-                if (target.closest('#confirmMasterColorBtn')) { confirmMasterColor(); return; }
-                if (target.id === 'masterColorModal') { document.getElementById('masterColorModal').classList.add('hidden'); return; }
+                /* [PHASE 3] إضافة حساب جديد غير مطبّقة على النظام الحقيقي —
+                   الرتب تُدار فقط على أعضاء متواجدين فعلياً عبر الترقية/التخفيض. */
+                if (target.closest('#addAdminBtn')) { if (typeof showNotification === 'function') showNotification('ℹ️ رقّي عضو متواجد من القائمة مباشرة بدل إضافة حساب جديد', 'leave'); return; }
 
                 const adminNameToggle = target.closest('.admin-name-toggle');
                 if (adminNameToggle && adminNameToggle.dataset.id) {
@@ -392,30 +371,25 @@ async function initEventHandlers() {
                 }
                 const admPromoteBtn = target.closest('.admin-acc-promote-btn');
                 if (admPromoteBtn) {
-                    openConfirmModal('ترقية المشرف', 'هل تريد رفع رتبة هذا الحساب؟', 'ترقية', 'bg-cyan-600', () => promoteAdminAccount(admPromoteBtn.dataset.id));
+                    const rank = parseInt(admPromoteBtn.dataset.rank, 10);
+                    openConfirmModal('ترقية', `هل تريد ترقية ${admPromoteBtn.dataset.id}؟`, 'ترقية', 'bg-cyan-600', () => realPromoteUser(admPromoteBtn.dataset.id, rank));
                     return;
                 }
                 const admDemoteBtn = target.closest('.admin-acc-demote-btn');
                 if (admDemoteBtn) {
-                    openConfirmModal('تخفيض المشرف', 'هل تريد تخفيض رتبة هذا المشرف؟', 'تخفيض', 'bg-amber-600', () => demoteAdminAccount(admDemoteBtn.dataset.id));
+                    const rank = parseInt(admDemoteBtn.dataset.rank, 10);
+                    openConfirmModal('تخفيض', `هل تريد تخفيض ${admDemoteBtn.dataset.id}؟`, 'تخفيض', 'bg-amber-600', () => realDemoteUser(admDemoteBtn.dataset.id, rank));
                     return;
                 }
-                const admBindBtn = target.closest('.admin-acc-bind-btn');
-                if (admBindBtn) { if (typeof openDeviceBindModal === 'function') openDeviceBindModal(admBindBtn.dataset.id); return; }
-                if (target.closest('#closeDeviceBindBtn')) { document.getElementById('deviceBindModal')?.classList.add('hidden'); return; }
-                if (target.id === 'deviceBindModal') { document.getElementById('deviceBindModal').classList.add('hidden'); return; }
-                if (target.closest('#deviceBindAddCurrentBtn')) {
-                    const accId = target.closest('#deviceBindAddCurrentBtn').dataset.accountId;
-                    if (typeof bindCurrentDeviceToAccount === 'function') bindCurrentDeviceToAccount(accId);
-                    if (typeof openDeviceBindModal === 'function') openDeviceBindModal(accId);
+                const admFreezeBtn = target.closest('.admin-acc-freeze-btn');
+                if (admFreezeBtn) {
+                    openConfirmModal('تجميد', `هل تريد تجميد ${admFreezeBtn.dataset.id}؟`, 'تجميد', 'bg-blue-600', () => realFreezeUser(admFreezeBtn.dataset.id));
                     return;
                 }
-                const deviceUnbindBtn = target.closest('.device-unbind-btn');
-                if (deviceUnbindBtn) { unbindDeviceFromAccount(deviceUnbindBtn.dataset.accountId, deviceUnbindBtn.dataset.fp); return; }
 
                 const admDeleteBtn = target.closest('.admin-acc-delete-btn');
                 if (admDeleteBtn) {
-                    openConfirmModal('حذف المشرف', 'سيتم حذف هذا المشرف نهائياً من القائمة.', 'حذف', 'bg-red-600', () => deleteAdminAccount(admDeleteBtn.dataset.id));
+                    openConfirmModal('طرد', `سيتم طرد ${admDeleteBtn.dataset.id} من الغرفة.`, 'طرد', 'bg-red-600', () => realKickUser(admDeleteBtn.dataset.id));
                     return;
                 }
 
