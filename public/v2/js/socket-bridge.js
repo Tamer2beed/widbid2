@@ -140,6 +140,8 @@ function wbConnect(roomId, username, userId) {
       .map((u) => wbAdaptUser(u, false));
     mockUsersList = me ? [me, ...adapted] : adapted;
     if (typeof renderOnlineUsers === 'function') renderOnlineUsers();
+    /* [PHASE 3] تحديث لوحة إدارة المشرفين حياً لو كانت مفتوحة */
+    if (typeof renderAdminAccounts === 'function') renderAdminAccounts();
   });
 
   /* دخول/خروج مستخدم — إشعار بسيط (القائمة نفسها تتحدث عبر onlineUsers) */
