@@ -12,20 +12,20 @@ let newAdminSelectedRole = null;
 let changePasswordTargetId = null;
 
 function admSafe(str) { return (typeof sanitize === 'function') ? sanitize(str) : String(str); }
-function isCurrentUserSuperMaster() { return typeof ME_USER !== 'undefined' && ME_USER.role === 'super_master'; }
-function getCurrentUserRoleIndex() {
-    if (typeof ME_USER === 'undefined' || !ME_USER.hasAccount) return -1;
-    if (ME_USER.role === 'super_master') return 99;
-    return ADMIN_ROLE_ORDER.indexOf(ME_USER.role);
-}
-function canManageAdmins() { return getCurrentUserRoleIndex() >= ADMIN_ROLE_ORDER.indexOf('super_admin'); }
-function canActOnAccount(targetAdmin) {
-    if (!canManageAdmins()) return false;
-    if (isCurrentUserSuperMaster()) return true;
-    const myIdx = getCurrentUserRoleIndex();
-    const targetIdx = ADMIN_ROLE_ORDER.indexOf(targetAdmin.role);
-    return myIdx > targetIdx; // يمكنه فقط التأثير على رتبة أدنى من رتبته
-}
+/* [PHASE 3] استبدال بالكامل — الرتب الحقيقية (100→1200) بدل النظام
+   المحلي الوهمي (member/admin/super_admin/master). rankGuard بالسيرفر
+   هو الحكم الحقيقي دائماً؛ هذي الفحوصات هنا للواجهة فقط (إخفاء الأزرار). */
+function getCurrentUserRank() { return (typeof ME_USER !== 'undefined' && ME_USER.rank) || 100; }
+function canManageAdmins() { return getCurrentUserRank() >= 700; } /* Master فما فوق يقدر يفتح اللوحة */
+function canActOnMember(targetRank) { return canManageAdmins() && getCurrentUserRank() > targetRank; }
+/* [توافق] دوال قديمة لسا مستخدمة بملفات ثانية (app.js, logs.js, members.js)
+   — نعيد تعريفها بمنطق الرتب الحقيقية بدل حذفها لتجنب كسر تلك المراجع.
+   ⚠️ ملاحظة: getCurrentUserRoleIndex() ترجع الآن الرتبة الرقمية الحقيقية
+   (100-1200) بدل فهرس 0-3 القديم — فلتر رتب "تمديد الحظر" بـ logs.js
+   قد يحتاج مراجعة لاحقة لأنه يقارنها مع ADMIN_ROLE_ORDER.indexOf() القديم. */
+function getCurrentUserRoleIndex() { return getCurrentUserRank(); }
+function isCurrentUserSuperMaster() { return getCurrentUserRank() >= 800; } /* SuperMaster الحقيقي */
+function canAccessMasterOnlyFeatures() { return getCurrentUserRank() >= 700; }
 
 function getAdminBadgeColor(admin) {
     if (admin.role === 'super_master') return SUPER_MASTER_COLOR;
@@ -73,82 +73,78 @@ async function initAdminAccounts() {
     renderAdminAccounts();
 }
 
+const WB_RANK_LADDER = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200];
+
+/* [PHASE 3] تعرض الآن الأعضاء الحقيقيين المتواجدين فعلياً بالغرفة
+   (نفس بيانات mockUsersList المحدَّثة عبر onlineUsers الحقيقي)،
+   مع أزرار ترقية/تخفيض/طرد/تجميد حقيقية — بدل حسابات adminAccounts الوهمية. */
 function renderAdminAccounts() {
     const listEl = document.getElementById('adminAccountsList');
     if (!listEl) return;
-    if (adminAccounts.length === 0) {
-        listEl.innerHTML = '<div class="text-center text-white/30 text-xs py-6">لا يوجد مشرفون بعد</div>';
+    const members = (typeof mockUsersList !== 'undefined' ? mockUsersList : []);
+    if (members.length === 0) {
+        listEl.innerHTML = '<div class="text-center text-white/30 text-xs py-6">لا يوجد أعضاء متواجدون حالياً</div>';
         return;
     }
-    listEl.innerHTML = adminAccounts.map(a => {
-        const color = getAdminBadgeColor(a);
-        const isProtected = a.role === 'super_master';
-        const roleIdx = ADMIN_ROLE_ORDER.indexOf(a.role);
-        const canAct = !isProtected && (typeof canActOnAccount === 'function' ? canActOnAccount(a) : true);
-        const canPromote = canAct && roleIdx > -1 && roleIdx < ADMIN_ROLE_ORDER.length - 1;
-        const canDemote = canAct && roleIdx > 0;
+    listEl.innerHTML = members.map(m => {
+        const rank = m.rank || 100;
+        const color = (typeof WB_RANK_COLORS !== 'undefined' && WB_RANK_COLORS[rank]) || m.color || '#9ca3af';
+        const rankName = (typeof WB_RANK_NAMES !== 'undefined' && WB_RANK_NAMES[rank]) || '—';
+        const isSelf = m.id === 'me';
+        const canAct = !isSelf && (typeof canActOnMember === 'function' ? canActOnMember(rank) : false);
+        const ladderIdx = WB_RANK_LADDER.indexOf(rank);
+        const myRank = typeof getCurrentUserRank === 'function' ? getCurrentUserRank() : 100;
+        const nextRank = ladderIdx > -1 && ladderIdx < WB_RANK_LADDER.length - 1 ? WB_RANK_LADDER[ladderIdx + 1] : null;
+        const canPromote = canAct && nextRank !== null && nextRank < myRank;
+        const canDemote = canAct && ladderIdx > 0;
+        const safeName = typeof admSafe === 'function' ? admSafe(m.name) : m.name;
         return `
         <div class="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
-            <button class="admin-name-toggle w-full flex items-center justify-between" data-id="${a.id}">
-                <span class="font-bold text-sm" style="color:${color};">${admSafe(a.name)}${isProtected ? ' <i class=\"fa-solid fa-lock text-white/30 text-[10px]\"></i>' : ''}</span>
-                ${a.mustChangePassword ? '<span class="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">بانتظار تغيير كلمة المرور</span>' : ''}
+            <button class="admin-name-toggle w-full flex items-center justify-between" data-id="${safeName}">
+                <span class="font-bold text-sm" style="color:${color};">${safeName}${isSelf ? ' (أنت)' : ''}</span>
+                <span class="text-[9px] px-2 py-0.5 rounded-full" style="background:${color}22;color:${color};">${rankName}</span>
             </button>
-            <div class="text-white/40 text-[11px]"><i class="fa-regular fa-calendar ml-1"></i>${new Date(a.createdAt).toLocaleDateString('ar-EG')}</div>
-            <div id="admin-actions-${a.id}" class="hidden flex flex-wrap gap-2 pt-1">
-                ${canPromote ? `<button class="admin-acc-promote-btn text-[10px] px-2 py-1 rounded-lg bg-cyan-600/80 text-white" data-id="${a.id}">رفع مستوى</button>` : ''}
-                ${canDemote ? `<button class="admin-acc-demote-btn text-[10px] px-2 py-1 rounded-lg bg-amber-600/80 text-white" data-id="${a.id}">تخفيض</button>` : ''}
-                ${!isProtected ? `<button class="admin-acc-bind-btn text-[10px] px-2 py-1 rounded-lg bg-indigo-600/80 text-white" data-id="${a.id}">ربط الجهاز</button>` : ''}
-                ${canAct ? `<button class="admin-acc-changepw-btn text-[10px] px-2 py-1 rounded-lg bg-blue-600/80 text-white" data-id="${a.id}">تغيير كلمة المرور</button>` : ''}
-                ${canAct ? `<button class="admin-acc-delete-btn text-[10px] px-2 py-1 rounded-lg bg-red-600/80 text-white" data-id="${a.id}">حذف</button>` : ''}
-            </div>
+            ${canAct ? `<div id="admin-actions-${safeName}" class="hidden flex flex-wrap gap-2 pt-1">
+                ${canPromote ? `<button class="admin-acc-promote-btn text-[10px] px-2 py-1 rounded-lg bg-cyan-600/80 text-white" data-id="${safeName}" data-rank="${rank}">▲ ترقية</button>` : ''}
+                ${canDemote ? `<button class="admin-acc-demote-btn text-[10px] px-2 py-1 rounded-lg bg-amber-600/80 text-white" data-id="${safeName}" data-rank="${rank}">▼ تخفيض</button>` : ''}
+                <button class="admin-acc-freeze-btn text-[10px] px-2 py-1 rounded-lg bg-blue-600/80 text-white" data-id="${safeName}">🧊 تجميد</button>
+                <button class="admin-acc-delete-btn text-[10px] px-2 py-1 rounded-lg bg-red-600/80 text-white" data-id="${safeName}">🚪 طرد</button>
+            </div>` : ''}
         </div>`;
     }).join('');
 }
 
-function promoteAdminAccount(id) {
-    const admin = adminAccounts.find(a => a.id === id);
-    if (!admin || admin.role === 'super_master') return;
-    if (!canActOnAccount(admin)) { if (typeof showNotification === 'function') showNotification('⛔ لا تملك صلاحية التأثير على هذا الحساب', 'leave'); return; }
-    const idx = ADMIN_ROLE_ORDER.indexOf(admin.role);
-    if (idx >= ADMIN_ROLE_ORDER.length - 1) return;
-    const nextRole = ADMIN_ROLE_ORDER[idx + 1];
-    const myIdx = getCurrentUserRoleIndex();
-    if (!isCurrentUserSuperMaster() && ADMIN_ROLE_ORDER.indexOf(nextRole) >= myIdx) {
-        if (typeof showNotification === 'function') showNotification('⛔ لا يمكنك الترقية إلى رتبة مساوية أو أعلى من رتبتك', 'leave');
+function _wbEmitAdminAction(event, target) {
+    if (typeof wbSocket === 'undefined' || !wbSocket || !wbSocket.connected) {
+        if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave');
         return;
     }
-    admin.role = nextRole;
-    saveAdminAccounts();
-    renderAdminAccounts();
-    if (typeof renderOnlineUsers === 'function') renderOnlineUsers();
-    if (typeof showNotification === 'function') showNotification(`⬆️ تم رفع ${admin.name}`, 'join');
-    if (typeof logAdminActivity === 'function') logAdminActivity(`رفع رتبة ${admin.name} إلى ${ADMIN_ROLE_LABELS[admin.role]}`);
+    wbSocket.emit(event, { room_id: wbRoomId, target, by: wbUsername });
 }
 
-function demoteAdminAccount(id) {
-    const admin = adminAccounts.find(a => a.id === id);
-    if (!admin || admin.role === 'super_master') return;
-    if (!canActOnAccount(admin)) { if (typeof showNotification === 'function') showNotification('⛔ لا تملك صلاحية التأثير على هذا الحساب', 'leave'); return; }
-    const idx = ADMIN_ROLE_ORDER.indexOf(admin.role);
-    if (idx <= 0) return;
-    admin.role = ADMIN_ROLE_ORDER[idx - 1];
-    saveAdminAccounts();
-    renderAdminAccounts();
-    if (typeof renderOnlineUsers === 'function') renderOnlineUsers();
-    if (typeof showNotification === 'function') showNotification(`⬇️ تم تخفيض ${admin.name}`, 'leave');
-    if (typeof logAdminActivity === 'function') logAdminActivity(`تخفيض رتبة ${admin.name} إلى ${ADMIN_ROLE_LABELS[admin.role]}`);
+/* ترقية حقيقية عبر assignRole — السيرفر (rankGuard) هو الحكم النهائي دائماً */
+function realPromoteUser(username, currentRank) {
+    const ladderIdx = WB_RANK_LADDER.indexOf(currentRank);
+    const nextRank = ladderIdx > -1 && ladderIdx < WB_RANK_LADDER.length - 1 ? WB_RANK_LADDER[ladderIdx + 1] : null;
+    if (nextRank === null) return;
+    if (typeof wbSocket === 'undefined' || !wbSocket || !wbSocket.connected) { if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave'); return; }
+    wbSocket.emit('assignRole', { room_id: wbRoomId, target: username, new_rank: nextRank, by: wbUsername });
 }
 
-function deleteAdminAccount(id) {
-    const admin = adminAccounts.find(a => a.id === id);
-    if (!admin || admin.role === 'super_master') return;
-    if (!canActOnAccount(admin)) { if (typeof showNotification === 'function') showNotification('⛔ لا تملك صلاحية حذف هذا الحساب', 'leave'); return; }
-    adminAccounts = adminAccounts.filter(a => a.id !== id);
-    saveAdminAccounts();
-    renderAdminAccounts();
-    if (typeof showNotification === 'function') showNotification(`🗑️ تم حذف ${admin ? admin.name : 'المشرف'}`, 'leave');
-    if (typeof logAdminActivity === 'function' && admin) logAdminActivity(`حذف الحساب ${admin.name}`);
+/* تخفيض حقيقي عبر assignRole */
+function realDemoteUser(username, currentRank) {
+    const ladderIdx = WB_RANK_LADDER.indexOf(currentRank);
+    if (ladderIdx <= 0) return;
+    const prevRank = WB_RANK_LADDER[ladderIdx - 1];
+    if (typeof wbSocket === 'undefined' || !wbSocket || !wbSocket.connected) { if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave'); return; }
+    wbSocket.emit('assignRole', { room_id: wbRoomId, target: username, new_rank: prevRank, by: wbUsername });
 }
+
+/* طرد حقيقي عبر kickUser */
+function realKickUser(username) { _wbEmitAdminAction('kickUser', username); }
+
+/* تجميد حقيقي عبر freezeUser */
+function realFreezeUser(username) { _wbEmitAdminAction('freezeUser', username); }
 
 function openAddAdminModal() {
     const nameInput = document.getElementById('newAdminNameInput');
