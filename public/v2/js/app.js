@@ -210,9 +210,14 @@ async function initEventHandlers() {
                 if (target.closest('#menuClearText')) { if (chatInput) chatInput.value = ''; sideMenu?.classList.remove('active'); return; }
                 if (target.closest('#menuReport')) { alert('تم إرسال البلاغ'); sideMenu?.classList.remove('active'); return; }
                 if (target.closest('#menuAdminPanel')) {
-                    const authorized = typeof ME_USER !== 'undefined' && ME_USER.hasAccount && ME_USER.role !== 'member';
+                    /* [FIX] كانت تتحقق من ME_USER.hasAccount/ME_USER.role
+                       (النظام المحلي القديم) — دايماً false على الحسابات
+                       الحقيقية. الآن تتحقق من الرتبة الحقيقية (500 فأعلى). */
+                    const authorized = typeof canAccessMasterOnlyFeatures === 'function'
+                        ? (typeof ME_USER !== 'undefined' && (ME_USER.rank || 100) >= 500)
+                        : false;
                     if (!authorized) {
-                        if (typeof showNotification === 'function') showNotification('🔒 لوحة التحكم متاحة فقط للمشرفين المسجَّلين (Admin فأعلى)', 'leave');
+                        if (typeof showNotification === 'function') showNotification('🔒 لوحة التحكم متاحة فقط للمشرفين (Admin فأعلى)', 'leave');
                         sideMenu?.classList.remove('active');
                         return;
                     }
