@@ -174,10 +174,11 @@ function backToMemberMainPanel() {
 function adminKickFromMicTarget() {
     const uid = contextMenuTargetUserId;
     if (typeof speakerState !== 'undefined' && speakerState.user && String(speakerState.user.id) === String(uid) && typeof releaseSpeaker === 'function') {
-        releaseSpeaker();
-    } else if (typeof micQueue !== 'undefined') {
-        micQueue = micQueue.filter(u => String(u.id) !== String(uid));
-        if (typeof renderSpeakerWidget === 'function') renderSpeakerWidget();
+        releaseSpeaker(); /* [حقيقي] ينهي المتحدث الحالي فعلياً عبر speakerRevoke */
+    } else if (typeof skipQueueFirst === 'function') {
+        /* [ملاحظة] السيرفر الحقيقي يدعم بس تخطي أول شخص بالطابور —
+           لو الهدف مو أول واحد، هذا أقرب إجراء حقيقي متاح. */
+        skipQueueFirst();
     }
     closeMemberContextMenu();
 }
@@ -194,17 +195,18 @@ function adminExtendMicTarget() {
 }
 
 function adminGrantOpenMicTarget() {
+    /* [PHASE 3] "مايك بلا وقت" غير مدعوم بالسيرفر الحقيقي — أعدنا توظيف
+       هذا الزر ليعطي المايك مباشرة للعضو المستهدف عبر speakerGiveTo
+       الحقيقي (يتخطى الطابور، بنفس مدة المتحدث الافتراضية). */
     const user = (typeof mockUsersList !== 'undefined') ? mockUsersList.find(u => String(u.id) === String(contextMenuTargetUserId)) : null;
-    if (user && typeof grantOpenMic === 'function') grantOpenMic(user);
+    if (user && typeof giveSpeakerTo === 'function') giveSpeakerTo(user.id);
     closeMemberContextMenu();
 }
 
 function adminClearQueueExceptTarget() {
-    const uid = contextMenuTargetUserId;
-    if (typeof micQueue !== 'undefined') {
-        micQueue = micQueue.filter(u => String(u.id) === String(uid));
-        if (typeof renderSpeakerWidget === 'function') renderSpeakerWidget();
-    }
+    /* [PHASE 3] لا يوجد بالسيرفر الحقيقي حدث "امسح الطابور إلا شخص واحد"
+       — أقرب إجراء حقيقي متاح هو speakerSkip (تخطي أول واحد بالطابور)
+       بشكل متكرر يدوياً، أو تركه معطّلاً لحد ما نضيف الحدث بالسيرفر. */
+    if (typeof showNotification === 'function') showNotification('ℹ️ هذا الإجراء غير مدعوم بالسيرفر الحقيقي حالياً', 'leave');
     closeMemberContextMenu();
-    if (typeof showNotification === 'function') showNotification('🧹 تم سحب البقية من طابور السبيكر', 'leave');
 }
