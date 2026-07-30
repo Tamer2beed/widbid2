@@ -80,56 +80,74 @@ function clearSpeakerTimer() {
     if (speakerState.timerId) { clearInterval(speakerState.timerId); speakerState.timerId = null; }
 }
 
-function assignSpeaker(user, mode, seconds) {
-    clearSpeakerTimer();
-    speakerState.user = user;
-    speakerState.mode = mode;
-    speakerState.secondsLeft = seconds || 0;
+/* [PHASE 3] استبدال كامل — الحالة الآن تُملأ حصراً من بث speakerState
+   الحقيقي القادم من السيرفر (rooms[room_id].current/.queue بالضبط)،
+   بدل محاكاة محلية. لا يوجد "مايك مفتوح بلا وقت" بالسيرفر الحقيقي —
+   كل سبيكر عنده وقت محدد قابل للتمديد (speakerExtend) أو الإنهاء
+   (speakerRevoke) من طرف مشرف، أو الإنهاء الذاتي (speakerDone). */
 
-    if (mode === 'timed') {
+function _wbAdaptSpeakerUser(u) {
+    if (!u) return null;
+    const rank = u.rank || 100;
+    return {
+        id: u.username, name: u.username,
+        color: (typeof WB_RANK_COLORS !== 'undefined' && WB_RANK_COLORS[rank]) || '#9ca3af',
+        rank,
+    };
+}
+
+/* يُستدعى من socket-bridge.js عند كل بث speakerState حقيقي */
+function wbApplySpeakerState(data) {
+    clearSpeakerTimer();
+    if (data.current) {
+        speakerState.user = _wbAdaptSpeakerUser(data.current);
+        speakerState.mode = 'timed';
+        speakerState.secondsLeft = Math.max(0, Math.round((data.current.endsAt - Date.now()) / 1000));
         speakerState.timerId = setInterval(() => {
             speakerState.secondsLeft--;
-            if (speakerState.secondsLeft <= 0) { releaseSpeaker(); return; }
+            if (speakerState.secondsLeft <= 0) { clearSpeakerTimer(); }
             renderSpeakerWidget();
         }, 1000);
+    } else {
+        speakerState.user = null;
+        speakerState.mode = null;
+        speakerState.secondsLeft = 0;
     }
+    micQueue = (data.queue || []).map(_wbAdaptSpeakerUser);
     renderSpeakerWidget();
 }
 
-function releaseSpeaker() {
-    clearSpeakerTimer();
-    speakerState.user = null;
-    speakerState.mode = null;
-    speakerState.secondsLeft = 0;
-    processQueue();
-    renderSpeakerWidget();
-}
-
-function processQueue() {
-    if (micQueue.length === 0) return;
-    const next = micQueue.shift();
-    assignSpeaker(next, 'timed', MIC_DEFAULT_SECONDS);
-}
-
+/* الزر الرئيسي: يقرر تلقائياً هل يطلب / يلغي الطلب / ينهي دوره — حسب حالتي الحقيقية */
 function requestMic(user) {
-    if (speakerState.user && speakerState.user.id === user.id) { releaseSpeaker(); return; }
-    const qIdx = micQueue.findIndex(u => u.id === user.id);
-    if (qIdx > -1) { micQueue.splice(qIdx, 1); renderSpeakerWidget(); return; }
-    if (!speakerState.user) { assignSpeaker(user, 'timed', MIC_DEFAULT_SECONDS); return; }
-    micQueue.push(user);
-    if (user.id === ME_USER.id && typeof showNotification === 'function') {
-        showNotification(`✋ انضممت للطابور - ترتيبك ${micQueue.length}`, 'join');
+    if (typeof wbSocket === 'undefined' || !wbSocket || !wbSocket.connected) {
+        if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave');
+        return;
     }
-    renderSpeakerWidget();
+    const iAmSpeaking = speakerState.user && speakerState.user.id === wbUsername;
+    const iAmQueued = micQueue.findIndex(u => u.id === wbUsername) > -1;
+    if (iAmSpeaking) {
+        wbSocket.emit('speakerDone', { room_id: wbRoomId, username: wbUsername });
+    } else if (iAmQueued) {
+        wbSocket.emit('speakerLeaveQueue', { room_id: wbRoomId, username: wbUsername });
+    } else {
+        wbSocket.emit('speakerRequest', { room_id: wbRoomId, username: wbUsername, rank: getCurrentUserRank() });
+    }
 }
 
-function grantOpenMic(user) { assignSpeaker(user, 'open', 0); }
-
+/* إجراءات إدارية حقيقية — كلها تتطلب رتبة 500+ (السيرفر هو الحكم الحقيقي) */
+function releaseSpeaker() { /* إنهاء المتحدث الحالي إدارياً */
+    if (typeof wbSocket !== 'undefined' && wbSocket?.connected) wbSocket.emit('speakerRevoke', { room_id: wbRoomId });
+}
 function extendMicTime(seconds) {
-    if (!speakerState.user || speakerState.mode !== 'timed') return;
-    speakerState.secondsLeft += seconds;
-    renderSpeakerWidget();
+    if (typeof wbSocket !== 'undefined' && wbSocket?.connected) wbSocket.emit('speakerExtend', { room_id: wbRoomId, seconds });
 }
+function skipQueueFirst() {
+    if (typeof wbSocket !== 'undefined' && wbSocket?.connected) wbSocket.emit('speakerSkip', { room_id: wbRoomId });
+}
+function giveSpeakerTo(targetUsername) {
+    if (typeof wbSocket !== 'undefined' && wbSocket?.connected) wbSocket.emit('speakerGiveTo', { room_id: wbRoomId, target: targetUsername });
+}
+/* [ملاحظة] grantOpenMic() حُذفت — "مايك بلا وقت" غير مدعوم بالسيرفر الحقيقي. */
 
 function getUserMicBadgeHtml(userId) {
     if (speakerState.user && speakerState.user.id === userId) {
@@ -167,7 +185,9 @@ function initSpeakerFeature() {
         const grantOpenBtn = document.getElementById('speakerGrantOpenBtn');
         if (grantOpenBtn) grantOpenBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            grantOpenMic(speakerState.user || ME_USER);
+            /* [PHASE 3] "مايك بلا وقت" غير مدعوم — أعدنا توظيف الزر
+               ليكون "تخطي للمتحدث التالي بالطابور" (speakerSkip الحقيقي). */
+            if (typeof skipQueueFirst === 'function') skipQueueFirst();
             document.getElementById('speakerAdminMenu')?.classList.remove('show');
         });
 
