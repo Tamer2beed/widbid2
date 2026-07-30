@@ -163,6 +163,16 @@ function wbConnect(roomId, username, userId) {
     if (typeof showNotification === 'function') showNotification('⚠️ ' + msg, 'leave');
     else console.warn('[socket-bridge] خطأ من السيرفر:', msg);
   });
+
+  /* [PHASE 3] نظام المايك/السبيكر الحقيقي */
+  wbSocket.on('speakerState', (data) => {
+    if (typeof wbApplySpeakerState === 'function') wbApplySpeakerState(data);
+  });
+  wbSocket.on('speakerWarning', (data) => {
+    if (data.username === username && typeof showNotification === 'function') {
+      showNotification(`⏳ ${data.remaining} ثوانٍ متبقية على دورك بالمايك`, 'leave');
+    }
+  });
 }
 
 /* ── إرسال رسالة حقيقية (تُستدعى بدل منطق sendMessage المحلي بـ app.js) ── */
