@@ -50,6 +50,7 @@ function wbAdaptUser(serverUser, isMe) {
     rank,
     rankName: WB_RANK_NAMES[rank] || '—',
     isMuted: !!serverUser.isMuted,
+    isBot: !!serverUser.isBot,
   };
 }
 
@@ -198,6 +199,18 @@ function wbConnect(roomId, username, userId) {
   });
   wbSocket.on('youAreWarned', (data) => {
     if (typeof showNotification === 'function') showNotification(`⚠️ تحذير رسمي من ${data.by}: ${data.reason || 'بدون سبب محدد'}`, 'leave');
+  });
+
+  /* [حظر IP/الجهاز] تغذية راجعة فورية — لو أنا المستهدف (طرد فوري
+     بسبب حظر حقيقي)، أو للجميع بالغرفة (تحديث حالة). */
+  wbSocket.on('youAreKicked', (data) => {
+    if (typeof showNotification === 'function') showNotification(`🚫 تم طردك من الغرفة (${data.reason || 'بواسطة ' + data.by})`, 'leave');
+  });
+  wbSocket.on('ipBanned', (data) => {
+    if (typeof showNotification === 'function') showNotification(`🔒 ${data.by} حظر IP الخاص بـ ${data.target} لمدة 24 ساعة`, 'leave');
+  });
+  wbSocket.on('deviceBanned', (data) => {
+    if (typeof showNotification === 'function') showNotification(`🔒 ${data.by} حظر جهاز ${data.target}`, 'leave');
   });
 }
 
