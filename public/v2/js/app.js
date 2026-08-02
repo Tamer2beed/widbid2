@@ -167,6 +167,8 @@ async function initEventHandlers() {
                 if (target.closest('#memberContextClearQueueBtn')) { adminClearQueueExceptTarget(); return; }
                 if (target.closest('#memberContextMuteBtn')) { adminMuteToggleTarget(); return; }
                 if (target.closest('#memberContextWarnBtn')) { openWarnUserModal(); return; }
+                if (target.closest('#memberContextBanIPBtn')) { adminBanIP(); return; }
+                if (target.closest('#memberContextBanDeviceBtn')) { adminBanDevice(); return; }
                 if (target.closest('#cancelWarnUserBtn')) { document.getElementById('warnUserModal')?.classList.add('hidden'); return; }
                 if (target.closest('#confirmWarnUserBtn')) { confirmWarnUser(); return; }
                 if (target.id === 'warnUserModal') { document.getElementById('warnUserModal').classList.add('hidden'); return; }
