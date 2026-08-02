@@ -1,13 +1,17 @@
 'use strict';
 /* ════════════════════════════════════════════════════════
    WidBid — server/bots.js
-   محرك الأعضاء الوهميين — 13 بوت (بوت من كل رتبة)
+   [S18] إعادة بناء كاملة — بوتات "الرتب الثابتة" بدل النظام
+   العشوائي القديم (دخول/خروج/تجوّل بين الغرف بأسماء عشوائية مربكة).
 
-   الميزات:
-   ✅ دخول / خروج عشوائي على الغرف
-   ✅ إرسال رسائل عربية طبيعية
-   ✅ تشغيل / إيقاف المايك (isMicOn)
-   ✅ رفع اليد (raiseHand)
+   الميزات الجديدة:
+   ✅ 12 بوت بالضبط — بوت واحد فقط لكل رتبة من رتب السلّم (100→1200)
+   ✅ اسم البوت = اسم رتبته حرفياً (Guest, Member, Admin, ...) —
+      تمييز فوري بالعين المجردة أثناء اختبار الصلاحيات
+   ✅ ثابتون بالغرفة نهائياً بعد الدخول — لا خروج عشوائي إطلاقاً
+   ✅ يُعمَّر كل غرفة نشطة تلقائياً عند إقلاع السيرفر، وأي غرفة
+      جديدة تُكتشف لاحقاً (كل 5 دقائق) تُعمَّر بنفس الـ 12 بوت
+   ✅ نشاط خفيف مستمر (رسائل / مايك / رفع يد) حسب طابع كل رتبة
    ✅ يظهر في قائمة الأعضاء عبر getBotUsers()
    ✅ لا يحتاج socket.io-client — يعمل داخل نفس العملية
 ════════════════════════════════════════════════════════ */
@@ -22,74 +26,22 @@ let _buildUsers = null; // buildOnlineUsers callback من index.js
 let _roomIds    = [];   // قائمة معرفات الغرف النشطة
 
 /* ══════════════════════════════════════════
-   تعريف البوتات الـ 13 (بوت من كل رتبة)
+   بوتات الرتب الثابتة — بوت واحد فقط لكل رتبة،
+   الاسم = اسم الرتبة نفسها (مطابق للسلّم الرسمي 100→1200)
 ══════════════════════════════════════════ */
-const BOTS = [
-  {
-    username: 'زائر_ويدبد',
-    rank: 100, avatar: 'av3.svg', country: 'العراق',
-    behavior: 'lurker',   // يدخل ويخرج، لا يكتب كثيراً
-  },
-  {
-    username: 'أحمد_المحمودي',
-    rank: 200, avatar: 'av2.svg', country: 'السعودية',
-    behavior: 'chatter',  // يكتب بانتظام
-  },
-  {
-    username: 'نورا_الكندري',
-    rank: 200, avatar: 'av6.svg', country: 'الكويت',
-    behavior: 'chatter',
-  },
-  {
-    username: 'ProtectedStar',
-    rank: 300, avatar: 'av5.svg', country: 'الإمارات',
-    behavior: 'chatter',
-  },
-  {
-    username: 'RoyalMajesty',
-    rank: 400, avatar: 'av7.svg', country: 'السعودية',
-    behavior: 'active',   // يكتب + يطلب المايك أحياناً
-  },
-  {
-    username: 'أبو_عمر_مشرف',
-    rank: 500, avatar: 'av4.svg', country: 'العراق',
-    behavior: 'active',
-  },
-  {
-    username: 'سوبر_إدارة',
-    rank: 600, avatar: 'av1.svg', country: 'مصر',
-    behavior: 'active',
-  },
-  {
-    username: 'ماستر_القمة',
-    rank: 700, avatar: 'av8.svg', country: 'لبنان',
-    behavior: 'speaker',  // يطلب المايك كثيراً
-  },
-  {
-    username: 'SuperMaster_VIP',
-    rank: 800, avatar: 'av2.svg', country: 'السعودية',
-    behavior: 'speaker',
-  },
-  {
-    username: 'Root_القائد',
-    rank: 900, avatar: 'av3.svg', country: 'العراق',
-    behavior: 'speaker',
-  },
-  {
-    username: 'سوبر_روت_بوت',
-    rank: 1000, avatar: 'av5.svg', country: 'العراق',
-    behavior: 'vip',      // نشيط جداً، يتحدث بسلطة
-  },
-  {
-    username: 'مالك_الغرفة',
-    rank: 1100, avatar: 'av7.svg', country: 'العراق',
-    behavior: 'vip',
-  },
-  {
-    username: 'السوبر_المالك',
-    rank: 1200, avatar: 'av8.svg', country: 'العراق',
-    behavior: 'vip',
-  },
+const RANK_BOTS = [
+  { username: 'Guest',       rank: 100,  avatar: 'av3.svg', country: 'العراق',   behavior: 'lurker'  },
+  { username: 'Member',      rank: 200,  avatar: 'av2.svg', country: 'السعودية', behavior: 'chatter' },
+  { username: 'Protected',   rank: 300,  avatar: 'av5.svg', country: 'الإمارات', behavior: 'chatter' },
+  { username: 'Royal',       rank: 400,  avatar: 'av7.svg', country: 'السعودية', behavior: 'active'  },
+  { username: 'Admin',       rank: 500,  avatar: 'av4.svg', country: 'العراق',   behavior: 'active'  },
+  { username: 'SuperAdmin',  rank: 600,  avatar: 'av1.svg', country: 'مصر',      behavior: 'active'  },
+  { username: 'Master',      rank: 700,  avatar: 'av8.svg', country: 'لبنان',    behavior: 'speaker' },
+  { username: 'SuperMaster', rank: 800,  avatar: 'av2.svg', country: 'السعودية', behavior: 'speaker' },
+  { username: 'Root',        rank: 900,  avatar: 'av3.svg', country: 'العراق',   behavior: 'speaker' },
+  { username: 'SuperRoot',   rank: 1000, avatar: 'av5.svg', country: 'العراق',   behavior: 'vip'     },
+  { username: 'Owner',       rank: 1100, avatar: 'av7.svg', country: 'العراق',   behavior: 'vip'     },
+  { username: 'SuperOwner',  rank: 1200, avatar: 'av8.svg', country: 'العراق',   behavior: 'vip'     },
 ];
 
 /* ══════════════════════════════════════════
@@ -173,21 +125,6 @@ async function refreshRooms() {
   } catch (_) {}
 }
 
-/* ── الغرف اللي فيها فعلاً بشر متصلين حالياً (Socket.io حقيقي) ──
-   البوتات لا تدخل عبر Socket.io فعلي (فقط io.to(roomId).emit مباشرة)،
-   فالعضوية الحقيقية بـ io.sockets.adapter.rooms تعكس البشر فقط،
-   وبالتالي نقدر نستخدمها كفلتر دقيق: بوت يدخل فقط غرفة فيها إنسان حقيقي
-   الآن، بدل التوزيع العشوائي على كل الغرف النشطة حتى الفارغة. */
-function _getHumanOccupiedRooms() {
-  if (!_io) return [];
-  const occupied = [];
-  for (const roomId of _roomIds) {
-    const members = _io.sockets.adapter.rooms.get(String(roomId));
-    if (members && members.size > 0) occupied.push(roomId);
-  }
-  return occupied;
-}
-
 /* ── تحديث onlineUsers في الغرفة ── */
 async function _pushOnlineList(roomId) {
   if (!_buildUsers) return;
@@ -258,27 +195,23 @@ function botSendMessage(bot, roomId, msgPool) {
 
 function botActivateMic(bot, roomId, state) {
   roomId = String(roomId);
-  if (state.isMicOn || !state.active) return;
+  if (state.isMicOn) return;
 
   // رسالة قبل طلب الميك
   botSendMessage(bot, roomId, MSG.mic);
 
   // تأخير صغير ثم تشغيل المايك
-  const t1 = setTimeout(() => {
-    if (!state.active) return;
+  setTimeout(() => {
     state.isMicOn = true;
     _io.to(roomId).emit('micOn', { username: bot.username });
 
-    // مدة الكلام: 10 - 35 ثانية
-    const talkMs = rnd(10000, 35000);
-    const t2 = setTimeout(() => {
-      if (!state.isMicOn) return;
+    // مدة الكلام: 15 - 40 ثانية
+    const talkMs = rnd(15000, 40000);
+    setTimeout(() => {
       state.isMicOn = false;
       _io.to(roomId).emit('micOff', { username: bot.username });
     }, talkMs);
-    state.timers.push(t2);
   }, rnd(2000, 7000));
-  state.timers.push(t1);
 }
 
 function botRaiseHand(bot, roomId) {
@@ -286,115 +219,51 @@ function botRaiseHand(bot, roomId) {
 }
 
 /* ══════════════════════════════════════════
-   دورة حياة بوت واحد (حلقة لا نهائية)
+   [S18] نشاط بوت دائم داخل غرفة واحدة — بدون خروج إطلاقاً.
+   يُستدعى مرة واحدة فقط بعد الدخول، ويجدول نفسه للأبد
+   (فترات أطول من النظام القديم لأنها أصبحت مستمرة/دائمة
+   لا مرتبطة بزيارة قصيرة).
 ══════════════════════════════════════════ */
-async function runBot(bot) {
-  // تأخير أولي عشوائي (يمنع الدخول الجماعي)
-  await delay(rnd(3000, 25000));
+function _startPermanentActivity(bot, roomId) {
+  const state = { isMicOn: false };
 
-  while (true) {
-    // تأكد من وجود غرف نشطة أصلاً
-    if (_roomIds.length === 0) {
-      await refreshRooms();
-      if (_roomIds.length === 0) { await delay(5000); continue; }
-    }
+  const schedMsg = () => {
+    const minWait = bot.behavior === 'lurker' ? 240000 : bot.behavior === 'vip' ? 60000 : 90000;
+    const maxWait = bot.behavior === 'lurker' ? 600000 : bot.behavior === 'chatter' ? 240000 : 360000;
+    setTimeout(() => { botSendMessage(bot, roomId); schedMsg(); }, rnd(minWait, maxWait));
+  };
 
-    // [تحديث] البوت يدخل فقط غرفة فيها إنسان حقيقي متصل الآن —
-    // لو ما فيه أي غرفة مأهولة ببشر، ينتظر ويعيد المحاولة بدل الدخول
-    // لغرفة فارغة عشوائياً (كان السلوك السابق).
-    const humanRooms = _getHumanOccupiedRooms();
-    if (humanRooms.length === 0) { await delay(8000); continue; }
-    const roomId = pick(humanRooms);
-    const state  = { active: true, isMicOn: false, timers: [] };
+  const schedMic = () => {
+    if (!['active', 'speaker', 'vip'].includes(bot.behavior)) return;
+    const wait = bot.behavior === 'vip' ? rnd(120000, 300000) : rnd(180000, 420000);
+    setTimeout(() => { botActivateMic(bot, roomId, state); schedMic(); }, wait);
+  };
 
-    // ── دخول الغرفة ──
+  const schedHand = () => {
+    if (bot.behavior === 'lurker') return;
+    setTimeout(() => { botRaiseHand(bot, roomId); schedHand(); }, rnd(240000, 600000));
+  };
+
+  if (bot.behavior !== 'lurker') schedMsg();
+  schedMic();
+  schedHand();
+}
+
+/* ── تعمير غرفة واحدة بكل الـ 12 بوت (لو مو موجودين فيها أصلاً) ── */
+function populateRoomWithRankBots(roomId) {
+  roomId = String(roomId);
+  const reg = BOT_REGISTRY.get(roomId);
+  RANK_BOTS.forEach(bot => {
+    if (reg && reg.has(bot.username)) return; // موجود مسبقاً — لا تكرار
     botJoin(bot, roomId);
+    _startPermanentActivity(bot, roomId);
+  });
+}
 
-    // رسالة ترحيبية بعد الدخول (للبوتات غير الصامتة)
-    if (bot.behavior !== 'lurker') {
-      const tw = setTimeout(() => {
-        if (state.active) botSendMessage(bot, roomId, MSG.join);
-      }, rnd(1500, 5000));
-      state.timers.push(tw);
-    }
-
-    // مدة البقاء: lurker = 1-4 دق، غيره = 3-12 دق
-    const stayMs  = bot.behavior === 'lurker'
-      ? rnd(60000,  240000)
-      : rnd(180000, 720000);
-    const stayEnd = Date.now() + stayMs;
-
-    /* ── جدولة الرسائل ── */
-    const schedMsg = () => {
-      // frekans حسب السلوك
-      const minWait = bot.behavior === 'vip'     ? 15000 :
-                      bot.behavior === 'speaker'  ? 20000 : 25000;
-      const maxWait = bot.behavior === 'lurker'  ? 120000 :
-                      bot.behavior === 'chatter'  ?  55000 : 75000;
-      const wait = rnd(minWait, maxWait);
-      if (Date.now() + wait >= stayEnd) return;
-      const t = setTimeout(() => {
-        if (state.active && Date.now() < stayEnd) {
-          botSendMessage(bot, roomId);
-          schedMsg();
-        }
-      }, wait);
-      state.timers.push(t);
-    };
-
-    /* ── جدولة المايك ── */
-    const schedMic = () => {
-      if (!['active', 'speaker', 'vip'].includes(bot.behavior)) return;
-      const wait = bot.behavior === 'vip'
-        ? rnd(30000,  90000)
-        : rnd(50000, 150000);
-      if (Date.now() + wait >= stayEnd) return;
-      const t = setTimeout(() => {
-        if (state.active && Date.now() < stayEnd) {
-          botActivateMic(bot, roomId, state);
-          schedMic();
-        }
-      }, wait);
-      state.timers.push(t);
-    };
-
-    /* ── جدولة رفع اليد ── */
-    const schedHand = () => {
-      if (bot.behavior === 'lurker') return;
-      const wait = rnd(90000, 300000);
-      if (Date.now() + wait >= stayEnd) return;
-      const t = setTimeout(() => {
-        if (state.active && Date.now() < stayEnd) {
-          botRaiseHand(bot, roomId);
-          schedHand();
-        }
-      }, wait);
-      state.timers.push(t);
-    };
-
-    // تشغيل الجداول
-    if (bot.behavior !== 'lurker') schedMsg();
-    schedMic();
-    if (rnd(0, 2) > 0) schedHand(); // 66% احتمال
-
-    // ── انتظار مدة البقاء ──
-    await delay(stayMs);
-
-    // ── تنظيف ──
-    state.active = false;
-    state.timers.forEach(clearTimeout);
-    state.timers = [];
-
-    if (state.isMicOn) {
-      state.isMicOn = false;
-      _io.to(String(roomId)).emit('micOff', { username: bot.username });
-    }
-
-    botLeave(bot, roomId);
-
-    // استراحة قبل الدخول من جديد (30 ثانية - 4 دقائق)
-    await delay(rnd(30000, 240000));
-  }
+/* ── تعمير كل الغرف النشطة (تُستدعى عند الإقلاع، وكل 5 دقائق لاكتشاف غرف جديدة) ── */
+async function ensureBotsEverywhere() {
+  await refreshRooms();
+  _roomIds.forEach(populateRoomWithRankBots);
 }
 
 /* ══════════════════════════════════════════
@@ -405,17 +274,12 @@ function initBots(io, db, buildOnlineUsers) {
   _db         = db;
   _buildUsers = buildOnlineUsers;
 
-  refreshRooms().then(() => {
-    console.log(`\n🤖 تشغيل ${BOTS.length} بوت وهمي على ${_roomIds.length} غرفة نشطة`);
-    BOTS.forEach(bot => {
-      runBot(bot).catch(err =>
-        console.error(`[Bot] خطأ في "${bot.username}":`, err.message)
-      );
-    });
+  ensureBotsEverywhere().then(() => {
+    console.log(`\n🤖 تعمير ${_roomIds.length} غرفة نشطة بـ ${RANK_BOTS.length} بوت-رتبة ثابت لكل غرفة (بدون خروج)`);
   });
 
-  // تحديث قائمة الغرف كل 5 دقائق
-  setInterval(refreshRooms, 5 * 60 * 1000);
+  // اكتشاف أي غرفة جديدة نشطة كل 5 دقائق وتعميرها تلقائياً
+  setInterval(ensureBotsEverywhere, 5 * 60 * 1000);
 }
 
 module.exports = { initBots, getBotUsers };
