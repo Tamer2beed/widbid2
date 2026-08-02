@@ -69,6 +69,23 @@ function openMemberContextMenu(userId, msgId, triggerEl) {
 
     document.getElementById('memberContextAdminEntryBtn')?.classList.toggle('hidden', !isCurrentUserAdminOrAbove());
 
+    /* [كتم/تحذير] فحص رتبة حقيقي مستقل (بدل الفهرس القديم المعطوب أعلاه):
+       كتم يتطلب Admin(500)+، تحذير يتطلب Super Admin(600)+، وبكل الحالتين
+       لازم رتبة المنفّذ أعلى فعلياً من رتبة الهدف. rankGuard بالسيرفر هو
+       الحكم النهائي دائماً — هذا فقط لإخفاء/إظهار الأزرار بالواجهة. */
+    const myRealRank = typeof getCurrentUserRank === 'function' ? getCurrentUserRank() : 100;
+    const targetRealRank = user.rank || 100;
+    const canMuteTarget = myRealRank >= 500 && myRealRank > targetRealRank;
+    const canWarnTarget = myRealRank >= 600 && myRealRank > targetRealRank;
+    const muteBtn = document.getElementById('memberContextMuteBtn');
+    if (muteBtn) {
+        muteBtn.classList.toggle('hidden', !canMuteTarget);
+        muteBtn.innerHTML = user.isMuted
+            ? '<i class="fa-solid fa-comment ml-2"></i> فك كتم الكتابة'
+            : '<i class="fa-solid fa-comment-slash ml-2"></i> كتم الكتابة';
+    }
+    document.getElementById('memberContextWarnBtn')?.classList.toggle('hidden', !canWarnTarget);
+
     positionContextPanel(triggerEl);
     showMemberContextModalAnimated();
 }
@@ -209,4 +226,46 @@ function adminClearQueueExceptTarget() {
        بشكل متكرر يدوياً، أو تركه معطّلاً لحد ما نضيف الحدث بالسيرفر. */
     if (typeof showNotification === 'function') showNotification('ℹ️ هذا الإجراء غير مدعوم بالسيرفر الحقيقي حالياً', 'leave');
     closeMemberContextMenu();
+}
+
+/* ---------- كتم / فك كتم الكتابة (حقيقي عبر muteUser/unmuteUser) ---------- */
+function adminMuteToggleTarget() {
+    const user = (typeof mockUsersList !== 'undefined') ? mockUsersList.find(u => String(u.id) === String(contextMenuTargetUserId)) : null;
+    closeMemberContextMenu();
+    if (!user) return;
+    if (typeof wbSocket === 'undefined' || !wbSocket || !wbSocket.connected) {
+        if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave');
+        return;
+    }
+    const event = user.isMuted ? 'unmuteUser' : 'muteUser';
+    wbSocket.emit(event, { room_id: wbRoomId, target: user.name, by: wbUsername });
+    /* [ملاحظة] لا نعدّل user.isMuted محلياً هنا — السيرفر يرد بحدث onlineUsers
+       محدَّث فوراً بعد تنفيذ الإجراء فعلياً (بما فيه رفض الحصانة إن وُجد)،
+       فنتجنب أي تناقض بين ما تظهره الواجهة وما وافق عليه السيرفر فعلياً. */
+}
+
+/* ---------- تحذير رسمي (حقيقي عبر warnUser) ---------- */
+let warnUserTargetName = null;
+function openWarnUserModal() {
+    const user = (typeof mockUsersList !== 'undefined') ? mockUsersList.find(u => String(u.id) === String(contextMenuTargetUserId)) : null;
+    closeMemberContextMenu();
+    if (!user) return;
+    warnUserTargetName = user.name;
+    const subtitle = document.getElementById('warnUserModalSubtitle');
+    if (subtitle) subtitle.textContent = `سبب تحذير ${user.name}`;
+    const reasonInput = document.getElementById('warnReasonInput');
+    if (reasonInput) reasonInput.value = '';
+    document.getElementById('warnUserModal')?.classList.remove('hidden');
+}
+function confirmWarnUser() {
+    const reason = document.getElementById('warnReasonInput')?.value.trim();
+    if (!reason) { if (typeof showNotification === 'function') showNotification('يرجى كتابة سبب التحذير', 'leave'); return; }
+    document.getElementById('warnUserModal')?.classList.add('hidden');
+    if (!warnUserTargetName) return;
+    if (typeof wbSocket === 'undefined' || !wbSocket || !wbSocket.connected) {
+        if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave');
+        return;
+    }
+    wbSocket.emit('warnUser', { room_id: wbRoomId, target: warnUserTargetName, reason, by: wbUsername });
+    warnUserTargetName = null;
 }
