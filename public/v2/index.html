@@ -254,6 +254,17 @@
             </div>
         </div>
     </div>
+    <div id="warnUserModal" class="hidden fixed inset-0 flex items-center justify-center z-[70] p-4" style="background:rgba(0,0,0,0.6);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
+            <h3 class="text-white font-bold text-base mb-1">تحذير رسمي</h3>
+            <p id="warnUserModalSubtitle" class="text-white/50 text-xs mb-4"></p>
+            <textarea id="warnReasonInput" rows="3" placeholder="سبب التحذير..." class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-5 resize-none"></textarea>
+            <div class="flex gap-2">
+                <button id="cancelWarnUserBtn" class="flex-1 bg-white/5 border border-white/10 text-white/70 rounded-xl p-3 text-sm">إلغاء</button>
+                <button id="confirmWarnUserBtn" class="flex-1 bg-amber-600 text-white rounded-xl p-3 text-sm font-bold">إرسال التحذير</button>
+            </div>
+        </div>
+    </div>
     <div id="adminModal" class="hidden fixed inset-0 z-[60] flex flex-col glass-menu overflow-y-auto">
 
         <div id="adminMainPage" class="flex flex-col h-full w-full">
@@ -636,6 +647,8 @@
                 <button id="memberContextExtendMicBtn" class="w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-clock-rotate-left ml-2"></i> تحديث وقت التكلم</button>
                 <button id="memberContextOpenMicBtn" class="w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-infinity ml-2"></i> وقت تكلم مفتوح</button>
                 <button id="memberContextClearQueueBtn" class="w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-broom ml-2"></i> سحب المايك من الجميع إلا هذا</button>
+                <button id="memberContextMuteBtn" class="hidden w-full flex items-center py-3 text-white text-sm"><i class="fa-solid fa-comment-slash ml-2"></i> كتم الكتابة</button>
+                <button id="memberContextWarnBtn" class="hidden w-full flex items-center py-3 text-amber-300 text-sm"><i class="fa-solid fa-triangle-exclamation ml-2"></i> تحذير رسمي</button>
             </div>
         </div>
     </div>
