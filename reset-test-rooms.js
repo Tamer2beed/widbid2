@@ -65,8 +65,8 @@ const TEST_ROOMS = [
     for (const room of TEST_ROOMS) {
       const token = `WB-TEST-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
       const [r] = await conn.query(
-        `INSERT INTO rooms (name, token, type, owner_id, theme, welcome_message, max_capacity, is_active)
-         VALUES (?, ?, 'public', ?, ?, ?, 200, 1)`,
+        `INSERT INTO rooms (name, token, type, owner_id, theme, welcome_message, max_capacity, category_id, is_active)
+         VALUES (?, ?, 'public', ?, ?, ?, 200, 17, 1)`,
         [room.name, token, smId, room.theme, room.welcome]
       );
       roomIds.push(r.insertId);
