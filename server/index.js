@@ -8,7 +8,7 @@ require('dotenv').config();
 // [SKILL-AUDIO][server/index.js:~9] — استيراد SFU
 // تاريخ: 2026-06-25
 const { initWorker, getOrCreateRoom, createTransport, sfuRooms, cleanupRoom } = require('./mediasoup');
-const { initBots, getBotUsers, getBotInRoom, setBotMuted } = require('./bots');
+const { initBots, getBotUsers, getBotInRoom, setBotMuted, setBotFrozen, kickBotFromRoom } = require('./bots');
 const rankGuard = require('./middleware/rankGuard');
 
 /* نظام التجميد — مستوى الـ module */
@@ -502,7 +502,28 @@ io.on('connection', (socket) => {
 
     const roomSockets = await io.in(room_id).fetchSockets();
     const targetSocket = roomSockets.find(s => s.userData?.username === target);
-    if (!targetSocket) { socket.emit('error', 'المستخدم غير موجود'); return; }
+
+    /* [S18-3] طرد بوت — بدون Socket.io حقيقي */
+    if (!targetSocket) {
+      const bot = getBotInRoom(room_id, target);
+      if (!bot) { socket.emit('error', 'المستخدم غير موجود'); return; }
+
+      const check = await rankGuard.canActOn(
+        { id: actorId, rank: actorRank }, { id: null, rank: bot.rank }, 500
+      );
+      if (!check.allowed) {
+        socket.emit('error', immunityErrorMessage(check.reason));
+        if (check.alertOwner) io.to(room_id).emit('immunityAlert', { target, by, action: 'kick' });
+        return;
+      }
+
+      kickBotFromRoom(room_id, target);
+      io.to(room_id).emit('userKicked', { username: target, by });
+      const usersAfterBotKick = await buildOnlineUsers(room_id);
+      io.to(room_id).emit('onlineUsers', usersAfterBotKick);
+      console.log(`🚪 ${by} kicked bot ${target} from room ${room_id}`);
+      return;
+    }
 
     const targetRank = targetSocket.userData?.rank || 100;
     const targetId = targetSocket.userData?.user_id || null;
@@ -1064,7 +1085,17 @@ io.on('connection', (socket) => {
 
     try {
       const [targetRows] = await db.query('SELECT id, rank FROM users WHERE username = ?', [target]);
-      if (!targetRows.length) { socket.emit('error', 'المستخدم غير موجود'); return; }
+      if (!targetRows.length) {
+        /* [S18-3] بوتات الرتب الثابتة لا يمكن ترقيتها/تخفيضها عمداً —
+           هويتها الثابتة (رتبة واحدة لكل بوت) هي أساس تصميمها للاختبار.
+           استخدم حسابات Test_* الحقيقية لاختبار الترقية فعلياً. */
+        if (getBotInRoom(room_id, target)) {
+          socket.emit('error', 'بوتات الرتب الثابتة لا يمكن ترقيتها — رتبتها هويتها الثابتة للاختبار. استخدم حساب Test_* حقيقي بدلها');
+          return;
+        }
+        socket.emit('error', 'المستخدم غير موجود');
+        return;
+      }
       const targetId = targetRows[0].id;
       const targetRank = targetRows[0].rank || 100;
 
@@ -1660,8 +1691,32 @@ io.on('connection', (socket) => {
 
     const socks      = await io.in(room_id).fetchSockets();
     const targetSock = socks.find(s => s.userData?.username === target);
-    const targetRank = targetSock?.userData?.rank || 0;
-    const targetId   = targetSock?.userData?.user_id || null;
+
+    /* [S18-3] لا يوجد اتصال حقيقي — تحقق من البوتات، مع جلب رتبته
+       الحقيقية أولاً (كان الكود القديم يفترض رتبة 0 لأي هدف غير
+       متصل، وهذا يخلي فحص الحصانة يمر بالغلط دايماً — ثغرة حقيقية). */
+    if (!targetSock) {
+      const bot = getBotInRoom(room_id, target);
+      if (!bot) { socket.emit('error', 'المستخدم غير موجود'); return; }
+
+      const check = await rankGuard.canActOn(
+        { id: actorId, rank: actorRank }, { id: null, rank: bot.rank }, 500
+      );
+      if (!check.allowed) {
+        socket.emit('error', immunityErrorMessage(check.reason));
+        if (check.alertOwner) io.to(room_id).emit('immunityAlert', { target, by, action: 'freeze' });
+        return;
+      }
+
+      setBotFrozen(room_id, target, true);
+      io.to(room_id).emit('systemMessage', `🧊 تم تجميد ${target} بواسطة ${by}`);
+      const usersAfterBotFreeze = await buildOnlineUsers(room_id);
+      io.to(room_id).emit('onlineUsers', usersAfterBotFreeze);
+      return;
+    }
+
+    const targetRank = targetSock.userData?.rank || 100;
+    const targetId   = targetSock.userData?.user_id || null;
 
     const check = await rankGuard.canActOn(
       { id: actorId, rank: actorRank }, { id: targetId, rank: targetRank }, 500
@@ -1674,10 +1729,8 @@ io.on('connection', (socket) => {
 
     frozenUsers.set(target, { by, at: Date.now() });
     io.to(room_id).emit('systemMessage', `🧊 تم تجميد ${target} بواسطة ${by}`);
-    if (targetSock) {
-      targetSock.emit('youAreKicked', { by, reason: 'تم تجميد حسابك مؤقتاً' });
-      targetSock.leave(room_id);
-    }
+    targetSock.emit('youAreKicked', { by, reason: 'تم تجميد حسابك مؤقتاً' });
+    targetSock.leave(room_id);
     const users = await buildOnlineUsers(room_id);
     io.to(room_id).emit('onlineUsers', users);
   });
