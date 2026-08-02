@@ -25,7 +25,7 @@ const DB = {
 
 const TEST_PASS = '123456';
 const SM_USERNAME = 'SuperMaster_TEST';
-const SM_EMAIL    = 'supermaster_test@widbid.com';
+const SM_EMAIL    = 'master@widbid.com';
 
 const TEST_ROOMS = [
   { name: 'غرفة الاختبار 1', theme: 'candy',   welcome: 'مرحباً بكم في غرفة الاختبار 1 🌟' },
@@ -90,9 +90,15 @@ const TEST_ROOMS = [
       console.log(`║${line.padEnd(50)}║`);
     });
     console.log('╠════════════════════════════════════════════════╣');
-    console.log(`║  👤 حساب Super Master: ${SM_USERNAME.padEnd(24)}║`);
-    console.log(`║  📧 الإيميل: ${SM_EMAIL.padEnd(34)}║`);
+    console.log(`║  👤 اسم المستخدم: ${SM_USERNAME.padEnd(28)}║`);
+    console.log(`║  📧 البريد الإلكتروني: ${SM_EMAIL.padEnd(23)}║`);
     console.log(`║  🔑 كلمة المرور: ${TEST_PASS.padEnd(30)}║`);
+    console.log('╠════════════════════════════════════════════════╣');
+    console.log('║  طريقة الدخول بالواجهة (مهم):                    ║');
+    console.log('║  تبويب "عضو مميز" ← اسم المستخدم أو البريد        ║');
+    console.log('║  + كلمة المرور الحقيقية (يتحقق منها السيرفر فعلاً) ║');
+    console.log('║  تبويب "عضو" يطلب البريد حصراً (لا اسم المستخدم)   ║');
+    console.log('║  ولا يتحقق من كلمة مرور الحساب إطلاقاً حالياً!     ║');
     console.log('╠════════════════════════════════════════════════╣');
     console.log('║  روابط الاختبار المباشرة (واجهة v2):            ║');
     roomIds.forEach(id => {
