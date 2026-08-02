@@ -145,9 +145,26 @@ function getBotUsers(roomId) {
     username: b.username,
     rank:     b.rank,
     status:   'available',
-    isMuted:  false,
+    isMuted:  !!b.isMuted,
     isBot:    true,
   }));
+}
+
+/* ── [S18] دعم إجراءات الإدارة على البوتات (كتم/فك كتم) ──
+   البوتات ليس لها Socket.io حقيقي، فأي إجراء إداري يدوّر على
+   اتصال حقيقي (زي muteUser بـ index.js) ما يلقاها ويرفض بـ
+   "المستخدم غير موجود". هذي الدالتين تسمحان لـ index.js يتحقق
+   من وجود بوت بهذا الاسم بالغرفة ويغيّر حالة كتمه مباشرة بالسجل. */
+function getBotInRoom(roomId, username) {
+  const reg = BOT_REGISTRY.get(String(roomId));
+  if (!reg) return null;
+  return reg.get(username) || null;
+}
+function setBotMuted(roomId, username, muted) {
+  const reg = BOT_REGISTRY.get(String(roomId));
+  if (!reg || !reg.has(username)) return false;
+  reg.get(username).isMuted = !!muted;
+  return true;
 }
 
 /* ══════════════════════════════════════════
@@ -161,6 +178,7 @@ function botJoin(bot, roomId) {
     username: bot.username,
     rank:     bot.rank,
     avatar:   bot.avatar,
+    isMuted:  false,
   });
   _io.to(roomId).emit('userJoined', { username: bot.username, rank: bot.rank });
   _pushOnlineList(roomId);
@@ -282,4 +300,4 @@ function initBots(io, db, buildOnlineUsers) {
   setInterval(ensureBotsEverywhere, 5 * 60 * 1000);
 }
 
-module.exports = { initBots, getBotUsers };
+module.exports = { initBots, getBotUsers, getBotInRoom, setBotMuted };
