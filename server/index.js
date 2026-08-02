@@ -433,6 +433,8 @@ io.on('connection', (socket) => {
     targetSocket.userData.isMuted = true;
     targetSocket.emit('youAreMuted', { by });
     io.to(room_id).emit('userMuted', { username: target, by });
+    const usersAfterMute = await buildOnlineUsers(room_id);
+    io.to(room_id).emit('onlineUsers', usersAfterMute);
     console.log(`🔇 ${by} muted ${target} in room ${room_id}`);
   });
 
@@ -449,6 +451,8 @@ io.on('connection', (socket) => {
     targetSocket.userData.isMuted = false;
     targetSocket.emit('youAreUnmuted', { by });
     io.to(room_id).emit('userUnmuted', { username: target, by });
+    const usersAfterUnmute = await buildOnlineUsers(room_id);
+    io.to(room_id).emit('onlineUsers', usersAfterUnmute);
   });
 
   /* ─── طرد مستخدم ──────────────────────────── */
@@ -645,6 +649,8 @@ io.on('connection', (socket) => {
       }
     });
     io.to(room_id).emit('systemMessage', `🔇 ${by} أوقف الكتابة للجميع`);
+    const usersAfterMuteAll = await buildOnlineUsers(room_id);
+    io.to(room_id).emit('onlineUsers', usersAfterMuteAll);
   });
 
   /* ─── فك كتم الجميع ───────────────────────── */
@@ -659,6 +665,8 @@ io.on('connection', (socket) => {
       }
     });
     io.to(room_id).emit('systemMessage', `🔊 ${by} فتح الكتابة للجميع`);
+    const usersAfterUnmuteAll = await buildOnlineUsers(room_id);
+    io.to(room_id).emit('onlineUsers', usersAfterUnmuteAll);
   });
 
   /* ─── تحذير رسمي (Super Admin 600+) ────────── */
