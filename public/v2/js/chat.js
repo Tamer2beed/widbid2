@@ -53,12 +53,13 @@ function renderOnlineUsers() {
         const ignored = (!isMe && typeof isUserIgnored === 'function' && isUserIgnored(user.id));
         item.className = `flex items-center justify-between p-2 rounded-xl border shadow-sm user-card-item ${!isMe ? 'cursor-pointer' : ''} ${isMe ? 'bg-purple-50 border-purple-300 ring-1 ring-purple-300' : 'bg-gray-50 border-gray-100'} ${ignored ? 'opacity-50' : ''}`;
         item.dataset.userId = user.id;
+        const rankColorStyle = `color:${sanitize(user.color || '#374151')};`;
         const roleStyle = (isMe && user.hasAccount && typeof getRoleNameStyle === 'function') ? getRoleNameStyle(user.role) : '';
-        const nameStyle = roleStyle ? ` style="${roleStyle}"` : '';
+        const nameStyle = ` style="${roleStyle || rankColorStyle}"`;
         const glowClass = (isMe && user.hasAccount && user.role === 'super_master') ? ' super-master-glow' : '';
         const nameLabel = isMe ? `<span class="font-bold${glowClass}"${nameStyle}>${sanitize(user.name)}</span> <span class="text-purple-500 text-[9px] font-normal">(أنت)</span>` : `<span${nameStyle}>${sanitize(user.name)}</span>`;
         const muteBadge = user.isMuted ? '<span class="text-red-500 text-xs bg-red-50 p-1 rounded-md" title="مكتوم عن الكتابة"><i class="fa-solid fa-comment-slash"></i></span>' : '';
-        item.innerHTML = `<div class="flex items-center gap-3"><div class="relative"><img src="${sanitize(user.avatar)}" class="w-11 h-11 rounded-xl object-cover border-2 ${isMe ? 'border-purple-400' : 'border-amber-400'}"><div class="absolute bottom-[-2px] left-[-2px] w-3 h-3 rounded-full border-2 border-white" style="background:${sanitize(dotColor)};"></div></div><div class="flex flex-col text-left max-w-[140px]"><span class="font-bold text-gray-800 text-xs truncate">${nameLabel}</span><span class="text-[10px] text-gray-400 truncate">${sanitize(user.status)}</span></div></div><div class="flex items-center gap-1.5">${micBadge}${muteBadge}${user.isOwner?'<span class="text-amber-500 text-xs bg-amber-50 p-1 rounded-md"><i class="fa-solid fa-crown"></i></span>':''}</div>`;
+        item.innerHTML = `<div class="flex items-center gap-3"><div class="relative"><img src="${sanitize(user.avatar)}" class="w-11 h-11 rounded-xl object-cover border-2" style="border-color:${sanitize(user.color || '#f59e0b')};"><div class="absolute bottom-[-2px] left-[-2px] w-3 h-3 rounded-full border-2 border-white" style="background:${sanitize(dotColor)};"></div></div><div class="flex flex-col text-left max-w-[140px]"><span class="font-bold text-xs truncate">${nameLabel}</span><span class="text-[10px] text-gray-400 truncate">${sanitize(user.status)}</span></div></div><div class="flex items-center gap-1.5">${micBadge}${muteBadge}${user.isOwner?'<span class="text-amber-500 text-xs bg-amber-50 p-1 rounded-md"><i class="fa-solid fa-crown"></i></span>':''}</div>`;
         container.appendChild(item);
     });
 }
