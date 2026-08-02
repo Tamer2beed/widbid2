@@ -173,6 +173,20 @@ function wbConnect(roomId, username, userId) {
       showNotification(`⏳ ${data.remaining} ثوانٍ متبقية على دورك بالمايك`, 'leave');
     }
   });
+
+  /* [كتم/تحذير] تغذية راجعة فورية للمستخدم المستهدف نفسه فقط.
+     حالة isMuted بقائمة الأعضاء (mockUsersList) تتحدّث تلقائياً عبر
+     onlineUsers — السيرفر يعيد بثها فوراً بعد كل عملية كتم/فك كتم،
+     فلا حاجة لتعديل mockUsersList يدوياً هنا وتفادي أي تعارض. */
+  wbSocket.on('youAreMuted', (data) => {
+    if (typeof showNotification === 'function') showNotification(`🔇 تم كتم كتابتك بواسطة ${data.by}`, 'leave');
+  });
+  wbSocket.on('youAreUnmuted', (data) => {
+    if (typeof showNotification === 'function') showNotification(`🔊 تم فك كتم كتابتك بواسطة ${data.by}`, 'join');
+  });
+  wbSocket.on('youAreWarned', (data) => {
+    if (typeof showNotification === 'function') showNotification(`⚠️ تحذير رسمي من ${data.by}: ${data.reason || 'بدون سبب محدد'}`, 'leave');
+  });
 }
 
 /* ── إرسال رسالة حقيقية (تُستدعى بدل منطق sendMessage المحلي بـ app.js) ── */
