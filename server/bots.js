@@ -278,13 +278,13 @@ async function runBot(bot) {
   await delay(rnd(3000, 25000));
 
   while (true) {
-    // تأكد من وجود غرف
-    if (_roomIds.length === 0) {
-      await refreshRooms();
-      if (_roomIds.length === 0) { await delay(5000); continue; }
-    }
+    // تأكد من وجود غرف (نحدّث القائمة دايماً قبل كل دورة دخول جديدة،
+    // مو بس أول مرة، عشان البوتات توزّع على الغرف النشطة الفعلية —
+    // كانت مثبّتة سابقاً على غرفة '102' بشكل ثابت بالكود بدل هذا).
+    await refreshRooms();
+    if (_roomIds.length === 0) { await delay(5000); continue; }
 
-    const roomId = '102';
+    const roomId = pick(_roomIds);
     const state  = { active: true, isMicOn: false, timers: [] };
 
     // ── دخول الغرفة ──
