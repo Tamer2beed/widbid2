@@ -8,7 +8,7 @@ require('dotenv').config();
 // [SKILL-AUDIO][server/index.js:~9] — استيراد SFU
 // تاريخ: 2026-06-25
 const { initWorker, getOrCreateRoom, createTransport, sfuRooms, cleanupRoom } = require('./mediasoup');
-const { initBots, getBotUsers } = require('./bots');
+const { initBots, getBotUsers, getBotInRoom, setBotMuted } = require('./bots');
 const rankGuard = require('./middleware/rankGuard');
 
 /* نظام التجميد — مستوى الـ module */
@@ -416,7 +416,29 @@ io.on('connection', (socket) => {
 
     const roomSockets = await io.in(room_id).fetchSockets();
     const targetSocket = roomSockets.find(s => s.userData?.username === target);
-    if (!targetSocket) { socket.emit('error', 'المستخدم غير موجود'); return; }
+
+    /* [S18] لا يوجد اتصال حقيقي بهذا الاسم — تحقق هل هو أحد بوتات
+       الرتب الثابتة بنفس الغرفة (ليس لها Socket.io حقيقي أصلاً) */
+    if (!targetSocket) {
+      const bot = getBotInRoom(room_id, target);
+      if (!bot) { socket.emit('error', 'المستخدم غير موجود'); return; }
+
+      const check = await rankGuard.canActOn(
+        { id: actorId, rank: actorRank }, { id: null, rank: bot.rank }, 500
+      );
+      if (!check.allowed) {
+        socket.emit('error', immunityErrorMessage(check.reason));
+        if (check.alertOwner) io.to(room_id).emit('immunityAlert', { target, by, action: 'mute' });
+        return;
+      }
+
+      setBotMuted(room_id, target, true);
+      io.to(room_id).emit('userMuted', { username: target, by });
+      const usersAfterBotMute = await buildOnlineUsers(room_id);
+      io.to(room_id).emit('onlineUsers', usersAfterBotMute);
+      console.log(`🔇 ${by} muted bot ${target} in room ${room_id}`);
+      return;
+    }
 
     const targetRank = targetSocket.userData?.rank || 100;
     const targetId = targetSocket.userData?.user_id || null;
@@ -446,7 +468,17 @@ io.on('connection', (socket) => {
 
     const roomSockets = await io.in(room_id).fetchSockets();
     const targetSocket = roomSockets.find(s => s.userData?.username === target);
-    if (!targetSocket) return;
+
+    /* [S18] فك كتم بوت — بدون اتصال Socket.io حقيقي */
+    if (!targetSocket) {
+      const bot = getBotInRoom(room_id, target);
+      if (!bot) return;
+      setBotMuted(room_id, target, false);
+      io.to(room_id).emit('userUnmuted', { username: target, by });
+      const usersAfterBotUnmute = await buildOnlineUsers(room_id);
+      io.to(room_id).emit('onlineUsers', usersAfterBotUnmute);
+      return;
+    }
 
     targetSocket.userData.isMuted = false;
     targetSocket.emit('youAreUnmuted', { by });
