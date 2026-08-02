@@ -86,6 +86,14 @@ function openMemberContextMenu(userId, msgId, triggerEl) {
     }
     document.getElementById('memberContextWarnBtn')?.classList.toggle('hidden', !canWarnTarget);
 
+    /* [حظر IP/الجهاز] Master(700)+ لحظر IP، SuperMaster(800)+ لحظر الجهاز —
+       يعتمدان على Socket.io حقيقي فيعملان فقط على حساب حقيقي متصل، مو بوت
+       (البوت ما عنده IP أو جهاز فعلي أصلاً). */
+    const canBanIP     = myRealRank >= 700 && myRealRank > targetRealRank && !user.isBot;
+    const canBanDevice = myRealRank >= 800 && myRealRank > targetRealRank && !user.isBot;
+    document.getElementById('memberContextBanIPBtn')?.classList.toggle('hidden', !canBanIP);
+    document.getElementById('memberContextBanDeviceBtn')?.classList.toggle('hidden', !canBanDevice);
+
     positionContextPanel(triggerEl);
     showMemberContextModalAnimated();
 }
@@ -268,4 +276,28 @@ function confirmWarnUser() {
     }
     wbSocket.emit('warnUser', { room_id: wbRoomId, target: warnUserTargetName, reason, by: wbUsername });
     warnUserTargetName = null;
+}
+
+/* ---------- حظر IP (24 ساعة) — حقيقي عبر banIP (Master 700+) ---------- */
+function adminBanIP() {
+    const user = (typeof mockUsersList !== 'undefined') ? mockUsersList.find(u => String(u.id) === String(contextMenuTargetUserId)) : null;
+    closeMemberContextMenu();
+    if (!user || user.isBot) return;
+    if (typeof wbSocket === 'undefined' || !wbSocket || !wbSocket.connected) {
+        if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave');
+        return;
+    }
+    wbSocket.emit('banIP', { room_id: wbRoomId, target: user.name, by: wbUsername });
+}
+
+/* ---------- حظر الجهاز — حقيقي عبر banDevice (Super Master 800+) ---------- */
+function adminBanDevice() {
+    const user = (typeof mockUsersList !== 'undefined') ? mockUsersList.find(u => String(u.id) === String(contextMenuTargetUserId)) : null;
+    closeMemberContextMenu();
+    if (!user || user.isBot) return;
+    if (typeof wbSocket === 'undefined' || !wbSocket || !wbSocket.connected) {
+        if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave');
+        return;
+    }
+    wbSocket.emit('banDevice', { room_id: wbRoomId, target: user.name, by: wbUsername });
 }
