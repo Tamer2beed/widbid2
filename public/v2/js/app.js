@@ -358,10 +358,10 @@ async function initEventHandlers() {
 
                 if (target.closest('#menuLogout')) { document.getElementById('sideMenu')?.classList.remove('active'); if (typeof openRoomsScreen === 'function') openRoomsScreen(); return; }
 
-                const countryToggleBtn = target.closest('.country-toggle-btn');
-                if (countryToggleBtn) { toggleCountry(countryToggleBtn.dataset.country); return; }
+                const categoryToggleBtn = target.closest('.category-toggle-btn');
+                if (categoryToggleBtn) { toggleCategory(parseInt(categoryToggleBtn.dataset.catId, 10)); return; }
                 const roomSelectBtn = target.closest('.room-select-btn');
-                if (roomSelectBtn) { selectRoom(roomSelectBtn.dataset.room); return; }
+                if (roomSelectBtn) { selectRoom(roomSelectBtn.dataset.roomId); return; }
 
                 /* تغيير كلمة المرور */
                 const changePwBtn = target.closest('.admin-acc-changepw-btn');
@@ -478,6 +478,10 @@ async function initEventHandlers() {
         }
         hueRange?.addEventListener('input', (e)=>{ globalFontColor = `hsl(${e.target.value},100%,45%)`; if (fontLivePreview) fontLivePreview.style.color = globalFontColor; });
         colorBtns.forEach(b => b.addEventListener('click', ()=>{ globalFontColor = b.dataset.color; if (fontLivePreview) fontLivePreview.style.color = globalFontColor; }));
+
+        document.getElementById('roomsSearchInput')?.addEventListener('input', (e) => {
+            if (typeof onRoomsSearchInput === 'function') onRoomsSearchInput(e.target.value);
+        });
 
         function sendMessage() {
             if (!chatInput) return;
