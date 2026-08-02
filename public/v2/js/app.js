@@ -165,6 +165,11 @@ async function initEventHandlers() {
                 if (target.closest('#memberContextExtendMicBtn')) { adminExtendMicTarget(); return; }
                 if (target.closest('#memberContextOpenMicBtn')) { adminGrantOpenMicTarget(); return; }
                 if (target.closest('#memberContextClearQueueBtn')) { adminClearQueueExceptTarget(); return; }
+                if (target.closest('#memberContextMuteBtn')) { adminMuteToggleTarget(); return; }
+                if (target.closest('#memberContextWarnBtn')) { openWarnUserModal(); return; }
+                if (target.closest('#cancelWarnUserBtn')) { document.getElementById('warnUserModal')?.classList.add('hidden'); return; }
+                if (target.closest('#confirmWarnUserBtn')) { confirmWarnUser(); return; }
+                if (target.id === 'warnUserModal') { document.getElementById('warnUserModal').classList.add('hidden'); return; }
 
                 const mentionTagEl = target.closest('.mention-tag');
                 if (mentionTagEl) {
