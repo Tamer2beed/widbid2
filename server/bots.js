@@ -167,6 +167,28 @@ function setBotMuted(roomId, username, muted) {
   return true;
 }
 
+/* [S18-3] تجميد بوت — علم داخلي فقط (بوت ما له جلسة حقيقية يقفلها) */
+function setBotFrozen(roomId, username, frozen) {
+  const reg = BOT_REGISTRY.get(String(roomId));
+  if (!reg || !reg.has(username)) return false;
+  reg.get(username).isFrozen = !!frozen;
+  return true;
+}
+
+/* [S18-3] طرد بوت — يشيله من الغرفة فوراً (يرجع تلقائياً خلال
+   ≤5 دقائق عبر ensureBotsEverywhere الدوري — نفس منطق "لو رجع
+   إنسان حقيقي ممكن يرجع البوت" المتوقع من مستخدم حقيقي مطرود). */
+function kickBotFromRoom(roomId, username) {
+  roomId = String(roomId);
+  const reg = BOT_REGISTRY.get(roomId);
+  if (!reg || !reg.has(username)) return false;
+  reg.delete(username);
+  _io.to(roomId).emit('userLeft', { username });
+  _pushOnlineList(roomId);
+  console.log(`🤖 [Bot-Kicked] ${username} ← غرفة ${roomId} (رح يرجع تلقائياً خلال ≤5 دقائق)`);
+  return true;
+}
+
 /* ══════════════════════════════════════════
    أحداث الغرفة
 ══════════════════════════════════════════ */
@@ -300,4 +322,4 @@ function initBots(io, db, buildOnlineUsers) {
   setInterval(ensureBotsEverywhere, 5 * 60 * 1000);
 }
 
-module.exports = { initBots, getBotUsers, getBotInRoom, setBotMuted };
+module.exports = { initBots, getBotUsers, getBotInRoom, setBotMuted, setBotFrozen, kickBotFromRoom };
