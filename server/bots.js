@@ -173,6 +173,21 @@ async function refreshRooms() {
   } catch (_) {}
 }
 
+/* ── الغرف اللي فيها فعلاً بشر متصلين حالياً (Socket.io حقيقي) ──
+   البوتات لا تدخل عبر Socket.io فعلي (فقط io.to(roomId).emit مباشرة)،
+   فالعضوية الحقيقية بـ io.sockets.adapter.rooms تعكس البشر فقط،
+   وبالتالي نقدر نستخدمها كفلتر دقيق: بوت يدخل فقط غرفة فيها إنسان حقيقي
+   الآن، بدل التوزيع العشوائي على كل الغرف النشطة حتى الفارغة. */
+function _getHumanOccupiedRooms() {
+  if (!_io) return [];
+  const occupied = [];
+  for (const roomId of _roomIds) {
+    const members = _io.sockets.adapter.rooms.get(String(roomId));
+    if (members && members.size > 0) occupied.push(roomId);
+  }
+  return occupied;
+}
+
 /* ── تحديث onlineUsers في الغرفة ── */
 async function _pushOnlineList(roomId) {
   if (!_buildUsers) return;
@@ -278,13 +293,18 @@ async function runBot(bot) {
   await delay(rnd(3000, 25000));
 
   while (true) {
-    // تأكد من وجود غرف (نحدّث القائمة دايماً قبل كل دورة دخول جديدة،
-    // مو بس أول مرة، عشان البوتات توزّع على الغرف النشطة الفعلية —
-    // كانت مثبّتة سابقاً على غرفة '102' بشكل ثابت بالكود بدل هذا).
-    await refreshRooms();
-    if (_roomIds.length === 0) { await delay(5000); continue; }
+    // تأكد من وجود غرف نشطة أصلاً
+    if (_roomIds.length === 0) {
+      await refreshRooms();
+      if (_roomIds.length === 0) { await delay(5000); continue; }
+    }
 
-    const roomId = pick(_roomIds);
+    // [تحديث] البوت يدخل فقط غرفة فيها إنسان حقيقي متصل الآن —
+    // لو ما فيه أي غرفة مأهولة ببشر، ينتظر ويعيد المحاولة بدل الدخول
+    // لغرفة فارغة عشوائياً (كان السلوك السابق).
+    const humanRooms = _getHumanOccupiedRooms();
+    if (humanRooms.length === 0) { await delay(8000); continue; }
+    const roomId = pick(humanRooms);
     const state  = { active: true, isMicOn: false, timers: [] };
 
     // ── دخول الغرفة ──
