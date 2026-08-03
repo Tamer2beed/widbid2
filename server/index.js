@@ -1142,6 +1142,15 @@ io.on('connection', (socket) => {
 
       await db.query('UPDATE users SET rank = ?, custom_color = ? WHERE username = ?', [new_rank, safeColor, target]);
 
+      /* [S18-10] ربط/فك ربط الحساب بـ room_masters — "مشرفو هذه الغرفة"
+         تحديداً هم من رتبتهم 500+ ومربوطين بها، بغض النظر عن اتصالهم الآن.
+         ترقية لـ 500+ تربطه، تخفيض تحت 500 يفكّ الربط. */
+      if (Number(new_rank) >= 500) {
+        await db.query('INSERT IGNORE INTO room_masters (room_id, user_id, assigned_by) VALUES (?, ?, ?)', [room_id, targetId, actorId]);
+      } else {
+        await db.query('DELETE FROM room_masters WHERE room_id = ? AND user_id = ?', [room_id, targetId]);
+      }
+
       /* تحديث عدّاد الحدود: زيادة للرتبة الجديدة، إنقاص للرتبة القديمة
          (لو كانتا ضمن الرتب المحكومة بحد) */
       if (QUOTA_RANKS.includes(Number(new_rank)) && Number(new_rank) !== targetRank) {
@@ -1737,21 +1746,39 @@ io.on('connection', (socket) => {
        متصل، وهذا يخلي فحص الحصانة يمر بالغلط دايماً — ثغرة حقيقية). */
     if (!targetSock) {
       const bot = getBotInRoom(room_id, target);
-      if (!bot) { socket.emit('error', 'المستخدم غير موجود'); return; }
-
-      const check = await rankGuard.canActOn(
-        { id: actorId, rank: actorRank }, { id: null, rank: bot.rank }, 500
-      );
-      if (!check.allowed) {
-        socket.emit('error', immunityErrorMessage(check.reason));
-        if (check.alertOwner) io.to(room_id).emit('immunityAlert', { target, by, action: 'freeze' });
+      if (bot) {
+        const check = await rankGuard.canActOn(
+          { id: actorId, rank: actorRank }, { id: null, rank: bot.rank }, 500
+        );
+        if (!check.allowed) {
+          socket.emit('error', immunityErrorMessage(check.reason));
+          if (check.alertOwner) io.to(room_id).emit('immunityAlert', { target, by, action: 'freeze' });
+          return;
+        }
+        setBotFrozen(room_id, target, true);
+        io.to(room_id).emit('systemMessage', `🧊 تم تجميد ${target} بواسطة ${by}`);
+        const usersAfterBotFreeze = await buildOnlineUsers(room_id);
+        io.to(room_id).emit('onlineUsers', usersAfterBotFreeze);
         return;
       }
 
-      setBotFrozen(room_id, target, true);
-      io.to(room_id).emit('systemMessage', `🧊 تم تجميد ${target} بواسطة ${by}`);
-      const usersAfterBotFreeze = await buildOnlineUsers(room_id);
-      io.to(room_id).emit('onlineUsers', usersAfterBotFreeze);
+      /* [S18-10] حساب حقيقي غير متصل حالياً (مثلاً من قائمة "مشرفو
+         الغرفة" — مسجّلين بس مو متواجدين هالحظة) — نجيب رتبته من DB */
+      const [offlineRows] = await db.query('SELECT id, rank FROM users WHERE username = ?', [target]);
+      if (!offlineRows.length) { socket.emit('error', 'المستخدم غير موجود'); return; }
+      const offlineId = offlineRows[0].id;
+      const offlineRank = offlineRows[0].rank || 100;
+
+      const offlineCheck = await rankGuard.canActOn(
+        { id: actorId, rank: actorRank }, { id: offlineId, rank: offlineRank }, 500
+      );
+      if (!offlineCheck.allowed) {
+        socket.emit('error', immunityErrorMessage(offlineCheck.reason));
+        if (offlineCheck.alertOwner) io.to(room_id).emit('immunityAlert', { target, by, action: 'freeze' });
+        return;
+      }
+      frozenUsers.set(target, { by, at: Date.now() });
+      io.to(room_id).emit('systemMessage', `🧊 تم تجميد ${target} بواسطة ${by} (غير متصل حالياً)`);
       return;
     }
 
