@@ -46,7 +46,7 @@ function wbAdaptUser(serverUser, isMe) {
     avatar: isMe ? (typeof ME_AVATAR !== 'undefined' ? ME_AVATAR : '') : `/avatars/av${(rank % 16) + 1}.svg`,
     status: serverUser.status === 'available' ? 'متواجد الآن' : (serverUser.status || ''),
     isOwner: rank >= 900,
-    color: WB_RANK_COLORS[rank] || '#6b7280',
+    color: serverUser.customColor || WB_RANK_COLORS[rank] || '#6b7280',
     rank,
     rankName: WB_RANK_NAMES[rank] || '—',
     isMuted: !!serverUser.isMuted,
