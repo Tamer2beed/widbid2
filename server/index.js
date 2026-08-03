@@ -1119,12 +1119,40 @@ io.on('connection', (socket) => {
         return;
       }
 
+      /* [S18-8] فرض حدود إنشاء المشرفين لكل غرفة — Master/SuperAdmin/Admin
+         فقط (Member دائماً بلا حد). لا يمكن تجاوز الحد مهما كانت رتبة
+         الفاعل (حتى Owner نفسه يمر بنفس الفحص — التعديل على الحد نفسه
+         محصور له عبر REST /api/rooms/:id/quotas فقط). */
+      const QUOTA_RANKS = [500, 600, 700];
+      if (QUOTA_RANKS.includes(Number(new_rank)) && Number(new_rank) !== targetRank) {
+        const [quotaRows] = await db.query(
+          'SELECT max_count, current_count FROM room_rank_quotas WHERE room_id = ? AND rank_value = ?',
+          [room_id, new_rank]
+        );
+        if (quotaRows.length && quotaRows[0].current_count >= quotaRows[0].max_count) {
+          socket.emit('error', `⛔ وصلت للحد الأقصى المسموح لهذه الرتبة بهذه الغرفة (${quotaRows[0].current_count}/${quotaRows[0].max_count})`);
+          return;
+        }
+      }
+
       /* [S18-7] لون مخصص اختياري (يُقبل فقط ضمن قائمة بيضاء محدودة —
          يمنع حقن أي CSS/قيمة عشوائية عبر الـ socket من العميل) */
-      const ALLOWED_CUSTOM_COLORS = ['#D32F2F', '#EC4899'];
+      const ALLOWED_CUSTOM_COLORS = ['#D32F2F', '#FF1493'];
       const safeColor = ALLOWED_CUSTOM_COLORS.includes(custom_color) ? custom_color : null;
 
       await db.query('UPDATE users SET rank = ?, custom_color = ? WHERE username = ?', [new_rank, safeColor, target]);
+
+      /* تحديث عدّاد الحدود: زيادة للرتبة الجديدة، إنقاص للرتبة القديمة
+         (لو كانتا ضمن الرتب المحكومة بحد) */
+      if (QUOTA_RANKS.includes(Number(new_rank)) && Number(new_rank) !== targetRank) {
+        await db.query('UPDATE room_rank_quotas SET current_count = current_count + 1 WHERE room_id = ? AND rank_value = ?', [room_id, new_rank]);
+      }
+      if (QUOTA_RANKS.includes(targetRank) && Number(new_rank) !== targetRank) {
+        await db.query('UPDATE room_rank_quotas SET current_count = GREATEST(current_count - 1, 0) WHERE room_id = ? AND rank_value = ?', [room_id, targetRank]);
+      }
+      const [freshQuotas] = await db.query('SELECT rank_value, max_count, current_count FROM room_rank_quotas WHERE room_id = ?', [room_id]);
+      io.to(room_id).emit('quotasUpdated', freshQuotas);
+
       // تحديث socket الهدف إذا كان متصلاً
       const roomSockets = await io.in(room_id).fetchSockets();
       const ts = roomSockets.find(s => s.userData?.username === target);
