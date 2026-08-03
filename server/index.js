@@ -1156,7 +1156,7 @@ io.on('connection', (socket) => {
          [إصلاح صمود] معزول — فشل الربط ما يلغي الترقية الأساسية اللي
          تمت بالسطر فوق. */
       try {
-        if (Number(new_rank) >= 500) {
+        if (Number(new_rank) >= 200) {
           await db.query('INSERT IGNORE INTO room_masters (room_id, user_id, assigned_by) VALUES (?, ?, ?)', [room_id, targetId, actorId]);
         } else {
           await db.query('DELETE FROM room_masters WHERE room_id = ? AND user_id = ?', [room_id, targetId]);
