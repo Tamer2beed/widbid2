@@ -51,6 +51,44 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/* ── GET /api/rooms/:room_id/quotas — حدود إنشاء المشرفين لهذه الغرفة ── */
+router.get('/:room_id/quotas', async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      'SELECT rank_value, max_count, current_count FROM room_rank_quotas WHERE room_id = ?',
+      [req.params.room_id]
+    );
+    res.json({ success: true, quotas: rows });
+  } catch (err) {
+    console.error('GET /rooms/:room_id/quotas:', err.message);
+    res.status(500).json({ success: false, message: 'خطأ في السيرفر' });
+  }
+});
+
+/* ── POST /api/rooms/:room_id/quotas — تعديل الحد الأقصى لرتبة معيّنة
+   حصراً لـ Owner فما فوق (1100+) — لا يقدر Super Master يتجاوزه أبداً ── */
+router.post('/:room_id/quotas', verifyToken, isOwner, async (req, res) => {
+  const { rank_value, max_count } = req.body;
+  if (![500, 600, 700].includes(Number(rank_value))) {
+    return res.status(400).json({ success: false, message: 'رتبة غير مدعومة بنظام الحدود' });
+  }
+  if (!Number.isInteger(max_count) || max_count < 0) {
+    return res.status(400).json({ success: false, message: 'قيمة الحد غير صحيحة' });
+  }
+  try {
+    await db.query(
+      `INSERT INTO room_rank_quotas (room_id, rank_value, max_count, updated_by)
+       VALUES (?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE max_count = VALUES(max_count), updated_by = VALUES(updated_by)`,
+      [req.params.room_id, rank_value, max_count, req.user.id]
+    );
+    res.json({ success: true, message: 'تم تحديث الحد الأقصى' });
+  } catch (err) {
+    console.error('POST /rooms/:room_id/quotas:', err.message);
+    res.status(500).json({ success: false, message: 'خطأ في السيرفر' });
+  }
+});
+
 /* ── POST /api/rooms/create — إنشاء غرفة */
 router.post('/create', verifyToken, async (req, res) => {
   const { name, type, owner_id, category_id } = req.body;
@@ -68,6 +106,17 @@ router.post('/create', verifyToken, async (req, res) => {
       'INSERT INTO admin_actions_log (actor_id, actor_name, action, detail) VALUES (?,?,?,?)',
       [req.user.id, req.user.username, 'create_room', `Room: ${name}`]
     );
+
+    /* [S18-8] بذر الحدود الافتراضية لإنشاء المشرفين بهذه الغرفة —
+       Master=10, Super Admin=15, Admin=20 — Member دائماً بلا حد */
+    const DEFAULT_QUOTAS = [{ rank: 700, max: 10 }, { rank: 600, max: 15 }, { rank: 500, max: 20 }];
+    for (const q of DEFAULT_QUOTAS) {
+      await db.query(
+        'INSERT INTO room_rank_quotas (room_id, rank_value, max_count) VALUES (?, ?, ?)',
+        [result.insertId, q.rank, q.max]
+      );
+    }
+
     res.json({ success: true, room_id: result.insertId, message: 'تم إنشاء الغرفة' });
   } catch (err) {
     console.error('POST /rooms/create:', err.message);
