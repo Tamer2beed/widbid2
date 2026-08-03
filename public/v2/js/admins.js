@@ -1,15 +1,10 @@
 /* admins.js — إدارة المشرفين: مطابقة أسماء غير حساسة لحالة الأحرف، ألوان ثابتة بلا تعارض. */
 
-let adminAccounts = [];
 const ADMIN_ROLE_ORDER = ['member', 'admin', 'super_admin', 'master'];
 const ADMIN_ROLE_LABELS = { member: 'Member', admin: 'Admin', super_admin: 'Super Admin', master: 'Master', super_master: 'Super Master' };
 const ADMIN_ROLE_COLORS = { member: '#f472b6', admin: '#3b82f6', super_admin: '#22c55e', master: '#dc2626' };
 const SUPER_MASTER_COLOR = '#ef4444';
 const SUPER_MASTER_GLOW = 'text-shadow:0 0 6px #ef4444,0 0 14px #ef4444,0 0 22px #ef4444;';
-const RESERVED_MASTER_NAME = 'master';
-
-let newAdminSelectedRole = null;
-let changePasswordTargetId = null;
 
 function admSafe(str) { return (typeof sanitize === 'function') ? sanitize(str) : String(str); }
 /* [PHASE 3] استبدال بالكامل — الرتب الحقيقية (100→1200) بدل النظام
@@ -42,36 +37,6 @@ function getRoleNameStyle(role) {
     return `color:${color};`;
 }
 function canAccessMasterOnlyFeatures() { return getCurrentUserRoleIndex() >= ADMIN_ROLE_ORDER.indexOf('master'); }
-
-const ADMIN_SCHEMA_VERSION = 2;
-function checkAdminSchemaVersion() {
-    try {
-        const v = parseInt(localStorage.getItem('adminSchemaVersion') || '0', 10);
-        if (v !== ADMIN_SCHEMA_VERSION) {
-            localStorage.removeItem('adminAccounts');
-            localStorage.setItem('adminSchemaVersion', String(ADMIN_SCHEMA_VERSION));
-        }
-    } catch (e) {}
-}
-function loadAdminAccounts() { checkAdminSchemaVersion(); try { const s = localStorage.getItem('adminAccounts'); adminAccounts = s ? JSON.parse(s) : []; } catch (e) { adminAccounts = []; } }
-function saveAdminAccounts() { try { localStorage.setItem('adminAccounts', JSON.stringify(adminAccounts)); } catch (e) {} }
-function findAccountByName(name) { return adminAccounts.find(a => a.name.toLowerCase() === String(name).toLowerCase()); }
-
-async function ensureSuperMasterAccount() {
-    loadAdminAccounts();
-    if (adminAccounts.some(a => a.role === 'super_master')) return;
-    const hash = await hashPassword('123456');
-    adminAccounts.push({
-        id: 'super_master_fixed', name: RESERVED_MASTER_NAME, role: 'super_master',
-        namePasswordHash: hash, roomPasswordHash: hash, mustChangePassword: true, createdAt: Date.now()
-    });
-    saveAdminAccounts();
-}
-
-async function initAdminAccounts() {
-    await ensureSuperMasterAccount();
-    renderAdminAccounts();
-}
 
 const WB_RANK_LADDER = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200];
 
@@ -145,73 +110,6 @@ function realKickUser(username) { _wbEmitAdminAction('kickUser', username); }
 
 /* تجميد حقيقي عبر freezeUser */
 function realFreezeUser(username) { _wbEmitAdminAction('freezeUser', username); }
-
-function openAddAdminModal() {
-    const nameInput = document.getElementById('newAdminNameInput');
-    const pwInput = document.getElementById('newAdminPasswordInput');
-    if (nameInput) nameInput.value = '';
-    if (pwInput) pwInput.value = '';
-    document.querySelectorAll('.new-admin-role-option').forEach(el => el.classList.remove('selected'));
-    const myIdx = getCurrentUserRoleIndex();
-    document.querySelectorAll('.new-admin-role-option').forEach(opt => {
-        const roleIdx = ADMIN_ROLE_ORDER.indexOf(opt.dataset.role);
-        const hide = isCurrentUserSuperMaster() ? false : (roleIdx >= myIdx);
-        opt.classList.toggle('hidden', hide);
-    });
-    newAdminSelectedRole = null;
-    document.getElementById('addAdminModal')?.classList.remove('hidden');
-}
-
-function updateAddAdminPasswordFields() {}
-
-async function submitAddAdmin() {
-    const name = document.getElementById('newAdminNameInput')?.value.trim();
-    const pw = document.getElementById('newAdminPasswordInput')?.value.trim();
-
-    if (!name) { if (typeof showNotification === 'function') showNotification('يرجى إدخال الاسم', 'leave'); return; }
-    if (name.toLowerCase() === RESERVED_MASTER_NAME) { if (typeof showNotification === 'function') showNotification('⛔ هذا الاسم محجوز للنظام', 'leave'); return; }
-    if (!newAdminSelectedRole) { if (typeof showNotification === 'function') showNotification('يرجى اختيار الرتبة', 'leave'); return; }
-    if (newAdminSelectedRole === 'master' && !isCurrentUserSuperMaster()) { if (typeof showNotification === 'function') showNotification('⛔ لا تملك صلاحية إنشاء رتبة Master', 'leave'); return; }
-    if (!isCurrentUserSuperMaster() && ADMIN_ROLE_ORDER.indexOf(newAdminSelectedRole) >= getCurrentUserRoleIndex()) { if (typeof showNotification === 'function') showNotification('⛔ لا يمكنك إنشاء حساب برتبة مساوية أو أعلى من رتبتك', 'leave'); return; }
-    if (findAccountByName(name)) { if (typeof showNotification === 'function') showNotification('هذا الاسم مستخدم بالفعل', 'leave'); return; }
-    if (!pw) { if (typeof showNotification === 'function') showNotification('يرجى إدخال كلمة المرور', 'leave'); return; }
-
-    const hash = await hashPassword(pw);
-    const data = { id: 'admin_' + Date.now(), name, role: newAdminSelectedRole, passwordHash: hash, mustChangePassword: true, createdAt: Date.now() };
-    finalizeAddAdmin(data);
-}
-
-function finalizeAddAdmin(data) {
-    adminAccounts.push(data);
-    saveAdminAccounts();
-    renderAdminAccounts();
-    document.getElementById('addAdminModal')?.classList.add('hidden');
-    if (typeof showNotification === 'function') showNotification(`✅ تم إضافة ${data.name} — سيُطالَب بتغيير كلمة المرور عند أول دخول`, 'join');
-}
-
-function openChangePasswordModal(id) {
-    const admin = adminAccounts.find(a => a.id === id);
-    if (!admin || admin.role === 'super_master') return;
-    if (typeof canActOnAccount === 'function' && !canActOnAccount(admin)) { if (typeof showNotification === 'function') showNotification('⛔ لا تملك صلاحية تغيير كلمة مرور هذا الحساب', 'leave'); return; }
-    changePasswordTargetId = id;
-    const subtitle = document.getElementById('changePasswordSubtitle');
-    if (subtitle) subtitle.textContent = `كلمة مرور جديدة لـ ${admin.name}`;
-    const pwInput = document.getElementById('newPasswordInput');
-    if (pwInput) pwInput.value = '';
-    document.getElementById('changePasswordModal')?.classList.remove('hidden');
-}
-
-async function submitChangePassword() {
-    const newPw = document.getElementById('newPasswordInput')?.value.trim();
-    if (!newPw) { if (typeof showNotification === 'function') showNotification('يرجى إدخال كلمة مرور جديدة', 'leave'); return; }
-    const admin = adminAccounts.find(a => a.id === changePasswordTargetId);
-    if (!admin) return;
-    admin.passwordHash = await hashPassword(newPw);
-    saveAdminAccounts();
-    document.getElementById('changePasswordModal')?.classList.add('hidden');
-    if (typeof showNotification === 'function') showNotification(`🔑 تم تغيير كلمة مرور ${admin.name}`, 'join');
-    if (typeof logAdminActivity === 'function') logAdminActivity(`تغيير كلمة مرور ${admin.name}`);
-}
 
 /* ---------- سجل التغييرات: يسجّل كل إجراء إداري باسم المنفّذ والتاريخ والوقت ---------- */
 function loadActivityLog() { try { const s = localStorage.getItem('activityLog'); return s ? JSON.parse(s) : []; } catch (e) { return []; } }
