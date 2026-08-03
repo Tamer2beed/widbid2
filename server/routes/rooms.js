@@ -51,6 +51,25 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/* ── GET /api/rooms/:room_id/admins — مشرفو هذه الغرفة المسجّلون فعلياً
+   (رتبة 500+ ومربوطين عبر room_masters) — بغض النظر عن اتصالهم الآن ── */
+router.get('/:room_id/admins', async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT u.id, u.username, u.rank, u.custom_color
+       FROM room_masters rm
+       JOIN users u ON u.id = rm.user_id
+       WHERE rm.room_id = ? AND u.rank >= 500
+       ORDER BY u.rank DESC, u.username ASC`,
+      [req.params.room_id]
+    );
+    res.json({ success: true, admins: rows });
+  } catch (err) {
+    console.error('GET /rooms/:room_id/admins:', err.message);
+    res.status(500).json({ success: false, message: 'خطأ في السيرفر' });
+  }
+});
+
 /* ── GET /api/rooms/:room_id/quotas — حدود إنشاء المشرفين لهذه الغرفة ── */
 router.get('/:room_id/quotas', async (req, res) => {
   try {
