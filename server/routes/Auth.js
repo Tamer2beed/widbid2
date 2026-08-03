@@ -229,24 +229,39 @@ router.post('/guest', async (req, res) => {
    — كلمة مرور الغرفة تُفحص لاحقاً في joinRoom (Socket.io)
 ════════════════════════════════════════════ */
 router.post('/room-entry', async (req, res) => {
-  const { email, room_id, room_password } = req.body;
+  const { identifier, password, room_id, room_password } = req.body;
 
-  if (!email) {
-    return res.status(400).json({ success: false, message: 'البريد الإلكتروني مطلوب' });
+  if (!identifier || !password) {
+    return res.status(400).json({ success: false, message: 'اسم المستخدم/البريد وكلمة المرور مطلوبان' });
   }
 
   try {
-    /* البحث عن المستخدم بالبريد */
+    /* [S18-6 SECURITY FIX] كان هذا المسار يبحث بالبريد فقط ولا يتحقق
+       من كلمة المرور إطلاقاً — أي شخص يعرف بريد عضو مسجّل يدخل باسمه
+       بدون كلمة مرور! الآن: يدعم اسم المستخدم أو البريد، ويتحقق من
+       كلمة المرور فعلياً بـ bcrypt متل /login تماماً. */
     const [users] = await db.query(
-      `SELECT id, username, rank, avatar, points
-       FROM users WHERE email = ? AND is_active = 1 LIMIT 1`,
-      [email.trim().toLowerCase()]
+      `SELECT id, username, password_hash, rank, avatar, points, is_active, is_banned
+       FROM users WHERE (email = ? OR username = ?) LIMIT 1`,
+      [identifier.trim().toLowerCase(), identifier.trim()]
     );
 
     if (!users.length) {
-      return res.status(401).json({ success: false, message: '⛔ البريد غير مسجّل أو الحساب غير نشط' });
+      return res.status(401).json({ success: false, message: '⛔ اسم المستخدم أو البريد غير مسجّل' });
     }
     const user = users[0];
+
+    if (user.is_banned) {
+      return res.status(403).json({ success: false, message: 'تم حظر هذا الحساب' });
+    }
+    if (!user.is_active) {
+      return res.status(403).json({ success: false, message: 'الحساب غير نشط' });
+    }
+
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      return res.status(401).json({ success: false, message: 'كلمة المرور غير صحيحة' });
+    }
 
     /* إنشاء JWT */
     const token = jwt.sign(
