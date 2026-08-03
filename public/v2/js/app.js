@@ -73,7 +73,7 @@ function applyChatTheme(theme) {
 const ADMIN_SUBPAGES = [
     'adminAppearanceSubMenu', 'adminWelcomeSubMenu', 'adminLoginLogsSubMenu',
     'adminLogoutLogsSubMenu', 'adminBannedSubMenu', 'adminManageAdminsSubMenu',
-    'adminActivityLogSubMenu'
+    'adminOnlineNowSubMenu', 'adminActivityLogSubMenu'
 ];
 
 function showAdminSubpage(id) {
@@ -233,7 +233,7 @@ async function initEventHandlers() {
                     ['goToWelcomeBtn', 'goToAppearanceBtn', 'goToBannedBtn', 'goToActivityLogBtn'].forEach(id => {
                         document.getElementById(id)?.classList.toggle('hidden', !masterOnly);
                     });
-                    ['goToLoginLogsBtn', 'goToLogoutLogsBtn', 'goToAdminsBtn'].forEach(id => {
+                    ['goToLoginLogsBtn', 'goToLogoutLogsBtn', 'goToAdminsBtn', 'goToOnlineNowBtn'].forEach(id => {
                         document.getElementById(id)?.classList.toggle('hidden', !superAdminOnly);
                     });
                     adminModal?.classList.remove('hidden');
@@ -275,11 +275,20 @@ async function initEventHandlers() {
                         return;
                     }
                     showAdminSubpage('adminManageAdminsSubMenu');
-                    if (typeof renderAdminAccounts === 'function') renderAdminAccounts();
                     if (typeof renderRoomAdmins === 'function') renderRoomAdmins();
                     return;
                 }
                 if (target.closest('#backFromAdminsBtn')) { showAdminMainPage(); return; }
+                if (target.closest('#goToOnlineNowBtn')) {
+                    if (typeof canManageAdmins === 'function' && !canManageAdmins()) {
+                        if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Super Admin فما فوق', 'leave');
+                        return;
+                    }
+                    showAdminSubpage('adminOnlineNowSubMenu');
+                    if (typeof renderAdminAccounts === 'function') renderAdminAccounts();
+                    return;
+                }
+                if (target.closest('#backFromOnlineNowBtn')) { showAdminMainPage(); return; }
                 if (target.closest('#goToActivityLogBtn')) { if (typeof canAccessMasterOnlyFeatures === 'function' && !canAccessMasterOnlyFeatures()) { if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Master فما فوق', 'leave'); return; } showAdminSubpage('adminActivityLogSubMenu'); if (typeof renderActivityLog === 'function') renderActivityLog(); return; }
                 if (target.closest('#backFromActivityLogBtn')) { showAdminMainPage(); return; }
 
