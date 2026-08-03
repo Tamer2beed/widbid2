@@ -488,77 +488,10 @@
         </div>
     </div>
 
-    <div id="addAdminModal" class="hidden fixed inset-0 flex items-center justify-center z-[70] p-4" style="background:rgba(0,0,0,0.6);">
-        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
-            <h3 class="text-white font-bold text-base mb-4">إضافة مشرف جديد</h3>
-            <label class="text-white/60 text-xs block mb-1">الاسم</label>
-            <input id="newAdminNameInput" type="text" placeholder="اسم العضو" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-4">
-            <label class="text-white/60 text-xs block mb-2">الرتبة</label>
-            <div class="grid grid-cols-2 gap-2 mb-4">
-                <button class="new-admin-role-option p-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm text-center" data-role="member" style="--role-color:#d9b98a;">Member</button>
-                <button class="new-admin-role-option p-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm text-center" data-role="admin" style="--role-color:#3b82f6;">Admin</button>
-                <button class="new-admin-role-option p-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm text-center" data-role="super_admin" style="--role-color:#22c55e;">Super Admin</button>
-                <button class="new-admin-role-option hidden p-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm text-center" data-role="master" style="--role-color:#dc2626;">Master</button>
-            </div>
-            <div id="newAdminNamePasswordContainer" class="hidden mb-4">
-                <label class="text-white/60 text-xs block mb-1">كلمة مرور الاسم</label>
-                <input id="newAdminNamePasswordInput" type="password" placeholder="كلمة مرور الاسم" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none">
-            </div>
-            <label class="text-white/60 text-xs block mb-1">كلمة المرور</label>
-            <input id="newAdminPasswordInput" type="password" placeholder="كلمة المرور" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-5">
-            <div class="flex gap-2">
-                <button id="cancelAddAdminBtn" class="flex-1 bg-white/5 border border-white/10 text-white/70 rounded-xl p-3 text-sm">إلغاء</button>
-                <button id="submitAddAdminBtn" class="flex-1 bg-purple-600 text-white rounded-xl p-3 text-sm font-bold">إضافة</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="masterColorModal" class="hidden fixed inset-0 flex items-center justify-center z-[80] p-4" style="background:rgba(0,0,0,0.65);">
-        <div class="glass-menu w-full max-w-xs rounded-2xl p-5 text-center">
-            <h3 class="text-white font-bold text-base mb-4">اختر لون رتبة Master</h3>
-            <div class="flex justify-center gap-4 mb-5">
-                <button class="master-color-option w-16 h-16 rounded-full border-4 border-transparent" data-color="red" style="background:#dc2626;"></button>
-                <button class="master-color-option w-16 h-16 rounded-full border-4 border-transparent" data-color="pink" style="background:#ec4899;"></button>
-            </div>
-            <div class="flex gap-2">
-                <button id="cancelMasterColorBtn" class="flex-1 bg-white/5 border border-white/10 text-white/70 rounded-xl p-3 text-sm">إلغاء</button>
-                <button id="confirmMasterColorBtn" class="flex-1 bg-purple-600 text-white rounded-xl p-3 text-sm font-bold">تأكيد</button>
-            </div>
-        </div>
-    </div>
-
-    <style>
-        .new-admin-role-option.selected { border-color: var(--role-color) !important; box-shadow: 0 0 0 2px var(--role-color); }
-        .master-color-option.selected { border-color: white !important; }
-    </style>
     <style>
         .login-tab-btn { background: rgba(255,255,255,0.05); transition: all 0.2s; }
         .login-tab-btn.active { background: #9333ea; color: white; }
     </style>
-
-    <div id="changePasswordModal" class="hidden fixed inset-0 flex items-center justify-center z-[80] p-4" style="background:rgba(0,0,0,0.65);">
-        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
-            <h3 class="text-white font-bold text-base mb-1">تغيير كلمة المرور</h3>
-            <p id="changePasswordSubtitle" class="text-white/50 text-xs mb-4"></p>
-            <input id="newPasswordInput" type="password" placeholder="كلمة المرور الجديدة" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-5">
-            <div class="flex gap-2">
-                <button id="cancelChangePasswordBtn" class="flex-1 bg-white/5 border border-white/10 text-white/70 rounded-xl p-3 text-sm">إلغاء</button>
-                <button id="confirmChangePasswordBtn" class="flex-1 bg-blue-600 text-white rounded-xl p-3 text-sm font-bold">حفظ</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="forcedPasswordChangeModal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.8);">
-        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
-            <h3 class="text-white font-bold text-base mb-1">يجب تغيير كلمتي المرور</h3>
-            <p id="forcedChangeSubtitle" class="text-white/50 text-xs mb-4"></p>
-            <label class="text-white/60 text-xs block mb-1">كلمة مرور الاسم الجديدة</label>
-            <input id="forcedNewNamePassword" type="password" placeholder="كلمة مرور الاسم الجديدة" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-4">
-            <label class="text-white/60 text-xs block mb-1">كلمة مرور الغرفة الجديدة</label>
-            <input id="forcedNewRoomPassword" type="password" placeholder="كلمة مرور الغرفة الجديدة" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-5">
-            <button id="submitForcedChangeBtn" class="w-full bg-purple-600 text-white rounded-xl p-3 text-sm font-bold">حفظ ومتابعة</button>
-        </div>
-    </div>
 
     <div id="roomsScreen" class="hidden fixed inset-0 z-[100] flex flex-col bg-gradient-to-b from-purple-900 to-slate-900">
         <div class="flex items-center justify-center h-16 shrink-0 border-b border-white/10">
@@ -618,14 +551,6 @@
     <script src="js/device-binding.js"></script>
     <script src="js/admins.js"></script>
     <script src="js/login.js"></script>
-    <div id="forcedSinglePasswordChangeModal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.8);">
-        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
-            <h3 class="text-white font-bold text-base mb-1">يجب تغيير كلمة المرور</h3>
-            <p id="forcedSingleChangeSubtitle" class="text-white/50 text-xs mb-4"></p>
-            <input id="forcedSingleNewPassword" type="password" placeholder="كلمة المرور الجديدة" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-5">
-            <button id="submitForcedSingleChangeBtn" class="w-full bg-purple-600 text-white rounded-xl p-3 text-sm font-bold">حفظ ومتابعة</button>
-        </div>
-    </div>
 
     <div id="memberContextModal" class="hidden fixed inset-0 z-[75]" style="background:rgba(0,0,0,0.25);">
         <div class="member-context-panel p-3">
