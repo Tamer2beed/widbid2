@@ -362,7 +362,12 @@ async function initEventHandlers() {
 
                 /* [PHASE 3] إضافة حساب جديد غير مطبّقة على النظام الحقيقي —
                    الرتب تُدار فقط على أعضاء متواجدين فعلياً عبر الترقية/التخفيض. */
-                if (target.closest('#addAdminBtn')) { if (typeof showNotification === 'function') showNotification('ℹ️ رقّي عضو متواجد من القائمة مباشرة بدل إضافة حساب جديد', 'leave'); return; }
+                if (target.closest('#addAdminBtn')) { if (typeof openAddAdminModal === 'function') openAddAdminModal(); return; }
+                if (target.closest('#cancelAddAdminBtn')) { document.getElementById('addAdminModal')?.classList.add('hidden'); return; }
+                if (target.closest('#submitAddAdminBtn')) { await submitAddAdmin(); return; }
+                if (target.id === 'addAdminModal') { document.getElementById('addAdminModal').classList.add('hidden'); return; }
+                const newAdminRankOpt = target.closest('.new-admin-rank-opt');
+                if (newAdminRankOpt) { selectNewAdminRank(parseInt(newAdminRankOpt.dataset.rank, 10)); return; }
 
                 const adminNameToggle = target.closest('.admin-name-toggle');
                 if (adminNameToggle && adminNameToggle.dataset.id) {
