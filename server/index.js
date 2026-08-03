@@ -49,13 +49,15 @@ app.get('/', (req, res) => res.send('WidBid Server Running ✅'));
 
 // قراءة رتبة المستخدم من DB
 async function getUserRank(userId) {
-  if (!userId) return 100;
+  if (!userId) return { rank: 100, customColor: null };
   try {
     const [rows] = await db.query(
-      'SELECT rank FROM users WHERE id = ?', [userId]
+      'SELECT rank, custom_color FROM users WHERE id = ?', [userId]
     );
-    return rows.length ? (rows[0].rank || 100) : 100;
-  } catch { return 100; }
+    return rows.length
+      ? { rank: rows[0].rank || 100, customColor: rows[0].custom_color || null }
+      : { rank: 100, customColor: null };
+  } catch { return { rank: 100, customColor: null }; }
 }
 
 // قراءة إعدادات الغرفة (بانر + ثيم)
@@ -76,6 +78,7 @@ async function buildOnlineUsers(roomId) {
     rank:     s.userData?.rank     || 100,
     status:   s.userData?.status   || 'available',
     isMuted:  s.userData?.isMuted  || false,
+    customColor: s.userData?.customColor || null,
   })).filter(u => u.username !== '?');
 
   /* ── إضافة الأعضاء الوهميين (البوتات) ── */
@@ -249,13 +252,15 @@ io.on('connection', (socket) => {
        الرتبة الحقيقية الوحيدة المصدر لها DB عبر user_id.
        أي مستخدم بدون user_id (زائر) يُثبَّت على Guest (100) دائماً،
        بغض النظر عمّا يرسله في الـ payload — يمنع انتحال الرتبة بالكامل. */
-    const dbRank = user_id ? await getUserRank(user_id) : 100;
+    const dbInfo = user_id ? await getUserRank(user_id) : { rank: 100, customColor: null };
+    const dbRank = dbInfo.rank;
 
     // تخزين بيانات المستخدم على الـ socket
     socket.userData = {
       username,
       user_id: user_id || null,
       rank:    dbRank,
+      customColor: dbInfo.customColor,
       room_id,
       status:  'available',
       isMuted: false,
@@ -1078,7 +1083,7 @@ io.on('connection', (socket) => {
 
   // ── تعيين رتبة (Master 700+) ─────────────────
   socket.on('assignRole', async (data) => {
-    const { room_id, target, new_rank, by } = data;
+    const { room_id, target, new_rank, by, custom_color } = data;
     const actorRank = socket.userData?.rank || 0;
     const actorId = socket.userData?.user_id || null;
     if (actorRank < 700) { socket.emit('error', 'ليس لديك صلاحية تعيين الرتب'); return; }
@@ -1114,12 +1119,19 @@ io.on('connection', (socket) => {
         return;
       }
 
-      await db.query('UPDATE users SET rank = ? WHERE username = ?', [new_rank, target]);
+      /* [S18-7] لون مخصص اختياري (يُقبل فقط ضمن قائمة بيضاء محدودة —
+         يمنع حقن أي CSS/قيمة عشوائية عبر الـ socket من العميل) */
+      const ALLOWED_CUSTOM_COLORS = ['#D32F2F', '#C2185B'];
+      const safeColor = ALLOWED_CUSTOM_COLORS.includes(custom_color) ? custom_color : null;
+
+      await db.query('UPDATE users SET rank = ?, custom_color = ? WHERE username = ?', [new_rank, safeColor, target]);
       // تحديث socket الهدف إذا كان متصلاً
       const roomSockets = await io.in(room_id).fetchSockets();
       const ts = roomSockets.find(s => s.userData?.username === target);
-      if (ts) ts.userData.rank = new_rank;
+      if (ts) { ts.userData.rank = new_rank; ts.userData.customColor = safeColor; }
       io.to(room_id).emit('roleAssigned', { target, new_rank, by });
+      const usersAfterAssign = await buildOnlineUsers(room_id);
+      io.to(room_id).emit('onlineUsers', usersAfterAssign);
     } catch (e) { console.error('assignRole:', e.message); }
   });
 
