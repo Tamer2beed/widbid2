@@ -1122,18 +1122,26 @@ io.on('connection', (socket) => {
       /* [S18-8] فرض حدود إنشاء المشرفين لكل غرفة — Master/SuperAdmin/Admin
          فقط (Member دائماً بلا حد). لا يمكن تجاوز الحد مهما كانت رتبة
          الفاعل (حتى Owner نفسه يمر بنفس الفحص — التعديل على الحد نفسه
-         محصور له عبر REST /api/rooms/:id/quotas فقط). */
+         محصور له عبر REST /api/rooms/:id/quotas فقط).
+         [إصلاح صمود] معزول بـ try خاص — لو جدول الحدود مو موجود بعد
+         (نسيان تشغيل الهجرة) ما يوقف الترقية الأساسية، بس يسجّل تحذير. */
       const QUOTA_RANKS = [500, 600, 700];
+      let quotaBlocked = false;
       if (QUOTA_RANKS.includes(Number(new_rank)) && Number(new_rank) !== targetRank) {
-        const [quotaRows] = await db.query(
-          'SELECT max_count, current_count FROM room_rank_quotas WHERE room_id = ? AND rank_value = ?',
-          [room_id, new_rank]
-        );
-        if (quotaRows.length && quotaRows[0].current_count >= quotaRows[0].max_count) {
-          socket.emit('error', `⛔ وصلت للحد الأقصى المسموح لهذه الرتبة بهذه الغرفة (${quotaRows[0].current_count}/${quotaRows[0].max_count})`);
-          return;
+        try {
+          const [quotaRows] = await db.query(
+            'SELECT max_count, current_count FROM room_rank_quotas WHERE room_id = ? AND rank_value = ?',
+            [room_id, new_rank]
+          );
+          if (quotaRows.length && quotaRows[0].current_count >= quotaRows[0].max_count) {
+            socket.emit('error', `⛔ وصلت للحد الأقصى المسموح لهذه الرتبة بهذه الغرفة (${quotaRows[0].current_count}/${quotaRows[0].max_count})`);
+            quotaBlocked = true;
+          }
+        } catch (qErr) {
+          console.warn('⚠️ نظام حدود الرتب غير جاهز (شغّل node migrate-room-quotas.js):', qErr.message);
         }
       }
+      if (quotaBlocked) return;
 
       /* [S18-7] لون مخصص اختياري (يُقبل فقط ضمن قائمة بيضاء محدودة —
          يمنع حقن أي CSS/قيمة عشوائية عبر الـ socket من العميل) */
@@ -1144,23 +1152,29 @@ io.on('connection', (socket) => {
 
       /* [S18-10] ربط/فك ربط الحساب بـ room_masters — "مشرفو هذه الغرفة"
          تحديداً هم من رتبتهم 500+ ومربوطين بها، بغض النظر عن اتصالهم الآن.
-         ترقية لـ 500+ تربطه، تخفيض تحت 500 يفكّ الربط. */
-      if (Number(new_rank) >= 500) {
-        await db.query('INSERT IGNORE INTO room_masters (room_id, user_id, assigned_by) VALUES (?, ?, ?)', [room_id, targetId, actorId]);
-      } else {
-        await db.query('DELETE FROM room_masters WHERE room_id = ? AND user_id = ?', [room_id, targetId]);
-      }
+         ترقية لـ 500+ تربطه، تخفيض تحت 500 يفكّ الربط.
+         [إصلاح صمود] معزول — فشل الربط ما يلغي الترقية الأساسية اللي
+         تمت بالسطر فوق. */
+      try {
+        if (Number(new_rank) >= 500) {
+          await db.query('INSERT IGNORE INTO room_masters (room_id, user_id, assigned_by) VALUES (?, ?, ?)', [room_id, targetId, actorId]);
+        } else {
+          await db.query('DELETE FROM room_masters WHERE room_id = ? AND user_id = ?', [room_id, targetId]);
+        }
+      } catch (rmErr) { console.warn('⚠️ فشل ربط room_masters:', rmErr.message); }
 
       /* تحديث عدّاد الحدود: زيادة للرتبة الجديدة، إنقاص للرتبة القديمة
-         (لو كانتا ضمن الرتب المحكومة بحد) */
-      if (QUOTA_RANKS.includes(Number(new_rank)) && Number(new_rank) !== targetRank) {
-        await db.query('UPDATE room_rank_quotas SET current_count = current_count + 1 WHERE room_id = ? AND rank_value = ?', [room_id, new_rank]);
-      }
-      if (QUOTA_RANKS.includes(targetRank) && Number(new_rank) !== targetRank) {
-        await db.query('UPDATE room_rank_quotas SET current_count = GREATEST(current_count - 1, 0) WHERE room_id = ? AND rank_value = ?', [room_id, targetRank]);
-      }
-      const [freshQuotas] = await db.query('SELECT rank_value, max_count, current_count FROM room_rank_quotas WHERE room_id = ?', [room_id]);
-      io.to(room_id).emit('quotasUpdated', freshQuotas);
+         (لو كانتا ضمن الرتب المحكومة بحد) — معزول لنفس السبب أعلاه */
+      try {
+        if (QUOTA_RANKS.includes(Number(new_rank)) && Number(new_rank) !== targetRank) {
+          await db.query('UPDATE room_rank_quotas SET current_count = current_count + 1 WHERE room_id = ? AND rank_value = ?', [room_id, new_rank]);
+        }
+        if (QUOTA_RANKS.includes(targetRank) && Number(new_rank) !== targetRank) {
+          await db.query('UPDATE room_rank_quotas SET current_count = GREATEST(current_count - 1, 0) WHERE room_id = ? AND rank_value = ?', [room_id, targetRank]);
+        }
+        const [freshQuotas] = await db.query('SELECT rank_value, max_count, current_count FROM room_rank_quotas WHERE room_id = ?', [room_id]);
+        io.to(room_id).emit('quotasUpdated', freshQuotas);
+      } catch (qErr2) { console.warn('⚠️ فشل تحديث عداد الحدود:', qErr2.message); }
 
       // تحديث socket الهدف إذا كان متصلاً
       const roomSockets = await io.in(room_id).fetchSockets();
@@ -1169,7 +1183,10 @@ io.on('connection', (socket) => {
       io.to(room_id).emit('roleAssigned', { target, new_rank, by });
       const usersAfterAssign = await buildOnlineUsers(room_id);
       io.to(room_id).emit('onlineUsers', usersAfterAssign);
-    } catch (e) { console.error('assignRole:', e.message); }
+    } catch (e) {
+      console.error('❌ assignRole فشل:', e.message);
+      socket.emit('error', `⚠️ فشل تنفيذ الترقية: ${e.message}`);
+    }
   });
 
   // ── حظر IP (Master 700+) ─────────────────────
