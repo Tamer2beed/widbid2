@@ -488,6 +488,22 @@
         </div>
     </div>
 
+    <div id="addAdminModal" class="hidden fixed inset-0 flex items-center justify-center z-[70] p-4" style="background:rgba(0,0,0,0.6);">
+        <div class="glass-menu w-full max-w-sm rounded-2xl p-5">
+            <h3 class="text-white font-bold text-base mb-4">إضافة عضو حقيقي جديد</h3>
+            <label class="text-white/60 text-xs block mb-1">اسم المستخدم</label>
+            <input id="newAdminNameInput" type="text" placeholder="اسم العضو" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-4">
+            <label class="text-white/60 text-xs block mb-1">كلمة المرور</label>
+            <input id="newAdminPasswordInput" type="password" placeholder="كلمة المرور (6 أحرف على الأقل)" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none mb-4">
+            <label class="text-white/60 text-xs block mb-2">الرتبة</label>
+            <div id="newAdminRankOptions" class="grid grid-cols-3 gap-2 mb-5"></div>
+            <div class="flex gap-2">
+                <button id="cancelAddAdminBtn" class="flex-1 bg-white/5 border border-white/10 text-white/70 rounded-xl p-3 text-sm">إلغاء</button>
+                <button id="submitAddAdminBtn" class="flex-1 bg-purple-600 text-white rounded-xl p-3 text-sm font-bold">إنشاء الحساب</button>
+            </div>
+        </div>
+    </div>
+
     <style>
         .login-tab-btn { background: rgba(255,255,255,0.05); transition: all 0.2s; }
         .login-tab-btn.active { background: #9333ea; color: white; }
