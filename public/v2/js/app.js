@@ -276,6 +276,7 @@ async function initEventHandlers() {
                     }
                     showAdminSubpage('adminManageAdminsSubMenu');
                     if (typeof renderAdminAccounts === 'function') renderAdminAccounts();
+                    if (typeof renderRoomAdmins === 'function') renderRoomAdmins();
                     return;
                 }
                 if (target.closest('#backFromAdminsBtn')) { showAdminMainPage(); return; }
