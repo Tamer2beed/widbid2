@@ -62,10 +62,10 @@ const TEST_ROOMS = [
     /* ══ 2.5 حساب "Master" الافتراضي المحجوز (سوبر ماستر/123456) —
        نفس الحساب يتكرر ربطه بكل غرفة جديدة (مطابق لمسار /api/rooms/create) ══ */
     process.stdout.write('⏳ إنشاء/تحديث حساب Master الافتراضي (رتبة 800)... ');
-    await conn.query('DELETE FROM users WHERE username = ?', ['Master']);
+    await conn.query('DELETE FROM users WHERE username = ? OR email = ?', ['Master', 'default_master@widbid.com']);
     const [masterResult] = await conn.query(
       `INSERT INTO users (username, email, password_hash, rank, avatar, is_active)
-       VALUES ('Master', 'master@widbid.com', ?, 800, 'av1.svg', 1)`,
+       VALUES ('Master', 'default_master@widbid.com', ?, 800, 'av1.svg', 1)`,
       [hash]
     );
     const masterId = masterResult.insertId;
