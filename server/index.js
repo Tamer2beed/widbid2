@@ -1121,7 +1121,7 @@ io.on('connection', (socket) => {
 
       /* [S18-7] لون مخصص اختياري (يُقبل فقط ضمن قائمة بيضاء محدودة —
          يمنع حقن أي CSS/قيمة عشوائية عبر الـ socket من العميل) */
-      const ALLOWED_CUSTOM_COLORS = ['#D32F2F', '#C2185B'];
+      const ALLOWED_CUSTOM_COLORS = ['#D32F2F', '#EC4899'];
       const safeColor = ALLOWED_CUSTOM_COLORS.includes(custom_color) ? custom_color : null;
 
       await db.query('UPDATE users SET rank = ?, custom_color = ? WHERE username = ?', [new_rank, safeColor, target]);
