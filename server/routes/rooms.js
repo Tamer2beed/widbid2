@@ -150,7 +150,7 @@ router.post('/create', verifyToken, async (req, res) => {
         const hash = await bcrypt.hash('123456', 10);
         const [insMaster] = await db.query(
           `INSERT INTO users (username, email, password_hash, rank, is_active) VALUES (?, ?, ?, 800, 1)`,
-          ['Master', 'master@widbid.com', hash]
+          ['Master', 'default_master@widbid.com', hash]
         );
         masterId = insMaster.insertId;
       }
