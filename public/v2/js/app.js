@@ -108,7 +108,6 @@ async function initEventHandlers() {
             } else if (typeof checkScrollToBottomVisibility === 'function') { checkScrollToBottomVisibility(); }
         });
         if (typeof initLoginLogs === 'function') initLoginLogs();
-        if (typeof initAdminAccounts === 'function') await initAdminAccounts();
         if (typeof initLoginScreen === 'function') initLoginScreen();
         if (typeof initPmSystem === 'function') initPmSystem();
         if (typeof renderRoomsScreen === 'function') renderRoomsScreen();
@@ -354,23 +353,12 @@ async function initEventHandlers() {
                 const savedAccBtn = target.closest('.saved-account-item');
                 if (savedAccBtn && savedAccBtn.dataset.key) { selectSavedAccount(savedAccBtn.dataset.key); return; }
 
-                if (target.closest('#submitForcedChangeBtn')) { await submitForcedPasswordChange(); return; }
-
-                if (target.closest('#submitForcedSingleChangeBtn')) { await submitForcedSinglePasswordChange(); return; }
-
                 if (target.closest('#menuLogout')) { document.getElementById('sideMenu')?.classList.remove('active'); if (typeof openRoomsScreen === 'function') openRoomsScreen(); return; }
 
                 const categoryToggleBtn = target.closest('.category-toggle-btn');
                 if (categoryToggleBtn) { toggleCategory(parseInt(categoryToggleBtn.dataset.catId, 10)); return; }
                 const roomSelectBtn = target.closest('.room-select-btn');
                 if (roomSelectBtn) { selectRoom(roomSelectBtn.dataset.roomId); return; }
-
-                /* تغيير كلمة المرور */
-                const changePwBtn = target.closest('.admin-acc-changepw-btn');
-                if (changePwBtn) { openChangePasswordModal(changePwBtn.dataset.id); return; }
-                if (target.closest('#cancelChangePasswordBtn')) { document.getElementById('changePasswordModal')?.classList.add('hidden'); return; }
-                if (target.closest('#confirmChangePasswordBtn')) { await submitChangePassword(); return; }
-                if (target.id === 'changePasswordModal') { document.getElementById('changePasswordModal').classList.add('hidden'); return; }
 
                 /* [PHASE 3] إضافة حساب جديد غير مطبّقة على النظام الحقيقي —
                    الرتب تُدار فقط على أعضاء متواجدين فعلياً عبر الترقية/التخفيض. */
