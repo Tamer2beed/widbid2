@@ -51,8 +51,8 @@ function switchLoginTab(tab) {
     } else if (tab === 'member') {
         namePwInput?.classList.add('hidden');
         roomPwInput?.classList.remove('hidden');
-        if (roomPwInput) roomPwInput.placeholder = 'كلمة مرور الغرفة (اختياري)';
-        if (mainInput) mainInput.placeholder = 'البريد الإلكتروني';
+        if (roomPwInput) roomPwInput.placeholder = 'كلمة المرور';
+        if (mainInput) mainInput.placeholder = 'اسم المستخدم أو البريد الإلكتروني';
     } else if (tab === 'registered') {
         roomPwInput?.classList.remove('hidden');
         if (roomPwInput) roomPwInput.placeholder = 'كلمة المرور';
@@ -153,7 +153,7 @@ async function attemptLogin() {
     }
     const mainValue = document.getElementById('loginUsernameInput')?.value.trim();
     if (!mainValue) {
-        if (typeof showNotification === 'function') showNotification(currentLoginTab === 'guest' ? 'يرجى إدخال اسم المستخدم' : 'يرجى إدخال البريد الإلكتروني', 'leave');
+        if (typeof showNotification === 'function') showNotification(currentLoginTab === 'guest' ? 'يرجى إدخال اسم المستخدم' : 'يرجى إدخال اسم المستخدم أو البريد الإلكتروني', 'leave');
         return;
     }
     wbLoginInProgress = true;
@@ -171,8 +171,9 @@ async function attemptLogin() {
         }
 
         const pw = document.getElementById('loginRoomPasswordInput')?.value.trim();
+        if (!pw) { if (typeof showNotification === 'function') showNotification('يرجى إدخال كلمة المرور', 'leave'); return; }
+
         if (currentLoginTab === 'registered') {
-            if (!pw) { if (typeof showNotification === 'function') showNotification('يرجى إدخال كلمة المرور', 'leave'); return; }
             res = await fetch('/api/auth/login', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: mainValue, password: pw }),
@@ -180,7 +181,7 @@ async function attemptLogin() {
         } else { /* member */
             res = await fetch('/api/auth/room-entry', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: mainValue, room_id: roomId, room_password: pw || '' }),
+                body: JSON.stringify({ identifier: mainValue, password: pw, room_id: roomId }),
             });
         }
         data = await res.json();
