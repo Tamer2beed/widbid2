@@ -59,8 +59,20 @@ const TEST_ROOMS = [
     const smId = smResult.insertId;
     console.log('✅');
 
-    /* ══ 3. إنشاء الغرف الثلاث + ربط Super Master كمالك ومشرف عليها ══ */
-    process.stdout.write('⏳ إنشاء 3 غرف اختبار وربطها بحساب Super Master... ');
+    /* ══ 2.5 حساب "Master" الافتراضي المحجوز (سوبر ماستر/123456) —
+       نفس الحساب يتكرر ربطه بكل غرفة جديدة (مطابق لمسار /api/rooms/create) ══ */
+    process.stdout.write('⏳ إنشاء/تحديث حساب Master الافتراضي (رتبة 800)... ');
+    await conn.query('DELETE FROM users WHERE username = ?', ['Master']);
+    const [masterResult] = await conn.query(
+      `INSERT INTO users (username, email, password_hash, rank, avatar, is_active)
+       VALUES ('Master', 'master@widbid.com', ?, 800, 'av1.svg', 1)`,
+      [hash]
+    );
+    const masterId = masterResult.insertId;
+    console.log('✅');
+
+    /* ══ 3. إنشاء الغرف الثلاث + ربط Super Master وMaster الافتراضي عليها ══ */
+    process.stdout.write('⏳ إنشاء 3 غرف اختبار وربطها بالحسابين... ');
     const roomIds = [];
     for (const room of TEST_ROOMS) {
       const token = `WB-TEST-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
@@ -71,8 +83,8 @@ const TEST_ROOMS = [
       );
       roomIds.push(r.insertId);
       await conn.query(
-        'INSERT INTO room_masters (room_id, user_id) VALUES (?, ?)',
-        [r.insertId, smId]
+        'INSERT INTO room_masters (room_id, user_id) VALUES (?, ?), (?, ?)',
+        [r.insertId, smId, r.insertId, masterId]
       );
       await conn.query(
         `INSERT INTO messages (room_id, sender_id, content, type) VALUES (?, ?, ?, 'system')`,
@@ -94,11 +106,13 @@ const TEST_ROOMS = [
     console.log(`║  📧 البريد الإلكتروني: ${SM_EMAIL.padEnd(23)}║`);
     console.log(`║  🔑 كلمة المرور: ${TEST_PASS.padEnd(30)}║`);
     console.log('╠════════════════════════════════════════════════╣');
-    console.log('║  طريقة الدخول بالواجهة (مهم):                    ║');
+    console.log('║  حساب "Master" الافتراضي (سوبر ماستر بكل غرفة):  ║');
+    console.log('║  👤 اسم المستخدم: Master                          ║');
+    console.log('║  🔑 كلمة المرور: 123456                           ║');
+    console.log('╠════════════════════════════════════════════════╣');
+    console.log('║  طريقة الدخول بالواجهة:                          ║');
     console.log('║  تبويب "عضو مميز" ← اسم المستخدم أو البريد        ║');
-    console.log('║  + كلمة المرور الحقيقية (يتحقق منها السيرفر فعلاً) ║');
-    console.log('║  تبويب "عضو" يطلب البريد حصراً (لا اسم المستخدم)   ║');
-    console.log('║  ولا يتحقق من كلمة مرور الحساب إطلاقاً حالياً!     ║');
+    console.log('║  + كلمة المرور (يتحقق منها السيرفر فعلياً الآن)    ║');
     console.log('╠════════════════════════════════════════════════╣');
     console.log('║  روابط الاختبار المباشرة (واجهة v2):            ║');
     roomIds.forEach(id => {
