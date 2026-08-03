@@ -164,6 +164,12 @@ function wbConnect(roomId, username, userId) {
     if (typeof renderAdminAccounts === 'function') renderAdminAccounts();
   });
 
+  /* [S18-10] تحديث قائمة "مشرفو الغرفة المسجّلون" حياً بعد أي ترقية/تخفيض
+     (مو مرتبط بـ onlineUsers عشان ما نستدعي API كل ثانية بلا داعي) */
+  wbSocket.on('roleAssigned', () => {
+    if (typeof renderRoomAdmins === 'function') renderRoomAdmins();
+  });
+
   /* دخول/خروج مستخدم — إشعار بسيط (القائمة نفسها تتحدث عبر onlineUsers) */
   wbSocket.on('userJoined', (data) => {
     if (typeof showNotification === 'function' && data.username !== username) {
