@@ -155,3 +155,77 @@ function clearActivityLog() {
     renderActivityLog();
     if (typeof showNotification === 'function') showNotification('🗑️ تم مسح سجل التغييرات', 'leave');
 }
+
+/* ══════════════════════════════════════════
+   [S18-5] إضافة عضو حقيقي جديد — تسجيل فعلي عبر
+   /api/auth/register ثم ترقية فعلية عبر assignRole
+   (بدل النافذة الوهمية القديمة المحذوفة).
+══════════════════════════════════════════ */
+let newAdminSelectedRank = 100;
+
+function openAddAdminModal() {
+    const nameInput = document.getElementById('newAdminNameInput');
+    const pwInput = document.getElementById('newAdminPasswordInput');
+    if (nameInput) nameInput.value = '';
+    if (pwInput) pwInput.value = '';
+
+    const myRank = getCurrentUserRank();
+    const options = WB_RANK_LADDER.filter(r => r < myRank);
+    newAdminSelectedRank = options[0] || 100;
+
+    const container = document.getElementById('newAdminRankOptions');
+    if (container) {
+        container.innerHTML = options.map(r => `
+            <button class="new-admin-rank-opt p-2 rounded-lg border text-[11px] font-bold ${r === newAdminSelectedRank ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-white/10 bg-white/5 text-white/60'}"
+                data-rank="${r}">${(typeof WB_RANK_NAMES !== 'undefined' && WB_RANK_NAMES[r]) || r}</button>
+        `).join('');
+    }
+    document.getElementById('addAdminModal')?.classList.remove('hidden');
+}
+
+function selectNewAdminRank(rank) {
+    newAdminSelectedRank = rank;
+    document.querySelectorAll('.new-admin-rank-opt').forEach(btn => {
+        const isSel = parseInt(btn.dataset.rank, 10) === rank;
+        btn.classList.toggle('border-purple-500', isSel);
+        btn.classList.toggle('bg-purple-500/20', isSel);
+        btn.classList.toggle('text-white', isSel);
+        btn.classList.toggle('border-white/10', !isSel);
+        btn.classList.toggle('bg-white/5', !isSel);
+        btn.classList.toggle('text-white/60', !isSel);
+    });
+}
+
+async function submitAddAdmin() {
+    const name = document.getElementById('newAdminNameInput')?.value.trim();
+    const pw = document.getElementById('newAdminPasswordInput')?.value.trim();
+
+    if (!name || name.length < 3) { if (typeof showNotification === 'function') showNotification('يرجى إدخال اسم مستخدم صحيح (3 أحرف على الأقل)', 'leave'); return; }
+    if (!pw || pw.length < 6) { if (typeof showNotification === 'function') showNotification('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'leave'); return; }
+    if (newAdminSelectedRank >= getCurrentUserRank()) { if (typeof showNotification === 'function') showNotification('⛔ لا يمكنك منح رتبة مساوية أو أعلى من رتبتك', 'leave'); return; }
+
+    try {
+        const email = `${name.toLowerCase().replace(/[^a-z0-9_]/g, '')}_${Date.now()}@widbid.com`;
+        const res = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: name, email, password: pw })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            if (typeof showNotification === 'function') showNotification(`⛔ ${data.message || 'فشل إنشاء الحساب'}`, 'leave');
+            return;
+        }
+
+        if (newAdminSelectedRank > 100 && typeof wbSocket !== 'undefined' && wbSocket && wbSocket.connected) {
+            wbSocket.emit('assignRole', { room_id: wbRoomId, target: name, new_rank: newAdminSelectedRank, by: wbUsername });
+        }
+
+        document.getElementById('addAdminModal')?.classList.add('hidden');
+        if (typeof showNotification === 'function') showNotification(`✅ تم إنشاء حساب "${name}" فعلياً — يقدر يسجّل دخول الآن بكلمة المرور اللي حطيتها`, 'join');
+        if (typeof logAdminActivity === 'function') logAdminActivity(`إنشاء عضو جديد: ${name}`);
+    } catch (err) {
+        console.error('[submitAddAdmin]', err);
+        if (typeof showNotification === 'function') showNotification('⚠️ فشل الاتصال بالسيرفر', 'leave');
+    }
+}
