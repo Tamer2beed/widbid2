@@ -169,11 +169,11 @@ let newAdminSelectedOption = null; /* { rank, label, color, customColor } */
    (يُحفظان بعمود custom_color، مو مجرد شكل واجهة). */
 const RESTRICTED_ADDABLE_RANKS = {
     800: [ /* Super Master */
-        { rank: 200, label: 'Member',            color: '#E6E6FA' },
+        { rank: 200, label: 'Member',            color: '#C9A0DC' },
         { rank: 500, label: 'Admin',              color: '#1565C0' },
         { rank: 600, label: 'Super Admin',        color: '#2E7D32' },
         { rank: 700, label: 'Master (أحمر)',      color: '#D32F2F', customColor: '#D32F2F' },
-        { rank: 700, label: 'Master (وردي)',      color: '#EC4899', customColor: '#EC4899' },
+        { rank: 700, label: 'Master (وردي)',      color: '#FF1493', customColor: '#FF1493' },
     ],
 };
 
@@ -188,24 +188,49 @@ function getAddableRankOptions() {
     }));
 }
 
-function openAddAdminModal() {
+async function openAddAdminModal() {
     const nameInput = document.getElementById('newAdminNameInput');
     const pwInput = document.getElementById('newAdminPasswordInput');
     if (nameInput) nameInput.value = '';
     if (pwInput) pwInput.value = '';
 
     const options = getAddableRankOptions();
-    newAdminSelectedOption = options[0] || null;
+
+    /* [S18-8] جلب الحدود الحقيقية لهذه الغرفة وعرض العدد المتبقي —
+       Member دائماً بلا حد، Admin/SuperAdmin/Master محكومة بسقف حقيقي
+       من قاعدة البيانات لا يقدر أي أحد (حتى Super Master) يتجاوزه. */
+    let quotaMap = {};
+    try {
+        const res = await fetch(`/api/rooms/${encodeURIComponent(wbRoomId)}/quotas`);
+        const data = await res.json();
+        if (data.success) data.quotas.forEach(q => { quotaMap[q.rank_value] = q; });
+    } catch (err) { console.error('[quotas] فشل الجلب:', err); }
+
+    options.forEach(opt => {
+        const q = quotaMap[opt.rank];
+        if (q) {
+            opt.remaining = Math.max(q.max_count - q.current_count, 0);
+            opt.maxCount = q.max_count;
+        } else {
+            opt.remaining = null; /* بلا حد (Member) أو ما فيه سجل بعد */
+        }
+    });
+
+    newAdminSelectedOption = options.find(o => o.remaining !== 0) || options[0] || null;
 
     const container = document.getElementById('newAdminRankOptions');
     if (container) {
-        container.innerHTML = options.map((opt, idx) => `
-            <button class="new-admin-rank-opt p-2 rounded-lg border-2 text-[11px] font-bold transition-colors"
-                data-idx="${idx}"
-                style="${idx === 0 ? `border-color:${opt.color};background:${opt.color}22;color:${opt.color};` : `border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:${opt.color};`}">
-                ${opt.label}
-            </button>
-        `).join('');
+        container.innerHTML = options.map((opt, idx) => {
+            const isFull = opt.remaining === 0;
+            const quotaLabel = opt.remaining !== null ? ` (${opt.remaining}/${opt.maxCount})` : '';
+            const isSelected = newAdminSelectedOption === opt;
+            return `
+            <button class="new-admin-rank-opt p-2 rounded-lg border-2 text-[11px] font-bold transition-colors ${isFull ? 'opacity-40 cursor-not-allowed' : ''}"
+                data-idx="${idx}" ${isFull ? 'disabled' : ''}
+                style="${isSelected ? `border-color:${opt.color};background:${opt.color}22;color:${opt.color};` : `border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:${opt.color};`}">
+                ${opt.label}${quotaLabel}
+            </button>`;
+        }).join('');
         container.dataset.options = JSON.stringify(options);
     }
     document.getElementById('addAdminModal')?.classList.remove('hidden');
@@ -215,8 +240,13 @@ function selectNewAdminRank(idx) {
     const container = document.getElementById('newAdminRankOptions');
     if (!container) return;
     const options = JSON.parse(container.dataset.options || '[]');
-    newAdminSelectedOption = options[idx];
-    if (!newAdminSelectedOption) return;
+    const chosen = options[idx];
+    if (!chosen) return;
+    if (chosen.remaining === 0) {
+        if (typeof showNotification === 'function') showNotification(`⛔ وصلت للحد الأقصى المسموح لرتبة ${chosen.label} بهذه الغرفة`, 'leave');
+        return;
+    }
+    newAdminSelectedOption = chosen;
 
     container.querySelectorAll('.new-admin-rank-opt').forEach(btn => {
         const isSel = parseInt(btn.dataset.idx, 10) === idx;
