@@ -4,6 +4,7 @@
 ════════════════════════════════════════ */
 const express = require('express');
 const router  = express.Router();
+const bcrypt  = require('bcryptjs');
 const db      = require('../db');
 const { verifyToken, isRoomAdmin, isOwner } = require('../middleware');
 
@@ -59,7 +60,7 @@ router.get('/:room_id/admins', async (req, res) => {
       `SELECT u.id, u.username, u.rank, u.custom_color
        FROM room_masters rm
        JOIN users u ON u.id = rm.user_id
-       WHERE rm.room_id = ? AND u.rank >= 500
+       WHERE rm.room_id = ? AND u.rank >= 200
        ORDER BY u.rank DESC, u.username ASC`,
       [req.params.room_id]
     );
@@ -135,6 +136,26 @@ router.post('/create', verifyToken, async (req, res) => {
         [result.insertId, q.rank, q.max]
       );
     }
+
+    /* [S18-13] حساب "Master" افتراضي محجوز — يُنشأ مرة واحدة بكلمة مرور
+       123456 برتبة Super Master (800)، وأي غرفة جديدة تُربط به تلقائياً
+       كسوبر ماستر افتراضي لها (نفس الحساب يُعاد استخدامه لكل الغرف). */
+    try {
+      const [existingMaster] = await db.query('SELECT id FROM users WHERE username = ?', ['Master']);
+      let masterId;
+      if (existingMaster.length) {
+        masterId = existingMaster[0].id;
+        await db.query('UPDATE users SET rank = 800 WHERE id = ? AND rank < 800', [masterId]);
+      } else {
+        const hash = await bcrypt.hash('123456', 10);
+        const [insMaster] = await db.query(
+          `INSERT INTO users (username, email, password_hash, rank, is_active) VALUES (?, ?, ?, 800, 1)`,
+          ['Master', 'master@widbid.com', hash]
+        );
+        masterId = insMaster.insertId;
+      }
+      await db.query('INSERT IGNORE INTO room_masters (room_id, user_id, assigned_by) VALUES (?, ?, ?)', [result.insertId, masterId, req.user.id]);
+    } catch (mErr) { console.warn('⚠️ فشل إنشاء/ربط حساب Master الافتراضي:', mErr.message); }
 
     res.json({ success: true, room_id: result.insertId, message: 'تم إنشاء الغرفة' });
   } catch (err) {
