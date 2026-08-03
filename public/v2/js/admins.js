@@ -169,11 +169,11 @@ let newAdminSelectedOption = null; /* { rank, label, color, customColor } */
    (يُحفظان بعمود custom_color، مو مجرد شكل واجهة). */
 const RESTRICTED_ADDABLE_RANKS = {
     800: [ /* Super Master */
-        { rank: 200, label: 'Member',            color: '#AD1457' },
+        { rank: 200, label: 'Member',            color: '#E6E6FA' },
         { rank: 500, label: 'Admin',              color: '#1565C0' },
         { rank: 600, label: 'Super Admin',        color: '#2E7D32' },
         { rank: 700, label: 'Master (أحمر)',      color: '#D32F2F', customColor: '#D32F2F' },
-        { rank: 700, label: 'Master (وردي)',      color: '#C2185B', customColor: '#C2185B' },
+        { rank: 700, label: 'Master (وردي)',      color: '#EC4899', customColor: '#EC4899' },
     ],
 };
 
