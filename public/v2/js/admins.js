@@ -43,6 +43,63 @@ const WB_RANK_LADDER = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100,
 /* [PHASE 3] تعرض الآن الأعضاء الحقيقيين المتواجدين فعلياً بالغرفة
    (نفس بيانات mockUsersList المحدَّثة عبر onlineUsers الحقيقي)،
    مع أزرار ترقية/تخفيض/طرد/تجميد حقيقية — بدل حسابات adminAccounts الوهمية. */
+/* [S18-10] مشرفو الغرفة المسجّلون فعلياً (رتبة 500+ ومربوطين بـ
+   room_masters) — بغض النظر عن اتصالهم الآن. منفصل تماماً عن
+   "المتواجدون الآن" (renderAdminAccounts فوق). */
+async function renderRoomAdmins() {
+    const listEl = document.getElementById('roomAdminsList');
+    if (!listEl) return;
+    listEl.innerHTML = '<div class="text-center text-white/30 text-xs py-4">جاري التحميل...</div>';
+
+    let admins = [];
+    try {
+        const res = await fetch(`/api/rooms/${encodeURIComponent(wbRoomId)}/admins`);
+        const data = await res.json();
+        if (data.success) admins = data.admins;
+    } catch (err) {
+        console.error('[renderRoomAdmins] فشل الجلب:', err);
+        listEl.innerHTML = '<div class="text-center text-red-400 text-xs py-4">تعذّر جلب مشرفي الغرفة</div>';
+        return;
+    }
+
+    if (admins.length === 0) {
+        listEl.innerHTML = '<div class="text-center text-white/30 text-xs py-4">لا يوجد مشرفون مسجّلون بهذه الغرفة بعد</div>';
+        return;
+    }
+
+    const onlineNames = new Set((typeof mockUsersList !== 'undefined' ? mockUsersList : []).map(u => u.name));
+
+    listEl.innerHTML = admins.map(a => {
+        const rank = a.rank || 100;
+        const color = a.custom_color || (typeof WB_RANK_COLORS !== 'undefined' && WB_RANK_COLORS[rank]) || '#9ca3af';
+        const rankName = (typeof WB_RANK_NAMES !== 'undefined' && WB_RANK_NAMES[rank]) || '—';
+        const isSelf = a.username === wbUsername;
+        const isOnline = onlineNames.has(a.username);
+        const canAct = !isSelf && (typeof canActOnMember === 'function' ? canActOnMember(rank) : false);
+        const ladderIdx = WB_RANK_LADDER.indexOf(rank);
+        const myRank = typeof getCurrentUserRank === 'function' ? getCurrentUserRank() : 100;
+        const nextRank = ladderIdx > -1 && ladderIdx < WB_RANK_LADDER.length - 1 ? WB_RANK_LADDER[ladderIdx + 1] : null;
+        const canPromote = canAct && nextRank !== null && nextRank < myRank;
+        const canDemote = canAct && ladderIdx > 0;
+        const safeName = typeof admSafe === 'function' ? admSafe(a.username) : a.username;
+        return `
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
+            <button class="admin-name-toggle w-full flex items-center justify-between" data-id="radm-${safeName}">
+                <span class="font-bold text-sm flex items-center gap-1.5" style="color:${color};">
+                    <span class="w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-green-400' : 'bg-white/20'}"></span>
+                    ${safeName}${isSelf ? ' (أنت)' : ''}
+                </span>
+                <span class="text-[9px] px-2 py-0.5 rounded-full" style="background:${color}22;color:${color};">${rankName}</span>
+            </button>
+            ${canAct ? `<div id="admin-actions-radm-${safeName}" class="hidden flex flex-wrap gap-2 pt-1">
+                ${canPromote ? `<button class="admin-acc-promote-btn text-[10px] px-2 py-1 rounded-lg bg-cyan-600/80 text-white" data-id="${safeName}" data-rank="${rank}">▲ ترقية</button>` : ''}
+                ${canDemote ? `<button class="admin-acc-demote-btn text-[10px] px-2 py-1 rounded-lg bg-amber-600/80 text-white" data-id="${safeName}" data-rank="${rank}">▼ تخفيض</button>` : ''}
+                <button class="admin-acc-freeze-btn text-[10px] px-2 py-1 rounded-lg bg-blue-600/80 text-white" data-id="${safeName}">🧊 تجميد</button>
+            </div>` : ''}
+        </div>`;
+    }).join('');
+}
+
 function renderAdminAccounts() {
     const listEl = document.getElementById('adminAccountsList');
     if (!listEl) return;
