@@ -161,7 +161,32 @@ function clearActivityLog() {
    /api/auth/register ثم ترقية فعلية عبر assignRole
    (بدل النافذة الوهمية القديمة المحذوفة).
 ══════════════════════════════════════════ */
-let newAdminSelectedRank = 100;
+let newAdminSelectedOption = null; /* { rank, label, color, customColor } */
+
+/* [S18-7] بعض الرتب لها قائمة "قابل للإضافة" مقيّدة صراحة بدل
+   "كل رتبة أقل من رتبتي" العامة — حسب طلب تامر لرتبة Super Master
+   تحديداً: أربع رتب فقط، وMaster له نسختان لونيتان منفصلتان فعلياً
+   (يُحفظان بعمود custom_color، مو مجرد شكل واجهة). */
+const RESTRICTED_ADDABLE_RANKS = {
+    800: [ /* Super Master */
+        { rank: 200, label: 'Member',            color: '#AD1457' },
+        { rank: 500, label: 'Admin',              color: '#1565C0' },
+        { rank: 600, label: 'Super Admin',        color: '#2E7D32' },
+        { rank: 700, label: 'Master (أحمر)',      color: '#D32F2F', customColor: '#D32F2F' },
+        { rank: 700, label: 'Master (وردي)',      color: '#C2185B', customColor: '#C2185B' },
+    ],
+};
+
+function getAddableRankOptions() {
+    const myRank = getCurrentUserRank();
+    if (RESTRICTED_ADDABLE_RANKS[myRank]) return RESTRICTED_ADDABLE_RANKS[myRank];
+    /* الافتراضي لبقية الرتب: كل رتبة أقل من رتبتي بلون رتبتها الحقيقي */
+    return WB_RANK_LADDER.filter(r => r < myRank).map(r => ({
+        rank: r,
+        label: (typeof WB_RANK_NAMES !== 'undefined' && WB_RANK_NAMES[r]) || String(r),
+        color: (typeof WB_RANK_COLORS !== 'undefined' && WB_RANK_COLORS[r]) || '#9ca3af',
+    }));
+}
 
 function openAddAdminModal() {
     const nameInput = document.getElementById('newAdminNameInput');
@@ -169,30 +194,36 @@ function openAddAdminModal() {
     if (nameInput) nameInput.value = '';
     if (pwInput) pwInput.value = '';
 
-    const myRank = getCurrentUserRank();
-    const options = WB_RANK_LADDER.filter(r => r < myRank);
-    newAdminSelectedRank = options[0] || 100;
+    const options = getAddableRankOptions();
+    newAdminSelectedOption = options[0] || null;
 
     const container = document.getElementById('newAdminRankOptions');
     if (container) {
-        container.innerHTML = options.map(r => `
-            <button class="new-admin-rank-opt p-2 rounded-lg border text-[11px] font-bold ${r === newAdminSelectedRank ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-white/10 bg-white/5 text-white/60'}"
-                data-rank="${r}">${(typeof WB_RANK_NAMES !== 'undefined' && WB_RANK_NAMES[r]) || r}</button>
+        container.innerHTML = options.map((opt, idx) => `
+            <button class="new-admin-rank-opt p-2 rounded-lg border-2 text-[11px] font-bold transition-colors"
+                data-idx="${idx}"
+                style="${idx === 0 ? `border-color:${opt.color};background:${opt.color}22;color:${opt.color};` : `border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:${opt.color};`}">
+                ${opt.label}
+            </button>
         `).join('');
+        container.dataset.options = JSON.stringify(options);
     }
     document.getElementById('addAdminModal')?.classList.remove('hidden');
 }
 
-function selectNewAdminRank(rank) {
-    newAdminSelectedRank = rank;
-    document.querySelectorAll('.new-admin-rank-opt').forEach(btn => {
-        const isSel = parseInt(btn.dataset.rank, 10) === rank;
-        btn.classList.toggle('border-purple-500', isSel);
-        btn.classList.toggle('bg-purple-500/20', isSel);
-        btn.classList.toggle('text-white', isSel);
-        btn.classList.toggle('border-white/10', !isSel);
-        btn.classList.toggle('bg-white/5', !isSel);
-        btn.classList.toggle('text-white/60', !isSel);
+function selectNewAdminRank(idx) {
+    const container = document.getElementById('newAdminRankOptions');
+    if (!container) return;
+    const options = JSON.parse(container.dataset.options || '[]');
+    newAdminSelectedOption = options[idx];
+    if (!newAdminSelectedOption) return;
+
+    container.querySelectorAll('.new-admin-rank-opt').forEach(btn => {
+        const isSel = parseInt(btn.dataset.idx, 10) === idx;
+        const opt = options[parseInt(btn.dataset.idx, 10)];
+        btn.style.borderColor = isSel ? opt.color : 'rgba(255,255,255,0.1)';
+        btn.style.background = isSel ? `${opt.color}22` : 'rgba(255,255,255,0.05)';
+        btn.style.color = opt.color;
     });
 }
 
@@ -202,7 +233,8 @@ async function submitAddAdmin() {
 
     if (!name || name.length < 3) { if (typeof showNotification === 'function') showNotification('يرجى إدخال اسم مستخدم صحيح (3 أحرف على الأقل)', 'leave'); return; }
     if (!pw || pw.length < 6) { if (typeof showNotification === 'function') showNotification('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'leave'); return; }
-    if (newAdminSelectedRank >= getCurrentUserRank()) { if (typeof showNotification === 'function') showNotification('⛔ لا يمكنك منح رتبة مساوية أو أعلى من رتبتك', 'leave'); return; }
+    if (!newAdminSelectedOption) { if (typeof showNotification === 'function') showNotification('يرجى اختيار الرتبة', 'leave'); return; }
+    if (newAdminSelectedOption.rank >= getCurrentUserRank()) { if (typeof showNotification === 'function') showNotification('⛔ لا يمكنك منح رتبة مساوية أو أعلى من رتبتك', 'leave'); return; }
 
     try {
         const email = `${name.toLowerCase().replace(/[^a-z0-9_]/g, '')}_${Date.now()}@widbid.com`;
@@ -217,8 +249,11 @@ async function submitAddAdmin() {
             return;
         }
 
-        if (newAdminSelectedRank > 100 && typeof wbSocket !== 'undefined' && wbSocket && wbSocket.connected) {
-            wbSocket.emit('assignRole', { room_id: wbRoomId, target: name, new_rank: newAdminSelectedRank, by: wbUsername });
+        if (typeof wbSocket !== 'undefined' && wbSocket && wbSocket.connected) {
+            wbSocket.emit('assignRole', {
+                room_id: wbRoomId, target: name, new_rank: newAdminSelectedOption.rank,
+                custom_color: newAdminSelectedOption.customColor || null, by: wbUsername
+            });
         }
 
         document.getElementById('addAdminModal')?.classList.add('hidden');
