@@ -362,7 +362,7 @@ async function initEventHandlers() {
 
                 /* [PHASE 3] إضافة حساب جديد غير مطبّقة على النظام الحقيقي —
                    الرتب تُدار فقط على أعضاء متواجدين فعلياً عبر الترقية/التخفيض. */
-                if (target.closest('#addAdminBtn')) { if (typeof openAddAdminModal === 'function') openAddAdminModal(); return; }
+                if (target.closest('#addAdminBtn')) { if (typeof openAddAdminModal === 'function') await openAddAdminModal(); return; }
                 if (target.closest('#cancelAddAdminBtn')) { document.getElementById('addAdminModal')?.classList.add('hidden'); return; }
                 if (target.closest('#submitAddAdminBtn')) { await submitAddAdmin(); return; }
                 if (target.id === 'addAdminModal') { document.getElementById('addAdminModal').classList.add('hidden'); return; }
