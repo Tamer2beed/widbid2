@@ -211,64 +211,6 @@ function finishLoginReal(username, rank, userId, token, roomId, avatar) {
     if (typeof showNotification === 'function') showNotification(`👋 أهلاً بك ${username}`, 'join');
 }
 
-function openForcedSingleChange(account, displayName) {
-    loggedInAccountId = account.id;
-    window.__pendingLoginDisplayName = displayName;
-    document.getElementById('forcedSingleChangeSubtitle').textContent = `مرحباً ${displayName} — يجب تعيين كلمة مرور جديدة قبل المتابعة`;
-    document.getElementById('forcedSingleNewPassword').value = '';
-    document.getElementById('forcedSinglePasswordChangeModal')?.classList.remove('hidden');
-}
-
-async function submitForcedSinglePasswordChange() {
-    const newPw = document.getElementById('forcedSingleNewPassword')?.value.trim();
-    if (!newPw) { if (typeof showNotification === 'function') showNotification('يرجى إدخال كلمة مرور جديدة', 'leave'); return; }
-    const account = adminAccounts.find(a => a.id === loggedInAccountId);
-    if (!account) return;
-    const hash = await hashPassword(newPw);
-    account.passwordHash = hash;
-    account.mustChangePassword = false;
-    saveAdminAccounts();
-    document.getElementById('forcedSinglePasswordChangeModal')?.classList.add('hidden');
-    const displayName = window.__pendingLoginDisplayName || account.name;
-    saveLoginCredentials(displayName, hash, null);
-    finishLogin(displayName, account.role, account.role !== 'member', account.id, true);
-    if (typeof showNotification === 'function') showNotification('✅ تم تحديث كلمة المرور بنجاح', 'join');
-}
-
-async function submitForcedPasswordChange() {
-    const newNamePw = document.getElementById('forcedNewNamePassword')?.value.trim();
-    const newRoomPw = document.getElementById('forcedNewRoomPassword')?.value.trim();
-    if (!newNamePw || !newRoomPw) { if (typeof showNotification === 'function') showNotification('يرجى تعبئة الحقلين', 'leave'); return; }
-    if (newNamePw === newRoomPw) { if (typeof showNotification === 'function') showNotification('يجب أن تختلف كلمتا المرور عن بعضهما', 'leave'); return; }
-    const account = adminAccounts.find(a => a.id === loggedInAccountId);
-    if (!account) return;
-    const nameHash = await hashPassword(newNamePw);
-    const roomHash = await hashPassword(newRoomPw);
-    account.namePasswordHash = nameHash;
-    account.roomPasswordHash = roomHash;
-    account.mustChangePassword = false;
-    saveAdminAccounts();
-    document.getElementById('forcedPasswordChangeModal')?.classList.add('hidden');
-    const displayName = window.__pendingLoginDisplayName || account.name;
-    saveLoginCredentials(displayName, roomHash, nameHash);
-    finishLogin(displayName, account.role, true, account.id, true);
-    if (typeof showNotification === 'function') showNotification('✅ تم تحديث كلمتي المرور بنجاح', 'join');
-}
-
-function finishLogin(name, role, isOwner, accountId, hasAccount, skipNotification) {
-    if (typeof ME_USER !== 'undefined') {
-        ME_USER.name = name;
-        ME_USER.avatar = selectedLoginAvatar;
-        ME_USER.role = role;
-        ME_USER.isOwner = !!isOwner;
-        ME_USER.accountId = accountId || null;
-        ME_USER.hasAccount = !!hasAccount;
-    }
-    document.getElementById('loginScreen')?.classList.add('hidden');
-    if (typeof renderOnlineUsers === 'function') renderOnlineUsers();
-    if (typeof showNotification === 'function') showNotification(skipNotification ? `👋 مرحباً بعودتك ${name}` : `👋 أهلاً بك ${name}`, 'join');
-}
-
 async function initLoginScreen() {
     try {
         selectLoginAvatar(AVATAR_OPTIONS[0]);
