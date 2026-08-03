@@ -367,7 +367,7 @@ async function initEventHandlers() {
                 if (target.closest('#submitAddAdminBtn')) { await submitAddAdmin(); return; }
                 if (target.id === 'addAdminModal') { document.getElementById('addAdminModal').classList.add('hidden'); return; }
                 const newAdminRankOpt = target.closest('.new-admin-rank-opt');
-                if (newAdminRankOpt) { selectNewAdminRank(parseInt(newAdminRankOpt.dataset.rank, 10)); return; }
+                if (newAdminRankOpt) { selectNewAdminRank(parseInt(newAdminRankOpt.dataset.idx, 10)); return; }
 
                 const adminNameToggle = target.closest('.admin-name-toggle');
                 if (adminNameToggle && adminNameToggle.dataset.id) {
