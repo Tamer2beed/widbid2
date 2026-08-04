@@ -170,6 +170,26 @@ function wbConnect(roomId, username, userId) {
     if (typeof renderRoomAdmins === 'function') renderRoomAdmins();
   });
 
+  /* [S18-16] تحديث نموذج "إدارة السبيكر" فور وصول الإعدادات الحالية
+     (سواء عند فتح البانل أو بعد أي تعديل حي من مشرف آخر بنفس الغرفة) */
+  wbSocket.on('speakerSettingsUpdated', (s) => {
+    const minsEl = document.getElementById('speakerTimeMinutes');
+    const secsEl = document.getElementById('speakerTimeSeconds');
+    if (minsEl && secsEl && typeof s.defaultTime === 'number') {
+      minsEl.value = Math.floor(s.defaultTime / 60);
+      secsEl.value = s.defaultTime % 60;
+    }
+    const map = {
+      speakerAutoRenewToggle: s.autoRenewEnabled,
+      speakerCoSpeakToggle: s.coSpeakEnabled,
+      speakerMemberMicToggle: s.memberMicEnabled,
+    };
+    Object.entries(map).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el && typeof val === 'boolean') el.dataset.active = val ? 'true' : 'false';
+    });
+  });
+
   /* دخول/خروج مستخدم — إشعار بسيط (القائمة نفسها تتحدث عبر onlineUsers) */
   wbSocket.on('userJoined', (data) => {
     if (typeof showNotification === 'function' && data.username !== username) {
