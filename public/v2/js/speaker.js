@@ -2,6 +2,7 @@ const MIC_DEFAULT_SECONDS = 60;
 
 let speakerState = { user: null, mode: null, secondsLeft: 0, timerId: null };
 let micQueue = [];
+let coSpeakersList = []; /* [S18-17] أسماء المتحدثين المشتركين الحاليين */
 
 function formatMicTime(totalSeconds) {
     const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
@@ -114,6 +115,7 @@ function wbApplySpeakerState(data) {
         speakerState.secondsLeft = 0;
     }
     micQueue = (data.queue || []).map(_wbAdaptSpeakerUser);
+    coSpeakersList = data.coSpeakers || [];
     renderSpeakerWidget();
 }
 
@@ -152,6 +154,9 @@ function giveSpeakerTo(targetUsername) {
 function getUserMicBadgeHtml(userId) {
     if (speakerState.user && speakerState.user.id === userId) {
         return '<span class="text-red-500 text-xs bg-red-50 p-1 rounded-md animate-pulse"><i class="fa-solid fa-microphone"></i></span>';
+    }
+    if (coSpeakersList.includes(userId)) {
+        return '<span class="text-purple-500 text-xs bg-purple-50 p-1 rounded-md animate-pulse"><i class="fa-solid fa-people-arrows"></i></span>';
     }
     const qIdx = micQueue.findIndex(u => u.id === userId);
     if (qIdx > -1) {
