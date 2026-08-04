@@ -229,13 +229,21 @@ async function initEventHandlers() {
                     }
                     showAdminMainPage();
                     const masterOnly = typeof canAccessMasterOnlyFeatures === 'function' && canAccessMasterOnlyFeatures();
-                    const superAdminOnly = typeof canManageAdmins === 'function' && canManageAdmins();
-                    ['goToWelcomeBtn', 'goToAppearanceBtn', 'goToBannedBtn', 'goToActivityLogBtn'].forEach(id => {
+                    const canManageAdminsPanel = typeof canManageAdmins === 'function' && canManageAdmins();
+                    const canBasicLogs = typeof canAccessBasicLogs === 'function' && canAccessBasicLogs();
+                    const canActivityLog = typeof canAccessActivityLogPanel === 'function' && canAccessActivityLogPanel();
+                    /* Master(700)+ حصراً: مظهر الغرفة، الترحيب، المحظورون */
+                    ['goToWelcomeBtn', 'goToAppearanceBtn', 'goToBannedBtn'].forEach(id => {
                         document.getElementById(id)?.classList.toggle('hidden', !masterOnly);
                     });
-                    ['goToLoginLogsBtn', 'goToLogoutLogsBtn', 'goToAdminsBtn', 'goToOnlineNowBtn'].forEach(id => {
-                        document.getElementById(id)?.classList.toggle('hidden', !superAdminOnly);
+                    /* Admin(500)+: سجل الدخول، سجل الخروج، المتواجدون الآن */
+                    ['goToLoginLogsBtn', 'goToLogoutLogsBtn', 'goToOnlineNowBtn'].forEach(id => {
+                        document.getElementById(id)?.classList.toggle('hidden', !canBasicLogs);
                     });
+                    /* Super Admin(600)+: سجل التغييرات */
+                    document.getElementById('goToActivityLogBtn')?.classList.toggle('hidden', !canActivityLog);
+                    /* Master(700)+ حصراً: إدارة المشرفين */
+                    document.getElementById('goToAdminsBtn')?.classList.toggle('hidden', !canManageAdminsPanel);
                     adminModal?.classList.remove('hidden');
                     sideMenu?.classList.remove('active');
                     return;
@@ -263,9 +271,9 @@ async function initEventHandlers() {
                 if (target.closest('#backFromAppearanceBtn')) { showAdminMainPage(); return; }
                 if (target.closest('#goToWelcomeBtn')) { if (typeof canAccessMasterOnlyFeatures === 'function' && !canAccessMasterOnlyFeatures()) { if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Master فما فوق', 'leave'); return; } showAdminSubpage('adminWelcomeSubMenu'); return; }
                 if (target.closest('#backFromWelcomeBtn')) { showAdminMainPage(); return; }
-                if (target.closest('#goToLoginLogsBtn')) { if (typeof canManageAdmins === 'function' && !canManageAdmins()) { if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Super Admin فما فوق', 'leave'); return; } resetLoginLogsFilter(); showAdminSubpage('adminLoginLogsSubMenu'); return; }
+                if (target.closest('#goToLoginLogsBtn')) { if (typeof canAccessBasicLogs === 'function' && !canAccessBasicLogs()) { if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Admin فما فوق', 'leave'); return; } resetLoginLogsFilter(); showAdminSubpage('adminLoginLogsSubMenu'); return; }
                 if (target.closest('#backFromLoginLogsBtn')) { showAdminMainPage(); return; }
-                if (target.closest('#goToLogoutLogsBtn')) { if (typeof canManageAdmins === 'function' && !canManageAdmins()) { if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Super Admin فما فوق', 'leave'); return; } showAdminSubpage('adminLogoutLogsSubMenu'); if (typeof renderLogoutLogs === 'function') renderLogoutLogs(); return; }
+                if (target.closest('#goToLogoutLogsBtn')) { if (typeof canAccessBasicLogs === 'function' && !canAccessBasicLogs()) { if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Admin فما فوق', 'leave'); return; } showAdminSubpage('adminLogoutLogsSubMenu'); if (typeof renderLogoutLogs === 'function') renderLogoutLogs(); return; }
                 if (target.closest('#backFromLogoutLogsBtn')) { showAdminMainPage(); return; }
                 if (target.closest('#goToBannedBtn')) { if (typeof canAccessMasterOnlyFeatures === 'function' && !canAccessMasterOnlyFeatures()) { if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Master فما فوق', 'leave'); return; } showAdminSubpage('adminBannedSubMenu'); if (typeof renderBannedList === 'function') renderBannedList(); return; }
                 if (target.closest('#backFromBannedBtn')) { showAdminMainPage(); return; }
@@ -280,8 +288,8 @@ async function initEventHandlers() {
                 }
                 if (target.closest('#backFromAdminsBtn')) { showAdminMainPage(); return; }
                 if (target.closest('#goToOnlineNowBtn')) {
-                    if (typeof canManageAdmins === 'function' && !canManageAdmins()) {
-                        if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Super Admin فما فوق', 'leave');
+                    if (typeof canAccessBasicLogs === 'function' && !canAccessBasicLogs()) {
+                        if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Admin فما فوق', 'leave');
                         return;
                     }
                     showAdminSubpage('adminOnlineNowSubMenu');
@@ -289,7 +297,7 @@ async function initEventHandlers() {
                     return;
                 }
                 if (target.closest('#backFromOnlineNowBtn')) { showAdminMainPage(); return; }
-                if (target.closest('#goToActivityLogBtn')) { if (typeof canAccessMasterOnlyFeatures === 'function' && !canAccessMasterOnlyFeatures()) { if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Master فما فوق', 'leave'); return; } showAdminSubpage('adminActivityLogSubMenu'); if (typeof renderActivityLog === 'function') renderActivityLog(); return; }
+                if (target.closest('#goToActivityLogBtn')) { if (typeof canAccessActivityLogPanel === 'function' && !canAccessActivityLogPanel()) { if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Super Admin فما فوق', 'leave'); return; } showAdminSubpage('adminActivityLogSubMenu'); if (typeof renderActivityLog === 'function') renderActivityLog(); return; }
                 if (target.closest('#backFromActivityLogBtn')) { showAdminMainPage(); return; }
 
                 if (target.closest('#logsOnlineCard')) { filterLoginLogsOnline(); return; }
