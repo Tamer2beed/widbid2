@@ -168,6 +168,7 @@ async function initEventHandlers() {
                 if (target.closest('#memberContextWarnBtn')) { openWarnUserModal(); return; }
                 if (target.closest('#memberContextBanIPBtn')) { adminBanIP(); return; }
                 if (target.closest('#memberContextBanDeviceBtn')) { adminBanDevice(); return; }
+                if (target.closest('#memberContextCoSpeakBtn')) { adminAddCoSpeaker(); return; }
                 if (target.closest('#cancelWarnUserBtn')) { document.getElementById('warnUserModal')?.classList.add('hidden'); return; }
                 if (target.closest('#confirmWarnUserBtn')) { confirmWarnUser(); return; }
                 if (target.id === 'warnUserModal') { document.getElementById('warnUserModal').classList.add('hidden'); return; }
@@ -232,16 +233,17 @@ async function initEventHandlers() {
                     const canManageAdminsPanel = typeof canManageAdmins === 'function' && canManageAdmins();
                     const canBasicLogs = typeof canAccessBasicLogs === 'function' && canAccessBasicLogs();
                     const canActivityLog = typeof canAccessActivityLogPanel === 'function' && canAccessActivityLogPanel();
-                    /* Master(700)+ حصراً: مظهر الغرفة، الترحيب، المحظورون، إدارة السبيكر */
-                    ['goToWelcomeBtn', 'goToAppearanceBtn', 'goToBannedBtn', 'goToSpeakerMgmtBtn'].forEach(id => {
+                    /* Master(700)+ حصراً: مظهر الغرفة، الترحيب، المحظورون */
+                    ['goToWelcomeBtn', 'goToAppearanceBtn', 'goToBannedBtn'].forEach(id => {
                         document.getElementById(id)?.classList.toggle('hidden', !masterOnly);
                     });
                     /* Admin(500)+: سجل الدخول، سجل الخروج، المتواجدون الآن */
                     ['goToLoginLogsBtn', 'goToLogoutLogsBtn', 'goToOnlineNowBtn'].forEach(id => {
                         document.getElementById(id)?.classList.toggle('hidden', !canBasicLogs);
                     });
-                    /* Super Admin(600)+: سجل التغييرات */
+                    /* Super Admin(600)+: سجل التغييرات + إدارة السبيكر */
                     document.getElementById('goToActivityLogBtn')?.classList.toggle('hidden', !canActivityLog);
+                    document.getElementById('goToSpeakerMgmtBtn')?.classList.toggle('hidden', !canActivityLog);
                     /* Master(700)+ حصراً: إدارة المشرفين */
                     document.getElementById('goToAdminsBtn')?.classList.toggle('hidden', !canManageAdminsPanel);
                     adminModal?.classList.remove('hidden');
@@ -300,8 +302,8 @@ async function initEventHandlers() {
                 if (target.closest('#goToActivityLogBtn')) { if (typeof canAccessActivityLogPanel === 'function' && !canAccessActivityLogPanel()) { if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Super Admin فما فوق', 'leave'); return; } showAdminSubpage('adminActivityLogSubMenu'); if (typeof renderActivityLog === 'function') renderActivityLog(); return; }
 
                 if (target.closest('#goToSpeakerMgmtBtn')) {
-                    if (typeof canAccessMasterOnlyFeatures === 'function' && !canAccessMasterOnlyFeatures()) {
-                        if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Master فما فوق', 'leave');
+                    if (typeof canAccessActivityLogPanel === 'function' && !canAccessActivityLogPanel()) {
+                        if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Super Admin فما فوق', 'leave');
                         return;
                     }
                     showAdminSubpage('adminSpeakerMgmtSubMenu');
@@ -331,7 +333,6 @@ async function initEventHandlers() {
                         room_id: wbRoomId,
                         defaultTime: totalSeconds,
                         autoRenewEnabled: document.getElementById('speakerAutoRenewToggle')?.dataset.active === 'true',
-                        coSpeakEnabled: document.getElementById('speakerCoSpeakToggle')?.dataset.active === 'true',
                         memberMicEnabled: document.getElementById('speakerMemberMicToggle')?.dataset.active === 'true',
                         by: wbUsername,
                     });
