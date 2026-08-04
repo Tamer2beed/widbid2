@@ -73,7 +73,7 @@ function applyChatTheme(theme) {
 const ADMIN_SUBPAGES = [
     'adminAppearanceSubMenu', 'adminWelcomeSubMenu', 'adminLoginLogsSubMenu',
     'adminLogoutLogsSubMenu', 'adminBannedSubMenu', 'adminManageAdminsSubMenu',
-    'adminOnlineNowSubMenu', 'adminActivityLogSubMenu'
+    'adminOnlineNowSubMenu', 'adminSpeakerMgmtSubMenu', 'adminActivityLogSubMenu'
 ];
 
 function showAdminSubpage(id) {
@@ -232,8 +232,8 @@ async function initEventHandlers() {
                     const canManageAdminsPanel = typeof canManageAdmins === 'function' && canManageAdmins();
                     const canBasicLogs = typeof canAccessBasicLogs === 'function' && canAccessBasicLogs();
                     const canActivityLog = typeof canAccessActivityLogPanel === 'function' && canAccessActivityLogPanel();
-                    /* Master(700)+ حصراً: مظهر الغرفة، الترحيب، المحظورون */
-                    ['goToWelcomeBtn', 'goToAppearanceBtn', 'goToBannedBtn'].forEach(id => {
+                    /* Master(700)+ حصراً: مظهر الغرفة، الترحيب، المحظورون، إدارة السبيكر */
+                    ['goToWelcomeBtn', 'goToAppearanceBtn', 'goToBannedBtn', 'goToSpeakerMgmtBtn'].forEach(id => {
                         document.getElementById(id)?.classList.toggle('hidden', !masterOnly);
                     });
                     /* Admin(500)+: سجل الدخول، سجل الخروج، المتواجدون الآن */
@@ -298,6 +298,46 @@ async function initEventHandlers() {
                 }
                 if (target.closest('#backFromOnlineNowBtn')) { showAdminMainPage(); return; }
                 if (target.closest('#goToActivityLogBtn')) { if (typeof canAccessActivityLogPanel === 'function' && !canAccessActivityLogPanel()) { if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Super Admin فما فوق', 'leave'); return; } showAdminSubpage('adminActivityLogSubMenu'); if (typeof renderActivityLog === 'function') renderActivityLog(); return; }
+
+                if (target.closest('#goToSpeakerMgmtBtn')) {
+                    if (typeof canAccessMasterOnlyFeatures === 'function' && !canAccessMasterOnlyFeatures()) {
+                        if (typeof showNotification === 'function') showNotification('🔒 متاحة فقط لـ Master فما فوق', 'leave');
+                        return;
+                    }
+                    showAdminSubpage('adminSpeakerMgmtSubMenu');
+                    if (typeof wbSocket !== 'undefined' && wbSocket && wbSocket.connected) {
+                        wbSocket.emit('getSpeakerSettings', { room_id: wbRoomId });
+                    }
+                    return;
+                }
+                if (target.closest('#backFromSpeakerMgmtBtn')) { showAdminMainPage(); return; }
+
+                const speakerToggleBtn = target.closest('.toggle-switch');
+                if (speakerToggleBtn && speakerToggleBtn.closest('#adminSpeakerMgmtSubMenu')) {
+                    const isActive = speakerToggleBtn.dataset.active === 'true';
+                    speakerToggleBtn.dataset.active = isActive ? 'false' : 'true';
+                    return;
+                }
+
+                if (target.closest('#saveSpeakerSettingsBtn')) {
+                    if (typeof wbSocket === 'undefined' || !wbSocket || !wbSocket.connected) {
+                        if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave');
+                        return;
+                    }
+                    const mins = parseInt(document.getElementById('speakerTimeMinutes')?.value, 10) || 0;
+                    const secs = parseInt(document.getElementById('speakerTimeSeconds')?.value, 10) || 0;
+                    const totalSeconds = Math.max(10, mins * 60 + secs);
+                    wbSocket.emit('setSpeakerSettings', {
+                        room_id: wbRoomId,
+                        defaultTime: totalSeconds,
+                        autoRenewEnabled: document.getElementById('speakerAutoRenewToggle')?.dataset.active === 'true',
+                        coSpeakEnabled: document.getElementById('speakerCoSpeakToggle')?.dataset.active === 'true',
+                        memberMicEnabled: document.getElementById('speakerMemberMicToggle')?.dataset.active === 'true',
+                        by: wbUsername,
+                    });
+                    if (typeof showNotification === 'function') showNotification('✅ تم حفظ إعدادات السبيكر', 'join');
+                    return;
+                }
                 if (target.closest('#backFromActivityLogBtn')) { showAdminMainPage(); return; }
 
                 if (target.closest('#logsOnlineCard')) { filterLoginLogsOnline(); return; }
