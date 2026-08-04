@@ -118,13 +118,14 @@ const rooms = {}; /* rooms[room_id] = { current, queue, defaultTime, timer, ... 
    السبيكر" الجديدة القابلة للتخصيص من لوحة التحكم (Master+ فقط):
    - defaultTime: الوقت الافتراضي بالثواني عند استلام المايك
    - autoRenewEnabled: هل يُجدَّد الوقت تلقائياً لو الطابور فاضي
-   - coSpeakEnabled: التحدث المشترك (أكثر من شخص بنفس الوقت بدون طابور)
+   - coSpeakers: التحدث المشترك — حتى 3 أشخاص إضافيين (4 بالمجموع مع
+     المتحدث الرئيسي) يُسحبون من الطابور بإجراء من Super Admin فما فوق
    - memberMicEnabled: هل يُسمح للرتب الأقل من Admin (500) بطلب المايك */
 function _ensureRoom(rid) {
   if (!rooms[rid]) {
     rooms[rid] = {
       current: null, queue: [], defaultTime: 120, timer: null, warnTimer: null,
-      autoRenewEnabled: true, coSpeakEnabled: false, memberMicEnabled: true,
+      autoRenewEnabled: true, memberMicEnabled: true,
       coSpeakers: {}, /* username → { endsAt, timer } عند تفعيل التحدث المشترك */
     };
   }
@@ -145,16 +146,13 @@ function _giveSpeaker(rid, user) {
   /* تحذير عند 5 ثوانٍ قبل الانتهاء */
   R.warnTimer = setTimeout(() => {
     if (!rooms[rid]?.current) return;
-    if (rooms[rid].queue.length === 0) {
-      if (rooms[rid].autoRenewEnabled === false) {
-        /* [S18-16] التجديد التلقائي معطّل من إعدادات إدارة السبيكر —
-           أطفئ المايك بدل التمديد */
-        _nextSpeaker(rid);
-      } else {
-        _autoRenew(rid);
-      }
+    if (rooms[rid].queue.length === 0 && rooms[rid].autoRenewEnabled !== false) {
+      /* الطابور فارغ والتجديد التلقائي مفعّل → جدّد */
+      _autoRenew(rid);
     } else {
-      /* يوجد طابور → أشعر المتحدث بأن وقته ينتهي */
+      /* يوجد طابور، أو التجديد التلقائي معطّل (بالحالتين ما نقطع
+         بدري — بس نحذّر؛ القطع الفعلي يصير بالتوقيت الصحيح تماماً
+         عبر R.timer المجدول أصلاً على كامل المدة) */
       io.to(rid).emit('speakerWarning', {
         username : rooms[rid].current.username,
         remaining: 5,
@@ -187,12 +185,8 @@ function _autoRenew(rid) {
   /* تحذير عند 5 ثوانٍ من الوقت الجديد */
   R.warnTimer = setTimeout(() => {
     if (!rooms[rid]?.current) return;
-    if (rooms[rid].queue.length === 0) {
-      if (rooms[rid].autoRenewEnabled === false) {
-        _nextSpeaker(rid);
-      } else {
-        _autoRenew(rid);   /* جدّد مرة أخرى */
-      }
+    if (rooms[rid].queue.length === 0 && rooms[rid].autoRenewEnabled !== false) {
+      _autoRenew(rid);   /* جدّد مرة أخرى */
     } else {
       io.to(rid).emit('speakerWarning', {
         username : rooms[rid].current.username,
@@ -227,6 +221,7 @@ function _broadcastState(rid) {
     current:     R.current || null,
     queue:       R.queue   || [],
     defaultTime: R.defaultTime || 120,
+    coSpeakers:  Object.keys(R.coSpeakers || {}),
     serverNow:   Date.now(),
   });
 }
@@ -238,6 +233,7 @@ function _sendStateTo(sock, rid) {
     current:     R.current || null,
     queue:       R.queue   || [],
     defaultTime: R.defaultTime || 120,
+    coSpeakers:  Object.keys(R.coSpeakers || {}),
     serverNow:   Date.now(),
   });
 }
@@ -909,25 +905,10 @@ io.on('connection', (socket) => {
 
     const R = _ensureRoom(rid);
 
-    /* [S18-16] منع الرتب الأقل من Admin (500) من طلب المايك إذا كان
-       "السماح للمستخدم العادي" معطّل من إعدادات إدارة السبيكر */
-    if (R.memberMicEnabled === false && (rank || 100) < 500) {
-      socket.emit('error', '🔇 المايك متاح حالياً للمشرفين فقط');
-      return;
-    }
-
-    /* [S18-16] وضع "التحدث المشترك" — يمنح المايك فوراً بالتوازي بدون
-       طابور ولا مايك واحد حصري */
-    if (R.coSpeakEnabled) {
-      if (R.coSpeakers[username]) return; /* عنده مايك فعلاً */
-      const duration = R.defaultTime || 120;
-      const endsAt = Date.now() + duration * 1000;
-      const timer = setTimeout(() => {
-        delete rooms[rid]?.coSpeakers[username];
-        io.to(rid).emit('micOff', { username });
-      }, duration * 1000);
-      R.coSpeakers[username] = { endsAt, timer };
-      io.to(rid).emit('micOn', { username });
+    /* [S18-16] منع الرتب الأقل من Member (200) — أي Guest فقط — من طلب
+       المايك إذا كان "مايك الأعضاء العاديين" معطّل من إعدادات إدارة السبيكر */
+    if (R.memberMicEnabled === false && (rank || 100) < 200) {
+      socket.emit('error', '🔇 المايك متاح حالياً للأعضاء المسجّلين فما فوق فقط');
       return;
     }
 
@@ -1001,11 +982,62 @@ io.on('connection', (socket) => {
     _nextSpeaker(rid);
   });
 
-  /* [S18-16] إعدادات "إدارة السبيكر" — Master (700)+ حصراً */
+  /* [S18-17] "تحدث مشترك" — Super Admin(600)+ يسحب عضو من الطابور
+     ليتكلم بالتوازي مع المتحدث الحالي (بدون انتظار دوره)، بحد أقصى
+     4 أشخاص إجمالاً (المتحدث الرئيسي + حتى 3 متحدثين مشتركين). */
+  socket.on('speakerAddCoSpeaker', (data) => {
+    if ((socket.userData?.rank || 0) < 600) {
+      socket.emit('error', '🔒 التحدث المشترك متاح فقط لـ Super Admin فما فوق');
+      return;
+    }
+    const rid = String(data.room_id);
+    const R = _ensureRoom(rid);
+    const target = data.target;
+
+    if (!R.current) { socket.emit('error', 'لا يوجد متحدث رئيسي حالياً لبدء تحدث مشترك معه'); return; }
+    if (R.coSpeakers[target]) return; /* عنده مايك مشترك فعلاً */
+
+    const totalSpeakers = 1 + Object.keys(R.coSpeakers).length;
+    if (totalSpeakers >= 4) {
+      socket.emit('error', '⛔ وصلت للحد الأقصى (4 متحدثين بالتوازي)');
+      return;
+    }
+
+    const queuedUser = R.queue.find(u => u.username === target);
+    if (!queuedUser) { socket.emit('error', 'هذا العضو مو موجود بالطابور حالياً'); return; }
+
+    R.queue = R.queue.filter(u => u.username !== target);
+
+    const duration = R.defaultTime || 120;
+    const timer = setTimeout(() => {
+      delete rooms[rid]?.coSpeakers[target];
+      io.to(rid).emit('micOff', { username: target });
+      _broadcastState(rid);
+    }, duration * 1000);
+    R.coSpeakers[target] = { timer };
+
+    io.to(rid).emit('micOn', { username: target });
+    io.to(rid).emit('coSpeakerAdded', { username: target, by: data.by });
+    _broadcastState(rid);
+  });
+
+  /* إنهاء تحدث مشترك مبكراً */
+  socket.on('speakerRemoveCoSpeaker', (data) => {
+    if ((socket.userData?.rank || 0) < 600) return;
+    const rid = String(data.room_id);
+    const R = rooms[rid];
+    if (!R || !R.coSpeakers[data.target]) return;
+    clearTimeout(R.coSpeakers[data.target].timer);
+    delete R.coSpeakers[data.target];
+    io.to(rid).emit('micOff', { username: data.target });
+    _broadcastState(rid);
+  });
+
+  /* [S18-16] إعدادات "إدارة السبيكر" — Super Admin (600)+ */
   socket.on('setSpeakerSettings', (data) => {
     const actorRank = socket.userData?.rank || 0;
-    if (actorRank < 700) {
-      socket.emit('error', '🔒 إدارة السبيكر متاحة فقط لـ Master فما فوق');
+    if (actorRank < 600) {
+      socket.emit('error', '🔒 إدارة السبيكر متاحة فقط لـ Super Admin فما فوق');
       return;
     }
     const rid = String(data.room_id);
@@ -1016,24 +1048,11 @@ io.on('connection', (socket) => {
       R.defaultTime = secs;
     }
     if (typeof data.autoRenewEnabled === 'boolean') R.autoRenewEnabled = data.autoRenewEnabled;
-    if (typeof data.coSpeakEnabled === 'boolean') {
-      R.coSpeakEnabled = data.coSpeakEnabled;
-      /* عند التبديل، نظّف الحالة القديمة لتفادي تعارض بين الوضعين */
-      if (R.coSpeakEnabled) {
-        if (R.current) { io.to(rid).emit('micOff', { username: R.current.username }); }
-        clearTimeout(R.timer); clearTimeout(R.warnTimer);
-        R.current = null; R.queue = [];
-      } else {
-        Object.entries(R.coSpeakers).forEach(([uname, s]) => { clearTimeout(s.timer); io.to(rid).emit('micOff', { username: uname }); });
-        R.coSpeakers = {};
-      }
-    }
     if (typeof data.memberMicEnabled === 'boolean') R.memberMicEnabled = data.memberMicEnabled;
 
     io.to(rid).emit('speakerSettingsUpdated', {
       defaultTime: R.defaultTime,
       autoRenewEnabled: R.autoRenewEnabled,
-      coSpeakEnabled: R.coSpeakEnabled,
       memberMicEnabled: R.memberMicEnabled,
       by: data.by,
     });
@@ -1046,7 +1065,6 @@ io.on('connection', (socket) => {
     socket.emit('speakerSettingsUpdated', {
       defaultTime: R.defaultTime,
       autoRenewEnabled: R.autoRenewEnabled,
-      coSpeakEnabled: R.coSpeakEnabled,
       memberMicEnabled: R.memberMicEnabled,
     });
   });
