@@ -112,7 +112,24 @@ const games = {};
 /* ════════════════════════════════════════════════
    نظام الغرف في الذاكرة (طابور السبيكر)
 ════════════════════════════════════════════════ */
-const rooms = {}; /* rooms[room_id] = { current, queue, defaultTime, timer } */
+const rooms = {}; /* rooms[room_id] = { current, queue, defaultTime, timer, ... } */
+
+/* [S18-16] تهيئة موحّدة لكائن الغرفة بالذاكرة — تضيف إعدادات "إدارة
+   السبيكر" الجديدة القابلة للتخصيص من لوحة التحكم (Master+ فقط):
+   - defaultTime: الوقت الافتراضي بالثواني عند استلام المايك
+   - autoRenewEnabled: هل يُجدَّد الوقت تلقائياً لو الطابور فاضي
+   - coSpeakEnabled: التحدث المشترك (أكثر من شخص بنفس الوقت بدون طابور)
+   - memberMicEnabled: هل يُسمح للرتب الأقل من Admin (500) بطلب المايك */
+function _ensureRoom(rid) {
+  if (!rooms[rid]) {
+    rooms[rid] = {
+      current: null, queue: [], defaultTime: 120, timer: null, warnTimer: null,
+      autoRenewEnabled: true, coSpeakEnabled: false, memberMicEnabled: true,
+      coSpeakers: {}, /* username → { endsAt, timer } عند تفعيل التحدث المشترك */
+    };
+  }
+  return rooms[rid];
+}
 
 function _giveSpeaker(rid, user) {
   const R = rooms[rid];
@@ -129,8 +146,13 @@ function _giveSpeaker(rid, user) {
   R.warnTimer = setTimeout(() => {
     if (!rooms[rid]?.current) return;
     if (rooms[rid].queue.length === 0) {
-      /* الطابور فارغ → جدّد تلقائياً 60 ثانية */
-      _autoRenew(rid);
+      if (rooms[rid].autoRenewEnabled === false) {
+        /* [S18-16] التجديد التلقائي معطّل من إعدادات إدارة السبيكر —
+           أطفئ المايك بدل التمديد */
+        _nextSpeaker(rid);
+      } else {
+        _autoRenew(rid);
+      }
     } else {
       /* يوجد طابور → أشعر المتحدث بأن وقته ينتهي */
       io.to(rid).emit('speakerWarning', {
@@ -166,7 +188,11 @@ function _autoRenew(rid) {
   R.warnTimer = setTimeout(() => {
     if (!rooms[rid]?.current) return;
     if (rooms[rid].queue.length === 0) {
-      _autoRenew(rid);   /* جدّد مرة أخرى */
+      if (rooms[rid].autoRenewEnabled === false) {
+        _nextSpeaker(rid);
+      } else {
+        _autoRenew(rid);   /* جدّد مرة أخرى */
+      }
     } else {
       io.to(rid).emit('speakerWarning', {
         username : rooms[rid].current.username,
@@ -299,7 +325,7 @@ io.on('connection', (socket) => {
     io.to(room_id).emit('onlineUsers', users);
 
     // تهيئة غرفة السبيكر إن لم تكن موجودة + إرسال الحالة للداخل
-    if (!rooms[room_id]) rooms[room_id] = { current: null, queue: [], defaultTime: 120, timer: null, warnTimer: null };
+    _ensureRoom(room_id);
     _sendStateTo(socket, room_id);
 
     console.log(`👤 ${username} (rank:${dbRank}) joined room ${room_id}`);
@@ -881,8 +907,30 @@ io.on('connection', (socket) => {
     const rid = String(room_id);
     console.log(`🔍 [DEBUG] speakerRequest وصل: room=${rid} user=${username} rank=${rank}`);
 
-    if (!rooms[rid]) rooms[rid] = { current: null, queue: [], defaultTime: 120, timer: null };
-    const R = rooms[rid];
+    const R = _ensureRoom(rid);
+
+    /* [S18-16] منع الرتب الأقل من Admin (500) من طلب المايك إذا كان
+       "السماح للمستخدم العادي" معطّل من إعدادات إدارة السبيكر */
+    if (R.memberMicEnabled === false && (rank || 100) < 500) {
+      socket.emit('error', '🔇 المايك متاح حالياً للمشرفين فقط');
+      return;
+    }
+
+    /* [S18-16] وضع "التحدث المشترك" — يمنح المايك فوراً بالتوازي بدون
+       طابور ولا مايك واحد حصري */
+    if (R.coSpeakEnabled) {
+      if (R.coSpeakers[username]) return; /* عنده مايك فعلاً */
+      const duration = R.defaultTime || 120;
+      const endsAt = Date.now() + duration * 1000;
+      const timer = setTimeout(() => {
+        delete rooms[rid]?.coSpeakers[username];
+        io.to(rid).emit('micOff', { username });
+      }, duration * 1000);
+      R.coSpeakers[username] = { endsAt, timer };
+      io.to(rid).emit('micOn', { username });
+      return;
+    }
+
     console.log(`🔍 [DEBUG] حالة الغرفة قبل المعالجة: current=${R.current?.username || 'فارغ'} queue=${R.queue.length}`);
 
     /* إذا السبيكر فارغ → أعطه فوراً */
@@ -951,6 +999,56 @@ io.on('connection', (socket) => {
     /* انقل المستهدف لأول الطابور */
     R.queue = [target, ...R.queue.filter(u => u.username !== data.target)];
     _nextSpeaker(rid);
+  });
+
+  /* [S18-16] إعدادات "إدارة السبيكر" — Master (700)+ حصراً */
+  socket.on('setSpeakerSettings', (data) => {
+    const actorRank = socket.userData?.rank || 0;
+    if (actorRank < 700) {
+      socket.emit('error', '🔒 إدارة السبيكر متاحة فقط لـ Master فما فوق');
+      return;
+    }
+    const rid = String(data.room_id);
+    const R = _ensureRoom(rid);
+
+    if (data.defaultTime !== undefined) {
+      const secs = Math.min(600, Math.max(10, parseInt(data.defaultTime) || 120));
+      R.defaultTime = secs;
+    }
+    if (typeof data.autoRenewEnabled === 'boolean') R.autoRenewEnabled = data.autoRenewEnabled;
+    if (typeof data.coSpeakEnabled === 'boolean') {
+      R.coSpeakEnabled = data.coSpeakEnabled;
+      /* عند التبديل، نظّف الحالة القديمة لتفادي تعارض بين الوضعين */
+      if (R.coSpeakEnabled) {
+        if (R.current) { io.to(rid).emit('micOff', { username: R.current.username }); }
+        clearTimeout(R.timer); clearTimeout(R.warnTimer);
+        R.current = null; R.queue = [];
+      } else {
+        Object.entries(R.coSpeakers).forEach(([uname, s]) => { clearTimeout(s.timer); io.to(rid).emit('micOff', { username: uname }); });
+        R.coSpeakers = {};
+      }
+    }
+    if (typeof data.memberMicEnabled === 'boolean') R.memberMicEnabled = data.memberMicEnabled;
+
+    io.to(rid).emit('speakerSettingsUpdated', {
+      defaultTime: R.defaultTime,
+      autoRenewEnabled: R.autoRenewEnabled,
+      coSpeakEnabled: R.coSpeakEnabled,
+      memberMicEnabled: R.memberMicEnabled,
+      by: data.by,
+    });
+    _broadcastState(rid);
+  });
+
+  socket.on('getSpeakerSettings', (data) => {
+    const rid = String(data.room_id);
+    const R = _ensureRoom(rid);
+    socket.emit('speakerSettingsUpdated', {
+      defaultTime: R.defaultTime,
+      autoRenewEnabled: R.autoRenewEnabled,
+      coSpeakEnabled: R.coSpeakEnabled,
+      memberMicEnabled: R.memberMicEnabled,
+    });
   });
 
   /* ══ عند دخول الغرفة — أرسل الحالة الحالية ══ */
