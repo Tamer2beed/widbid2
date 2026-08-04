@@ -485,18 +485,14 @@
 
                 <div class="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between">
                     <div class="flex-1 pl-3">
-                        <span class="text-white font-bold text-sm block">🎙️ التحدث المشترك</span>
-                        <span class="text-white/40 text-[11px] block mt-0.5">أكثر من شخص يتكلم بنفس الوقت بدون طابور</span>
-                    </div>
-                    <button id="speakerCoSpeakToggle" class="toggle-switch" data-active="false"><div class="toggle-knob"></div></button>
-                </div>
-
-                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between">
-                    <div class="flex-1 pl-3">
                         <span class="text-white font-bold text-sm block">👤 مايك الأعضاء العاديين</span>
-                        <span class="text-white/40 text-[11px] block mt-0.5">السماح لمن هم أقل من Admin بطلب المايك</span>
+                        <span class="text-white/40 text-[11px] block mt-0.5">السماح لمن هم أقل من Member بطلب المايك</span>
                     </div>
                     <button id="speakerMemberMicToggle" class="toggle-switch" data-active="true"><div class="toggle-knob"></div></button>
+                </div>
+
+                <div class="bg-white/5 border border-white/10 rounded-xl p-3">
+                    <span class="text-white/50 text-[11px] flex items-start gap-1.5"><i class="fa-solid fa-circle-info mt-0.5"></i> "التحدث المشترك" صار إجراء مباشر — اضغط على أي شخص بالطابور أثناء المكالمة وفعّله من قائمة خياراته (حتى 4 متحدثين بالتوازي)</span>
                 </div>
 
                 <button id="saveSpeakerSettingsBtn" class="w-full bg-purple-600 text-white rounded-xl p-3 text-sm font-bold">حفظ الإعدادات</button>
@@ -671,6 +667,7 @@
                 <button id="memberContextWarnBtn" class="hidden w-full flex items-center py-3 text-amber-300 text-sm"><i class="fa-solid fa-triangle-exclamation ml-2"></i> تحذير رسمي</button>
                 <button id="memberContextBanIPBtn" class="hidden w-full flex items-center py-3 text-orange-300 text-sm"><i class="fa-solid fa-ban ml-2"></i> حظر IP (24 ساعة)</button>
                 <button id="memberContextBanDeviceBtn" class="hidden w-full flex items-center py-3 text-red-400 text-sm"><i class="fa-solid fa-mobile-screen-button ml-2"></i> حظر الجهاز</button>
+                <button id="memberContextCoSpeakBtn" class="hidden w-full flex items-center py-3 text-purple-300 text-sm"><i class="fa-solid fa-people-arrows ml-2"></i> تحدث مشترك</button>
             </div>
         </div>
     </div>
