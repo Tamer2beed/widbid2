@@ -94,6 +94,12 @@ function openMemberContextMenu(userId, msgId, triggerEl) {
     document.getElementById('memberContextBanIPBtn')?.classList.toggle('hidden', !canBanIP);
     document.getElementById('memberContextBanDeviceBtn')?.classList.toggle('hidden', !canBanDevice);
 
+    /* [S18-17] "تحدث مشترك" — Super Admin(600)+، ويظهر فقط لو الهدف
+       موجود فعلياً بطابور المايك الحالي (micQueue من speaker.js) */
+    const isInMicQueue = typeof micQueue !== 'undefined' && micQueue.some(u => u.id === user.name);
+    const canCoSpeak = myRealRank >= 600 && isInMicQueue;
+    document.getElementById('memberContextCoSpeakBtn')?.classList.toggle('hidden', !canCoSpeak);
+
     positionContextPanel(triggerEl);
     showMemberContextModalAnimated();
 }
@@ -300,4 +306,16 @@ function adminBanDevice() {
         return;
     }
     wbSocket.emit('banDevice', { room_id: wbRoomId, target: user.name, by: wbUsername });
+}
+
+/* ---------- تحدث مشترك (حقيقي عبر speakerAddCoSpeaker) ---------- */
+function adminAddCoSpeaker() {
+    const user = (typeof mockUsersList !== 'undefined') ? mockUsersList.find(u => String(u.id) === String(contextMenuTargetUserId)) : null;
+    closeMemberContextMenu();
+    if (!user) return;
+    if (typeof wbSocket === 'undefined' || !wbSocket || !wbSocket.connected) {
+        if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave');
+        return;
+    }
+    wbSocket.emit('speakerAddCoSpeaker', { room_id: wbRoomId, target: user.name, by: wbUsername });
 }
