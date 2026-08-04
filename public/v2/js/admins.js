@@ -21,6 +21,12 @@ function canActOnMember(targetRank) { return canManageAdmins() && getCurrentUser
 function getCurrentUserRoleIndex() { return getCurrentUserRank(); }
 function isCurrentUserSuperMaster() { return getCurrentUserRank() >= 800; } /* SuperMaster الحقيقي */
 function canAccessMasterOnlyFeatures() { return getCurrentUserRank() >= 700; }
+/* [S18-15] مستويات وصول جديدة لأقسام لوحة التحكم — قواعد صريحة من تامر:
+   Admin(500)+  → سجل الدخول/الخروج + المتواجدون الآن فقط
+   SuperAdmin(600)+ → نفس الثلاثة + سجل التغييرات
+   Master(700)+ → كل شي (مظهر الغرفة/الترحيب/المحظورون/إدارة المشرفين تبقى Master+ حصراً) */
+function canAccessBasicLogs() { return getCurrentUserRank() >= 500; }
+function canAccessActivityLogPanel() { return getCurrentUserRank() >= 600; }
 
 function getAdminBadgeColor(admin) {
     if (admin.role === 'super_master') return SUPER_MASTER_COLOR;
@@ -36,7 +42,6 @@ function getRoleNameStyle(role) {
     if (!color) return '';
     return `color:${color};`;
 }
-function canAccessMasterOnlyFeatures() { return getCurrentUserRoleIndex() >= ADMIN_ROLE_ORDER.indexOf('master'); }
 
 const WB_RANK_LADDER = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200];
 
