@@ -252,7 +252,7 @@ function adminClearQueueExceptTarget() {
         if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave');
         return;
     }
-    wbSocket.emit('speakerClearAllExcept', { room_id: wbRoomId, target: user.name, by: wbUsername });
+    wbSocket.emit('speakerClearAllExcept', { room_id: wbRoomId, target: user.name, targetRank: user.rank, by: wbUsername });
 }
 
 /* ---------- كتم / فك كتم الكتابة (حقيقي عبر muteUser/unmuteUser) ---------- */
