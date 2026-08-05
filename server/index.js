@@ -125,7 +125,7 @@ function _ensureRoom(rid) {
   if (!rooms[rid]) {
     rooms[rid] = {
       current: null, queue: [], defaultTime: 120, timer: null, warnTimer: null,
-      autoRenewEnabled: true, memberMicEnabled: true,
+      autoRenewEnabled: true, memberMicEnabled: true, coSpeakAllowed: true,
       coSpeakers: {}, /* username → { endsAt, timer } عند تفعيل التحدث المشترك */
     };
   }
@@ -994,6 +994,10 @@ io.on('connection', (socket) => {
     const R = _ensureRoom(rid);
     const target = data.target;
 
+    if (R.coSpeakAllowed === false) {
+      socket.emit('error', '🔒 التحدث المشترك معطّل حالياً بإعدادات هذه الغرفة');
+      return;
+    }
     if (!R.current) { socket.emit('error', 'لا يوجد متحدث رئيسي حالياً لبدء تحدث مشترك معه'); return; }
     if (R.coSpeakers[target]) return; /* عنده مايك مشترك فعلاً */
 
@@ -1044,16 +1048,18 @@ io.on('connection', (socket) => {
     const R = _ensureRoom(rid);
 
     if (data.defaultTime !== undefined) {
-      const secs = Math.min(600, Math.max(10, parseInt(data.defaultTime) || 120));
+      const secs = Math.min(3600, Math.max(10, parseInt(data.defaultTime) || 120));
       R.defaultTime = secs;
     }
     if (typeof data.autoRenewEnabled === 'boolean') R.autoRenewEnabled = data.autoRenewEnabled;
     if (typeof data.memberMicEnabled === 'boolean') R.memberMicEnabled = data.memberMicEnabled;
+    if (typeof data.coSpeakAllowed === 'boolean') R.coSpeakAllowed = data.coSpeakAllowed;
 
     io.to(rid).emit('speakerSettingsUpdated', {
       defaultTime: R.defaultTime,
       autoRenewEnabled: R.autoRenewEnabled,
       memberMicEnabled: R.memberMicEnabled,
+      coSpeakAllowed: R.coSpeakAllowed,
       by: data.by,
     });
     _broadcastState(rid);
@@ -1066,6 +1072,7 @@ io.on('connection', (socket) => {
       defaultTime: R.defaultTime,
       autoRenewEnabled: R.autoRenewEnabled,
       memberMicEnabled: R.memberMicEnabled,
+      coSpeakAllowed: R.coSpeakAllowed,
     });
   });
 
@@ -1963,4 +1970,62 @@ server.listen(PORT, async () => {
 
   /* ── تشغيل الأعضاء الوهميين بعد ثانيتين من بدء الخادم ── */
   setTimeout(() => initBots(io, db, buildOnlineUsers), 2000);
+
+  /* [S18-18] محاكاة استخدام حقيقي للطابور من طرف البوتات — للاختبار.
+     البوتات ليس لها Socket.io حقيقي فما تقدر تستدعي socket.on('speakerRequest')
+     مباشرة، فهذي الدوال تلاعب حالة الغرفة (rooms[rid]) داخلياً بنفس منطق
+     المعالج الحقيقي، وتبث النتيجة لكل المتصلين بنفس الطريقة تماماً. */
+  const QUEUE_TEST_BOTS = ['Admin', 'SuperAdmin', 'Master', 'SuperMaster', 'Root'];
+  const CYCLING_BOT = 'Admin'; /* يدخل الطابور ويخرج منه كل 30 ثانية */
+
+  function _botQueueRequest(rid, username, rank) {
+    const R = _ensureRoom(rid);
+    if (!R.current) {
+      _giveSpeaker(rid, { username, rank });
+    } else if (R.current.username !== username && !R.queue.find(u => u.username === username)) {
+      R.queue.push({ username, rank });
+      _broadcastState(rid);
+    }
+  }
+  function _botQueueLeave(rid, username) {
+    const R = rooms[rid];
+    if (!R) return;
+    const before = R.queue.length;
+    R.queue = R.queue.filter(u => u.username !== username);
+    if (R.queue.length !== before) _broadcastState(rid);
+  }
+
+  /* كل 20 ثانية: فرصة 40% لكل بوت من الخمسة يحاول يدخل الطابور
+     (لو مو داخله أو متحدث حالياً) — محاكاة "محاولات متكررة للوصول للمايك" */
+  setInterval(() => {
+    Object.keys(rooms).forEach(rid => {
+      const botsHere = getBotUsers(rid);
+      if (!botsHere.length) return;
+      QUEUE_TEST_BOTS.forEach(name => {
+        const bot = botsHere.find(b => b.username === name);
+        if (!bot) return;
+        const R = rooms[rid];
+        const already = R.current?.username === name || R.queue.find(u => u.username === name);
+        if (!already && Math.random() < 0.4) _botQueueRequest(rid, name, bot.rank);
+      });
+    });
+  }, 20000);
+
+  /* كل 30 ثانية بالضبط: البوت المخصص (Admin) يدخل الطابور لو مو فيه،
+     أو يخرج منه لو داخله (بدون التأثير على كونه متحدث حالي فعلاً) */
+  setInterval(() => {
+    Object.keys(rooms).forEach(rid => {
+      const botsHere = getBotUsers(rid);
+      const bot = botsHere.find(b => b.username === CYCLING_BOT);
+      if (!bot) return;
+      const R = rooms[rid];
+      const inQueue = R.queue.find(u => u.username === CYCLING_BOT);
+      const isCurrent = R.current?.username === CYCLING_BOT;
+      if (inQueue) {
+        _botQueueLeave(rid, CYCLING_BOT);
+      } else if (!isCurrent) {
+        _botQueueRequest(rid, CYCLING_BOT, bot.rank);
+      }
+    });
+  }, 30000);
 });
