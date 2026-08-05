@@ -181,13 +181,14 @@ function wbConnect(roomId, username, userId) {
     }
     const map = {
       speakerAutoRenewToggle: s.autoRenewEnabled,
-      speakerCoSpeakToggle: s.coSpeakEnabled,
       speakerMemberMicToggle: s.memberMicEnabled,
+      speakerCoSpeakAllowedToggle: s.coSpeakAllowed,
     };
     Object.entries(map).forEach(([id, val]) => {
       const el = document.getElementById(id);
       if (el && typeof val === 'boolean') el.dataset.active = val ? 'true' : 'false';
     });
+    if (typeof s.coSpeakAllowed === 'boolean') window.wbCoSpeakAllowed = s.coSpeakAllowed;
   });
 
   /* دخول/خروج مستخدم — إشعار بسيط (القائمة نفسها تتحدث عبر onlineUsers) */
