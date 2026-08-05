@@ -97,7 +97,8 @@ function openMemberContextMenu(userId, msgId, triggerEl) {
     /* [S18-17] "تحدث مشترك" — Super Admin(600)+، ويظهر فقط لو الهدف
        موجود فعلياً بطابور المايك الحالي (micQueue من speaker.js) */
     const isInMicQueue = typeof micQueue !== 'undefined' && micQueue.some(u => u.id === user.name);
-    const canCoSpeak = myRealRank >= 600 && isInMicQueue;
+    const coSpeakAllowed = window.wbCoSpeakAllowed !== false;
+    const canCoSpeak = myRealRank >= 600 && isInMicQueue && coSpeakAllowed;
     document.getElementById('memberContextCoSpeakBtn')?.classList.toggle('hidden', !canCoSpeak);
 
     positionContextPanel(triggerEl);
