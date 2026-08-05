@@ -1031,7 +1031,9 @@ io.on('connection', (socket) => {
     io.to(rid).emit('systemMessage', `♾️ ${data.by} منح ${target} وقت تكلم مفتوح`);
   });
 
-  /* [S18-19] سحب المايك من الجميع إلا هذا — Super Admin(600)+ */
+  /* [S18-20] سحب المايك من الجميع إلا هذا — Super Admin(600)+
+     يعطي المايك للهدف المختار فقط (ويسحب المتحدثين المشتركين الآخرين)،
+     بدون أي تأثير على باقي الطابور — يبقى كما هو تماماً. */
   socket.on('speakerClearAllExcept', (data) => {
     if ((socket.userData?.rank || 0) < 600) {
       socket.emit('error', '🔒 غير مسموح لك بهذا الإجراء');
@@ -1041,7 +1043,7 @@ io.on('connection', (socket) => {
     const R = _ensureRoom(rid);
     const target = data.target;
 
-    /* اسحب من كل المتحدثين المشتركين ما عدا الهدف */
+    /* اسحب من كل المتحدثين المشتركين ما عدا الهدف (لو هو نفسه منهم) */
     Object.keys(R.coSpeakers).forEach(name => {
       if (name === target) return;
       clearTimeout(R.coSpeakers[name].timer);
@@ -1049,20 +1051,17 @@ io.on('connection', (socket) => {
       io.to(rid).emit('micOff', { username: name });
     });
 
-    const wasInQueue = R.queue.find(u => u.username === target);
-    const targetIsCurrent = R.current?.username === target;
-
-    /* فرّغ الطابور بالكامل (كلهم "غيره") */
-    R.queue = [];
-
-    if (!targetIsCurrent && wasInQueue) {
-      /* الهدف كان بالطابور → خلّيه هو المتحدث الوحيد الآن */
-      _giveSpeaker(rid, wasInQueue);
-    } else {
+    if (R.current?.username === target) {
+      /* هو المتحدث الرئيسي أصلاً — بس نظّف المشتركين، بلا أي تغيير آخر */
       _broadcastState(rid);
+    } else {
+      /* أعطه المايك مباشرة — لو كان بالطابور تُحذف نسخته منه تلقائياً
+         داخل _giveSpeaker، وباقي الطابور يبقى بدون أي تغيير */
+      const queuedUser = R.queue.find(u => u.username === target);
+      _giveSpeaker(rid, queuedUser || { username: target, rank: data.targetRank || 100 });
     }
 
-    io.to(rid).emit('systemMessage', `🧹 ${data.by} سحب المايك من الجميع إلا ${target}`);
+    io.to(rid).emit('systemMessage', `🎯 ${data.by} أعطى المايك لـ ${target} (والطابور بقي كما هو)`);
   });
 
   /* [S18-17] "تحدث مشترك" — Super Admin(600)+ يسحب عضو من الطابور
