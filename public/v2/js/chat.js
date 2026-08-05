@@ -27,9 +27,16 @@ let messageRegistry = {};
 function getUserSortPriority(userId, originalIndex) {
     try {
         if (typeof speakerState !== 'undefined' && speakerState.user && speakerState.user.id === userId) return -1;
+        /* [S18-20] المتحدثون المشتركون يبقون بأعلى القائمة مباشرة بعد
+           المتحدث الرئيسي (بترتيب إضافتهم) — كانوا يسقطون لأسفل القائمة
+           لأنهم يخرجون من micQueue بمجرد تفعيل التحدث المشترك */
+        if (typeof coSpeakersList !== 'undefined') {
+            const cIdx = coSpeakersList.indexOf(userId);
+            if (cIdx > -1) return cIdx;
+        }
         if (typeof micQueue !== 'undefined') {
             const qIdx = micQueue.findIndex(q => q.id === userId);
-            if (qIdx > -1) return qIdx;
+            if (qIdx > -1) return 100 + qIdx;
         }
     } catch (err) { console.error('خطأ في حساب ترتيب الطابور:', err); }
     return 1000 + originalIndex;
