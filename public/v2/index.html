@@ -465,7 +465,7 @@
                     <div class="flex items-center gap-3">
                         <div class="flex-1">
                             <label class="text-white/40 text-[10px] block mb-1">دقائق</label>
-                            <input id="speakerTimeMinutes" type="number" min="0" max="10" value="2" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none text-center">
+                            <input id="speakerTimeMinutes" type="number" min="0" max="60" value="2" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white text-sm outline-none text-center">
                         </div>
                         <span class="text-white/30 pt-4">:</span>
                         <div class="flex-1">
@@ -491,8 +491,16 @@
                     <button id="speakerMemberMicToggle" class="toggle-switch" data-active="true"><div class="toggle-knob"></div></button>
                 </div>
 
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between">
+                    <div class="flex-1 pl-3">
+                        <span class="text-white font-bold text-sm block">🎙️ السماح بالتحدث المشترك</span>
+                        <span class="text-white/40 text-[11px] block mt-0.5">تفعيل/تعطيل إمكانية سحب أحد من الطابور للتحدث بالتوازي</span>
+                    </div>
+                    <button id="speakerCoSpeakAllowedToggle" class="toggle-switch" data-active="true"><div class="toggle-knob"></div></button>
+                </div>
+
                 <div class="bg-white/5 border border-white/10 rounded-xl p-3">
-                    <span class="text-white/50 text-[11px] flex items-start gap-1.5"><i class="fa-solid fa-circle-info mt-0.5"></i> "التحدث المشترك" صار إجراء مباشر — اضغط على أي شخص بالطابور أثناء المكالمة وفعّله من قائمة خياراته (حتى 4 متحدثين بالتوازي)</span>
+                    <span class="text-white/50 text-[11px] flex items-start gap-1.5"><i class="fa-solid fa-circle-info mt-0.5"></i> "التحدث المشترك" إجراء مباشر — اضغط على أي شخص بالطابور أثناء المكالمة وفعّله من قائمة خياراته (حتى 4 متحدثين بالتوازي)</span>
                 </div>
 
                 <button id="saveSpeakerSettingsBtn" class="w-full bg-purple-600 text-white rounded-xl p-3 text-sm font-bold">حفظ الإعدادات</button>
