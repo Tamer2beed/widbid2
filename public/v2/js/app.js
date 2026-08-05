@@ -334,6 +334,7 @@ async function initEventHandlers() {
                         defaultTime: totalSeconds,
                         autoRenewEnabled: document.getElementById('speakerAutoRenewToggle')?.dataset.active === 'true',
                         memberMicEnabled: document.getElementById('speakerMemberMicToggle')?.dataset.active === 'true',
+                        coSpeakAllowed: document.getElementById('speakerCoSpeakAllowedToggle')?.dataset.active === 'true',
                         by: wbUsername,
                     });
                     if (typeof showNotification === 'function') showNotification('✅ تم حفظ إعدادات السبيكر', 'join');
