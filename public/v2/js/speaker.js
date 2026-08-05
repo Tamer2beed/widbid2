@@ -102,13 +102,19 @@ function wbApplySpeakerState(data) {
     clearSpeakerTimer();
     if (data.current) {
         speakerState.user = _wbAdaptSpeakerUser(data.current);
-        speakerState.mode = 'timed';
-        speakerState.secondsLeft = Math.max(0, Math.round((data.current.endsAt - Date.now()) / 1000));
-        speakerState.timerId = setInterval(() => {
-            speakerState.secondsLeft--;
-            if (speakerState.secondsLeft <= 0) { clearSpeakerTimer(); }
-            renderSpeakerWidget();
-        }, 1000);
+        if (data.current.unlimited) {
+            /* [S18-19] وقت تكلم مفتوح حقيقي — بدون عداد تنازلي إطلاقاً */
+            speakerState.mode = 'open';
+            speakerState.secondsLeft = null;
+        } else {
+            speakerState.mode = 'timed';
+            speakerState.secondsLeft = Math.max(0, Math.round((data.current.endsAt - Date.now()) / 1000));
+            speakerState.timerId = setInterval(() => {
+                speakerState.secondsLeft--;
+                if (speakerState.secondsLeft <= 0) { clearSpeakerTimer(); }
+                renderSpeakerWidget();
+            }, 1000);
+        }
     } else {
         speakerState.user = null;
         speakerState.mode = null;
@@ -140,8 +146,8 @@ function requestMic(user) {
 function releaseSpeaker() { /* إنهاء المتحدث الحالي إدارياً */
     if (typeof wbSocket !== 'undefined' && wbSocket?.connected) wbSocket.emit('speakerRevoke', { room_id: wbRoomId });
 }
-function extendMicTime(seconds) {
-    if (typeof wbSocket !== 'undefined' && wbSocket?.connected) wbSocket.emit('speakerExtend', { room_id: wbRoomId, seconds });
+function extendMicTime() {
+    if (typeof wbSocket !== 'undefined' && wbSocket?.connected) wbSocket.emit('speakerExtend', { room_id: wbRoomId, by: wbUsername });
 }
 function skipQueueFirst() {
     if (typeof wbSocket !== 'undefined' && wbSocket?.connected) wbSocket.emit('speakerSkip', { room_id: wbRoomId });
@@ -150,6 +156,14 @@ function giveSpeakerTo(targetUsername) {
     if (typeof wbSocket !== 'undefined' && wbSocket?.connected) wbSocket.emit('speakerGiveTo', { room_id: wbRoomId, target: targetUsername });
 }
 /* [ملاحظة] grantOpenMic() حُذفت — "مايك بلا وقت" غير مدعوم بالسيرفر الحقيقي. */
+
+function grantOpenMicToCurrent() {
+    if (typeof wbSocket === 'undefined' || !wbSocket?.connected || !speakerState.user) return;
+    wbSocket.emit('speakerGrantOpenMic', {
+        room_id: wbRoomId, target: speakerState.user.id,
+        targetRank: speakerState.user.rank, by: wbUsername,
+    });
+}
 
 function getUserMicBadgeHtml(userId) {
     if (speakerState.user && speakerState.user.id === userId) {
@@ -190,16 +204,14 @@ function initSpeakerFeature() {
         const grantOpenBtn = document.getElementById('speakerGrantOpenBtn');
         if (grantOpenBtn) grantOpenBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            /* [PHASE 3] "مايك بلا وقت" غير مدعوم — أعدنا توظيف الزر
-               ليكون "تخطي للمتحدث التالي بالطابور" (speakerSkip الحقيقي). */
-            if (typeof skipQueueFirst === 'function') skipQueueFirst();
+            grantOpenMicToCurrent();
             document.getElementById('speakerAdminMenu')?.classList.remove('show');
         });
 
         const extendBtn = document.getElementById('speakerExtendBtn');
         if (extendBtn) extendBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            extendMicTime(30);
+            extendMicTime();
             document.getElementById('speakerAdminMenu')?.classList.remove('show');
         });
 
