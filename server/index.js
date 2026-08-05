@@ -132,15 +132,24 @@ function _ensureRoom(rid) {
   return rooms[rid];
 }
 
-function _giveSpeaker(rid, user) {
+function _giveSpeaker(rid, user, unlimited = false) {
   const R = rooms[rid];
   if (!R) return;
   clearTimeout(R.timer);
   clearTimeout(R.warnTimer);
 
+  if (unlimited) {
+    /* [S18-19] وقت تكلم مفتوح حقيقي — بدون أي مؤقت إطلاقاً، ينتهي فقط
+       بإجراء يدوي (سحب المايك) */
+    R.current = { ...user, endsAt: null, unlimited: true };
+    R.queue   = R.queue.filter(u => u.username !== user.username);
+    _broadcastState(rid);
+    return;
+  }
+
   const duration = R.defaultTime || 120;
   const endsAt   = Date.now() + duration * 1000;
-  R.current = { ...user, endsAt };
+  R.current = { ...user, endsAt, unlimited: false };
   R.queue   = R.queue.filter(u => u.username !== user.username);
 
   /* تحذير عند 5 ثوانٍ قبل الانتهاء */
@@ -947,10 +956,26 @@ io.on('connection', (socket) => {
     const rid = String(data.room_id);
     const R   = rooms[rid];
     if (!R?.current) return;
-    const secs = Math.min(300, Math.max(10, parseInt(data.seconds) || 60));
-    R.current.endsAt += secs * 1000;
+
+    /* [S18-19] "تحديث وقت التكلم" يعيد ضبط الوقت المتبقي للمدة
+       الافتراضية الكاملة المضبوطة بإعدادات إدارة السبيكر — مو مجرد
+       إضافة 30 ثانية ثابتة زي قبل */
     clearTimeout(R.timer);
-    R.timer = setTimeout(() => _nextSpeaker(rid), R.current.endsAt - Date.now());
+    clearTimeout(R.warnTimer);
+    const duration = R.defaultTime || 120;
+    R.current.endsAt = Date.now() + duration * 1000;
+    R.current.unlimited = false;
+
+    R.warnTimer = setTimeout(() => {
+      if (!rooms[rid]?.current) return;
+      if (rooms[rid].queue.length === 0 && rooms[rid].autoRenewEnabled !== false) {
+        _autoRenew(rid);
+      } else {
+        io.to(rid).emit('speakerWarning', { username: rooms[rid].current.username, remaining: 5 });
+      }
+    }, Math.max(0, (duration - 5) * 1000));
+    R.timer = setTimeout(() => _nextSpeaker(rid), duration * 1000);
+
     io.to(rid).emit('speakerTimeUpdated', { endsAt: R.current.endsAt });
     _broadcastState(rid);
   });
@@ -980,6 +1005,64 @@ io.on('connection', (socket) => {
     /* انقل المستهدف لأول الطابور */
     R.queue = [target, ...R.queue.filter(u => u.username !== data.target)];
     _nextSpeaker(rid);
+  });
+
+  /* [S18-19] وقت تكلم مفتوح حقيقي — Admin(500)+ */
+  socket.on('speakerGrantOpenMic', (data) => {
+    if ((socket.userData?.rank || 0) < 500) {
+      socket.emit('error', '🔒 غير مسموح لك بمنح وقت تكلم مفتوح');
+      return;
+    }
+    const rid = String(data.room_id);
+    const R = _ensureRoom(rid);
+    const target = data.target;
+    const fromQueue = R.queue.find(u => u.username === target);
+    const userInfo = fromQueue || (R.current?.username === target ? R.current : null)
+      || Object.keys(R.coSpeakers).includes(target) && { username: target, rank: data.targetRank || 100 }
+      || { username: target, rank: data.targetRank || 100 };
+
+    /* لو كان متحدث مشترك، شيله من هناك أولاً */
+    if (R.coSpeakers[target]) {
+      clearTimeout(R.coSpeakers[target].timer);
+      delete R.coSpeakers[target];
+    }
+
+    _giveSpeaker(rid, { username: userInfo.username, rank: userInfo.rank }, true);
+    io.to(rid).emit('systemMessage', `♾️ ${data.by} منح ${target} وقت تكلم مفتوح`);
+  });
+
+  /* [S18-19] سحب المايك من الجميع إلا هذا — Super Admin(600)+ */
+  socket.on('speakerClearAllExcept', (data) => {
+    if ((socket.userData?.rank || 0) < 600) {
+      socket.emit('error', '🔒 غير مسموح لك بهذا الإجراء');
+      return;
+    }
+    const rid = String(data.room_id);
+    const R = _ensureRoom(rid);
+    const target = data.target;
+
+    /* اسحب من كل المتحدثين المشتركين ما عدا الهدف */
+    Object.keys(R.coSpeakers).forEach(name => {
+      if (name === target) return;
+      clearTimeout(R.coSpeakers[name].timer);
+      delete R.coSpeakers[name];
+      io.to(rid).emit('micOff', { username: name });
+    });
+
+    const wasInQueue = R.queue.find(u => u.username === target);
+    const targetIsCurrent = R.current?.username === target;
+
+    /* فرّغ الطابور بالكامل (كلهم "غيره") */
+    R.queue = [];
+
+    if (!targetIsCurrent && wasInQueue) {
+      /* الهدف كان بالطابور → خلّيه هو المتحدث الوحيد الآن */
+      _giveSpeaker(rid, wasInQueue);
+    } else {
+      _broadcastState(rid);
+    }
+
+    io.to(rid).emit('systemMessage', `🧹 ${data.by} سحب المايك من الجميع إلا ${target}`);
   });
 
   /* [S18-17] "تحدث مشترك" — Super Admin(600)+ يسحب عضو من الطابور
