@@ -101,6 +101,9 @@ function openMemberContextMenu(userId, msgId, triggerEl) {
     const canCoSpeak = myRealRank >= 600 && isInMicQueue && coSpeakAllowed;
     document.getElementById('memberContextCoSpeakBtn')?.classList.toggle('hidden', !canCoSpeak);
 
+    /* [S18-19] "سحب المايك من الجميع إلا هذا" — Super Admin(600)+ فقط */
+    document.getElementById('memberContextClearQueueBtn')?.classList.toggle('hidden', myRealRank < 600);
+
     positionContextPanel(triggerEl);
     showMemberContextModalAnimated();
 }
@@ -217,9 +220,11 @@ function adminKickFromMicTarget() {
 
 function adminExtendMicTarget() {
     const uid = contextMenuTargetUserId;
-    if (typeof speakerState !== 'undefined' && speakerState.user && String(speakerState.user.id) === String(uid) && typeof extendMicTime === 'function') {
-        extendMicTime(30);
-        if (typeof showNotification === 'function') showNotification('⏱️ تم تمديد وقت التكلم 30 ثانية', 'join');
+    if (typeof speakerState !== 'undefined' && speakerState.user && String(speakerState.user.id) === String(uid)) {
+        if (typeof wbSocket !== 'undefined' && wbSocket?.connected) {
+            wbSocket.emit('speakerExtend', { room_id: wbRoomId, by: wbUsername });
+        }
+        if (typeof showNotification === 'function') showNotification('⏱️ تم تحديث وقت التكلم للمدة الافتراضية الكاملة', 'join');
     } else if (typeof showNotification === 'function') {
         showNotification('هذا العضو ليس على السبيكر حالياً', 'leave');
     }
@@ -227,20 +232,27 @@ function adminExtendMicTarget() {
 }
 
 function adminGrantOpenMicTarget() {
-    /* [PHASE 3] "مايك بلا وقت" غير مدعوم بالسيرفر الحقيقي — أعدنا توظيف
-       هذا الزر ليعطي المايك مباشرة للعضو المستهدف عبر speakerGiveTo
-       الحقيقي (يتخطى الطابور، بنفس مدة المتحدث الافتراضية). */
+    /* [S18-19] وقت تكلم مفتوح حقيقي الآن — بدون أي مؤقت إطلاقاً */
     const user = (typeof mockUsersList !== 'undefined') ? mockUsersList.find(u => String(u.id) === String(contextMenuTargetUserId)) : null;
-    if (user && typeof giveSpeakerTo === 'function') giveSpeakerTo(user.id);
     closeMemberContextMenu();
+    if (!user) return;
+    if (typeof wbSocket === 'undefined' || !wbSocket || !wbSocket.connected) {
+        if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave');
+        return;
+    }
+    wbSocket.emit('speakerGrantOpenMic', { room_id: wbRoomId, target: user.name, targetRank: user.rank, by: wbUsername });
 }
 
 function adminClearQueueExceptTarget() {
-    /* [PHASE 3] لا يوجد بالسيرفر الحقيقي حدث "امسح الطابور إلا شخص واحد"
-       — أقرب إجراء حقيقي متاح هو speakerSkip (تخطي أول واحد بالطابور)
-       بشكل متكرر يدوياً، أو تركه معطّلاً لحد ما نضيف الحدث بالسيرفر. */
-    if (typeof showNotification === 'function') showNotification('ℹ️ هذا الإجراء غير مدعوم بالسيرفر الحقيقي حالياً', 'leave');
+    /* [S18-19] أصبح مدعوم فعلياً عبر speakerClearAllExcept — Super Admin(600)+ */
+    const user = (typeof mockUsersList !== 'undefined') ? mockUsersList.find(u => String(u.id) === String(contextMenuTargetUserId)) : null;
     closeMemberContextMenu();
+    if (!user) return;
+    if (typeof wbSocket === 'undefined' || !wbSocket || !wbSocket.connected) {
+        if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave');
+        return;
+    }
+    wbSocket.emit('speakerClearAllExcept', { room_id: wbRoomId, target: user.name, by: wbUsername });
 }
 
 /* ---------- كتم / فك كتم الكتابة (حقيقي عبر muteUser/unmuteUser) ---------- */
