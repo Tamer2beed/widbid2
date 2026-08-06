@@ -1,8 +1,8 @@
 function sanitizeText(str) { return String(str).replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-function showNotification(msg, type='join') {
+function showNotification(msg, type='join', force=false) {
     const loginScreenEl = document.getElementById('loginScreen');
-    if (loginScreenEl && !loginScreenEl.classList.contains('hidden')) return;
+    if (loginScreenEl && !loginScreenEl.classList.contains('hidden') && !force) return;
     const area = document.getElementById('notification-area');
     if (!area) return;
     const el = document.createElement('div');
