@@ -94,6 +94,22 @@ function openMemberContextMenu(userId, msgId, triggerEl) {
     document.getElementById('memberContextBanIPBtn')?.classList.toggle('hidden', !canBanIP);
     document.getElementById('memberContextBanDeviceBtn')?.classList.toggle('hidden', !canBanDevice);
 
+    /* [S18-21] تنظيم أزرار المايك — كانت تظهر دايماً بلا أي شرط، حتى
+       لعضو ما له أي علاقة بالمايك حالياً. الآن كل زر يظهر فقط لما
+       يكون فعلاً مناسب لحالة الهدف الحقيقية (متحدث رئيسي/مشترك/لا شيء). */
+    const isCurrentSpeaker = typeof speakerState !== 'undefined' && speakerState.user && speakerState.user.id === user.name;
+    const isCoSpeakerNow = typeof coSpeakersList !== 'undefined' && coSpeakersList.includes(user.name);
+    const hasMicNow = isCurrentSpeaker || isCoSpeakerNow;
+    const isUnlimitedNow = isCurrentSpeaker && typeof speakerState !== 'undefined' && speakerState.mode === 'open';
+
+    const canKickMic = myRealRank >= 500 && hasMicNow;
+    const canExtendMic = myRealRank >= 500 && isCurrentSpeaker && !isUnlimitedNow;
+    const canOpenMic = myRealRank >= 500 && !isUnlimitedNow;
+
+    document.getElementById('memberContextKickMicBtn')?.classList.toggle('hidden', !canKickMic);
+    document.getElementById('memberContextExtendMicBtn')?.classList.toggle('hidden', !canExtendMic);
+    document.getElementById('memberContextOpenMicBtn')?.classList.toggle('hidden', !canOpenMic);
+
     /* [S18-17] "تحدث مشترك" — Super Admin(600)+، ويظهر فقط لو الهدف
        موجود فعلياً بطابور المايك الحالي (micQueue من speaker.js) */
     const isInMicQueue = typeof micQueue !== 'undefined' && micQueue.some(u => u.id === user.name);
