@@ -120,9 +120,11 @@ function openMemberContextMenu(userId, msgId, triggerEl) {
     const canCoSpeak = myRealRank >= 600 && isInMicQueue && coSpeakAllowed;
     document.getElementById('memberContextCoSpeakBtn')?.classList.toggle('hidden', !canCoSpeak);
 
-    /* [S18-22] "سحب المايك من الجميع إلا هذا" — Super Admin(600)+، ولا
-       داعي له لو الهدف هو المتحدث الرئيسي أصلاً (هو أصلاً الوحيد المتكلم) */
-    document.getElementById('memberContextClearQueueBtn')?.classList.toggle('hidden', myRealRank < 600 || isCurrentSpeaker);
+    /* [S18-23] "سحب المايك من الجميع إلا هذا" — Super Admin(600)+، ولا
+       داعي له لو الهدف هو المتحدث الرئيسي أصلاً، ولا يظهر إطلاقاً لمن
+       هو خارج الطابور تماماً (مو متحدث مشترك ولا بالطابور) */
+    const canClearQueue = myRealRank >= 600 && !isCurrentSpeaker && (isInMicQueue || isCoSpeakerNow);
+    document.getElementById('memberContextClearQueueBtn')?.classList.toggle('hidden', !canClearQueue);
 
     positionContextPanel(triggerEl);
     showMemberContextModalAnimated();
