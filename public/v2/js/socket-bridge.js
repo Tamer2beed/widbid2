@@ -97,7 +97,7 @@ function wbInjectRealMessageOnce(user, text, isoTime) {
 }
 
 /* ── الاتصال الفعلي ── */
-function wbConnect(roomId, username, userId) {
+function wbConnect(roomId, username, userId, onJoinResult) {
   if (typeof io === 'undefined') {
     console.error('[socket-bridge] مكتبة socket.io-client غير محمّلة — أضف <script src="/socket.io/socket.io.js"> قبل هذا الملف');
     return;
@@ -118,9 +118,26 @@ function wbConnect(roomId, username, userId) {
     wbSocket.emit('joinRoom', { room_id: roomId, username, user_id: userId || null });
   });
 
+  /* [S18-24] ننتظر تأكيد صريح من السيرفر قبل ما نعتبر الدخول ناجح —
+     (كان الافتراض القديم دايماً "نجح" حتى لو رفض السيرفر الانضمام
+     فعلياً، مثلاً بسبب تكرار الاسم، فتدخل الواجهة لغرفة فارغة وهمياً). */
+  const _joinSuccessHandler = () => {
+    wbSocket.off('joinRoomSuccess', _joinSuccessHandler);
+    wbSocket.off('error', _joinErrorHandler);
+    if (typeof onJoinResult === 'function') onJoinResult(true);
+  };
+  const _joinErrorHandler = (msg) => {
+    wbSocket.off('joinRoomSuccess', _joinSuccessHandler);
+    wbSocket.off('error', _joinErrorHandler);
+    if (typeof onJoinResult === 'function') onJoinResult(false, msg);
+  };
+  wbSocket.on('joinRoomSuccess', _joinSuccessHandler);
+  wbSocket.on('error', _joinErrorHandler);
+
   wbSocket.on('connect_error', (err) => {
     console.error('[socket-bridge] ❌ فشل الاتصال:', err.message);
     if (typeof showNotification === 'function') showNotification('⚠️ تعذّر الاتصال بالسيرفر', 'leave');
+    if (typeof onJoinResult === 'function') onJoinResult(false, 'تعذّر الاتصال بالسيرفر');
   });
 
   /* سجل الرسائل السابقة عند الدخول */
