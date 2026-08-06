@@ -277,6 +277,18 @@ io.on('connection', (socket) => {
     const { room_id, username, user_id } = data;
     if (!room_id || !username) return;
 
+    /* [S18-23] منع تكرار الاسم بشكل قاطع بنفس الغرفة — لا يُسمح بدخول
+       اسم مستخدم فعلياً من إنسان حقيقي متصل بالفعل، ولا اسم بوت موجود
+       (كان فيه تعارض خطير سابقاً بين بوت "Master" وحساب حقيقي محجوز
+       بنفس الاسم أدى لتعارض بالحالة). */
+    const existingSockets = await io.in(room_id).fetchSockets();
+    const nameTakenByHuman = existingSockets.some(s => s.userData?.username === username && s.id !== socket.id);
+    const nameTakenByBot = getBotInRoom(room_id, username);
+    if (nameTakenByHuman || nameTakenByBot) {
+      socket.emit('error', `⛔ الاسم "${username}" مستخدم حالياً بهذه الغرفة — لا يمكن الدخول بنفس الاسم مرتين`);
+      return;
+    }
+
     socket.join(room_id);
 
     /* [SECURITY FIX — S15] رتبة العميل (data.rank) لا تُقرأ أبداً هنا.
@@ -2057,7 +2069,7 @@ server.listen(PORT, async () => {
      البوتات ليس لها Socket.io حقيقي فما تقدر تستدعي socket.on('speakerRequest')
      مباشرة، فهذي الدوال تلاعب حالة الغرفة (rooms[rid]) داخلياً بنفس منطق
      المعالج الحقيقي، وتبث النتيجة لكل المتصلين بنفس الطريقة تماماً. */
-  const QUEUE_TEST_BOTS = ['Admin', 'SuperAdmin', 'Master', 'SuperMaster', 'Root'];
+  const QUEUE_TEST_BOTS = ['Admin', 'SuperAdmin', 'Master🤖', 'SuperMaster', 'Root'];
   const CYCLING_BOT = 'Admin'; /* يدخل الطابور ويخرج منه كل 30 ثانية */
 
   function _botQueueRequest(rid, username, rank) {
