@@ -312,6 +312,11 @@ io.on('connection', (socket) => {
     socket.username = username;
     socket.room_id  = room_id;
 
+    /* [S18-24] تأكيد صريح بنجاح الانضمام — الواجهة تنتظر هذا الحدث (أو
+       'error') قبل ما تخفي شاشة الدخول، بدل ما تفترض النجاح دايماً
+       وتدخل لغرفة فارغة وهمياً لو انرفض الدخول (تكرار اسم مثلاً). */
+    socket.emit('joinRoomSuccess', { room_id, username });
+
     // إرسال إعدادات الغرفة (بانر + ثيم)
     const roomInfo = await getRoomInfo(room_id);
     socket.emit('roomInfo', roomInfo);
