@@ -104,7 +104,10 @@ function openMemberContextMenu(userId, msgId, triggerEl) {
 
     const canKickMic = myRealRank >= 500 && hasMicNow;
     const canExtendMic = myRealRank >= 500 && isCurrentSpeaker && !isUnlimitedNow;
-    const canOpenMic = myRealRank >= 500 && !isUnlimitedNow;
+    /* [S18-22] "وقت تكلم مفتوح" يظهر فقط للمتحدث الرئيسي الحالي نفسه
+       (ترقية جلسته لوقت مفتوح) — مو منح مباشر لأي حد آخر (خارج الطابور
+       أو حتى داخله وما استلم الدور بعد)، لأن هذا تجاوز على دوره الطبيعي. */
+    const canOpenMic = myRealRank >= 500 && isCurrentSpeaker && !isUnlimitedNow;
 
     document.getElementById('memberContextKickMicBtn')?.classList.toggle('hidden', !canKickMic);
     document.getElementById('memberContextExtendMicBtn')?.classList.toggle('hidden', !canExtendMic);
@@ -117,8 +120,9 @@ function openMemberContextMenu(userId, msgId, triggerEl) {
     const canCoSpeak = myRealRank >= 600 && isInMicQueue && coSpeakAllowed;
     document.getElementById('memberContextCoSpeakBtn')?.classList.toggle('hidden', !canCoSpeak);
 
-    /* [S18-19] "سحب المايك من الجميع إلا هذا" — Super Admin(600)+ فقط */
-    document.getElementById('memberContextClearQueueBtn')?.classList.toggle('hidden', myRealRank < 600);
+    /* [S18-22] "سحب المايك من الجميع إلا هذا" — Super Admin(600)+، ولا
+       داعي له لو الهدف هو المتحدث الرئيسي أصلاً (هو أصلاً الوحيد المتكلم) */
+    document.getElementById('memberContextClearQueueBtn')?.classList.toggle('hidden', myRealRank < 600 || isCurrentSpeaker);
 
     positionContextPanel(triggerEl);
     showMemberContextModalAnimated();
