@@ -28,6 +28,11 @@ const server = http.createServer(app);
 const io     = socketio(server, {
   cors: { origin: '*' },
   maxHttpBufferSize: 5 * 1024 * 1024,   /* 5MB — لدعم صور البانر */
+  /* [S18-25] تقليل مهلة اكتشاف قطع الاتصال — الافتراضي (25s+20s=45s
+     أقصى تأخير) كان يخلي اسم العضو "عالق" بقائمة المتواجدين عند
+     المتصلين الآخرين مدة طويلة بعد ما يقفل هو المتصفح فعلياً. */
+  pingInterval: 5000,
+  pingTimeout: 4000,
 });
 
 app.use(cors());
