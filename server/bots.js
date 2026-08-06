@@ -36,7 +36,7 @@ const RANK_BOTS = [
   { username: 'Royal',       rank: 400,  avatar: 'av7.svg', country: 'السعودية', behavior: 'active'  },
   { username: 'Admin',       rank: 500,  avatar: 'av4.svg', country: 'العراق',   behavior: 'active'  },
   { username: 'SuperAdmin',  rank: 600,  avatar: 'av1.svg', country: 'مصر',      behavior: 'active'  },
-  { username: 'Master',      rank: 700,  avatar: 'av8.svg', country: 'لبنان',    behavior: 'speaker' },
+  { username: 'Master🤖',     rank: 700,  avatar: 'av8.svg', country: 'لبنان',    behavior: 'speaker' },
   { username: 'SuperMaster', rank: 800,  avatar: 'av2.svg', country: 'السعودية', behavior: 'speaker' },
   { username: 'Root',        rank: 900,  avatar: 'av3.svg', country: 'العراق',   behavior: 'speaker' },
   { username: 'SuperRoot',   rank: 1000, avatar: 'av5.svg', country: 'العراق',   behavior: 'vip'     },
