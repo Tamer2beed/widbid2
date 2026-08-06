@@ -215,7 +215,7 @@ function finishLoginReal(username, rank, userId, token, roomId, avatar) {
             } else {
                 if (typeof wbSocket !== 'undefined' && wbSocket) { wbSocket.disconnect(); wbSocket = null; }
                 document.getElementById('loginScreen')?.classList.remove('hidden');
-                if (typeof showNotification === 'function') showNotification(`⛔ تعذّر الدخول: ${errMsg || 'خطأ غير معروف'}`, 'leave');
+                if (typeof showNotification === 'function') showNotification(`⛔ تعذّر الدخول: ${errMsg || 'خطأ غير معروف'}`, 'leave', true);
             }
         });
     } else {
