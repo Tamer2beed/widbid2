@@ -203,13 +203,24 @@ function finishLoginReal(username, rank, userId, token, roomId, avatar) {
         if (avatar) ME_USER.avatar = avatar.startsWith('http') || avatar.startsWith('data:') ? avatar : `/avatars/${avatar}`;
     }
     try { localStorage.setItem('widbid_jwt', token); } catch (e) {}
-    document.getElementById('loginScreen')?.classList.add('hidden');
+
+    /* [S18-24] ما نخفي شاشة الدخول ولا نعتبر الدخول نجح إلا بعد تأكيد
+       صريح من السيرفر (joinRoomSuccess) — لو انرفض الانضمام (تكرار
+       اسم مثلاً)، نرجع نظهر شاشة الدخول بدل الدخول لغرفة فارغة وهمياً. */
     if (typeof wbConnect === 'function') {
-        wbConnect(roomId, username, userId || null);
+        wbConnect(roomId, username, userId || null, (success, errMsg) => {
+            if (success) {
+                document.getElementById('loginScreen')?.classList.add('hidden');
+                if (typeof showNotification === 'function') showNotification(`👋 أهلاً بك ${username}`, 'join');
+            } else {
+                if (typeof wbSocket !== 'undefined' && wbSocket) { wbSocket.disconnect(); wbSocket = null; }
+                document.getElementById('loginScreen')?.classList.remove('hidden');
+                if (typeof showNotification === 'function') showNotification(`⛔ تعذّر الدخول: ${errMsg || 'خطأ غير معروف'}`, 'leave');
+            }
+        });
     } else {
         console.error('[login] wbConnect غير معرّفة — تأكد socket-bridge.js محمّل قبل login.js');
     }
-    if (typeof showNotification === 'function') showNotification(`👋 أهلاً بك ${username}`, 'join');
 }
 
 async function initLoginScreen() {
