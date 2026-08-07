@@ -860,12 +860,21 @@ io.on('connection', (socket) => {
     const withUser = data?.withUser;
     if (!me || !withUser) return;
     try {
+      /* [S18-28] احترام علامة الحذف الفردي — الرسائل الأقدم من علامة
+         حذفي أنا فقط تُخفى عني، الطرف الآخر ما يتأثر إطلاقاً */
+      const [[mark]] = await db.query(
+        'SELECT deleted_before_id FROM pm_deleted_marks WHERE username = ? AND contact = ?',
+        [me, withUser]
+      );
+      const minId = mark?.deleted_before_id || 0;
+
       const [rows] = await db.query(
         `SELECT id, sender_name AS sender, recipient_name AS recipient, message, created_at
          FROM private_messages
-         WHERE (sender_name = ? AND recipient_name = ?) OR (sender_name = ? AND recipient_name = ?)
+         WHERE ((sender_name = ? AND recipient_name = ?) OR (sender_name = ? AND recipient_name = ?))
+           AND id > ?
          ORDER BY created_at ASC LIMIT 300`,
-        [me, withUser, withUser, me]
+        [me, withUser, withUser, me, minId]
       );
       await db.query(
         'UPDATE private_messages SET is_read = 1 WHERE sender_name = ? AND recipient_name = ? AND is_read = 0',
@@ -889,25 +898,31 @@ io.on('connection', (socket) => {
       );
       const list = [];
       for (const c of contacts) {
+        const [[mark]] = await db.query(
+          'SELECT deleted_before_id FROM pm_deleted_marks WHERE username = ? AND contact = ?',
+          [me, c.contact]
+        );
+        const minId = mark?.deleted_before_id || 0;
+
         const [[lastMsg]] = await db.query(
-          `SELECT message, sender_name, created_at FROM private_messages
-           WHERE (sender_name=? AND recipient_name=?) OR (sender_name=? AND recipient_name=?)
+          `SELECT id, message, sender_name, created_at FROM private_messages
+           WHERE ((sender_name=? AND recipient_name=?) OR (sender_name=? AND recipient_name=?)) AND id > ?
            ORDER BY created_at DESC LIMIT 1`,
-          [me, c.contact, c.contact, me]
+          [me, c.contact, c.contact, me, minId]
         );
+        if (!lastMsg) continue; /* كل الرسائل محذوفة من طرفي — تختفي من قائمتي فقط */
+
         const [[{ unread }]] = await db.query(
-          `SELECT COUNT(*) AS unread FROM private_messages WHERE sender_name=? AND recipient_name=? AND is_read=0`,
-          [c.contact, me]
+          `SELECT COUNT(*) AS unread FROM private_messages WHERE sender_name=? AND recipient_name=? AND is_read=0 AND id > ?`,
+          [c.contact, me, minId]
         );
-        if (lastMsg) {
-          list.push({
-            contact: c.contact,
-            lastMessage: lastMsg.message,
-            lastFromMe: lastMsg.sender_name === me,
-            lastAt: lastMsg.created_at,
-            unread,
-          });
-        }
+        list.push({
+          contact: c.contact,
+          lastMessage: lastMsg.message,
+          lastFromMe: lastMsg.sender_name === me,
+          lastAt: lastMsg.created_at,
+          unread,
+        });
       }
       list.sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
       socket.emit('privateConversationsListLoaded', list);
@@ -916,15 +931,22 @@ io.on('connection', (socket) => {
     }
   });
 
-  /* حذف محادثة كاملة (من طرفي — حذف حقيقي نهائي) */
+  /* حذف محادثة من طرفي أنا فقط — الطرف الآخر يحتفظ بها كاملة كأن شي ما صار */
   socket.on('deletePrivateConversation', async (data) => {
     const me = socket.userData?.username;
     const withUser = data?.withUser;
     if (!me || !withUser) return;
     try {
-      await db.query(
-        `DELETE FROM private_messages WHERE (sender_name=? AND recipient_name=?) OR (sender_name=? AND recipient_name=?)`,
+      const [[latest]] = await db.query(
+        `SELECT MAX(id) AS maxId FROM private_messages
+         WHERE (sender_name=? AND recipient_name=?) OR (sender_name=? AND recipient_name=?)`,
         [me, withUser, withUser, me]
+      );
+      const markId = latest?.maxId || 0;
+      await db.query(
+        `INSERT INTO pm_deleted_marks (username, contact, deleted_before_id) VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE deleted_before_id = GREATEST(deleted_before_id, VALUES(deleted_before_id))`,
+        [me, withUser, markId]
       );
       socket.emit('privateConversationDeleted', { withUser });
     } catch (err) {
