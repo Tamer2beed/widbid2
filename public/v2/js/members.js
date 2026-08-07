@@ -9,9 +9,10 @@ function saveIgnoredUserIds(list) { try { localStorage.setItem('ignoredUserIds',
 function isUserIgnored(userId) { return getIgnoredUserIds().map(String).includes(String(userId)); }
 
 function isCurrentUserAdminOrAbove() {
-    return typeof getCurrentUserRoleIndex === 'function' &&
-        typeof ADMIN_ROLE_ORDER !== 'undefined' &&
-        getCurrentUserRoleIndex() >= ADMIN_ROLE_ORDER.indexOf('admin');
+    /* [S18-27] كانت تقارن رتبة حقيقية (100-1200) بفهرس قديم 0-3، فترجع
+       true دايماً لأي رتبة حتى Guest — إصلاح مباشر بمقارنة رقمية حقيقية.
+       Admin(500) هو أدنى رتبة تملك أي صلاحية إدارية بالتطبيق. */
+    return typeof getCurrentUserRank === 'function' && getCurrentUserRank() >= 500;
 }
 
 function positionContextPanel(triggerEl) {
