@@ -931,6 +931,21 @@ io.on('connection', (socket) => {
     }
   });
 
+  /* [S18-29] تعليم رسائل جهة اتصال كمقروءة صراحة — تُستخدم لما تكون
+     المحادثة مفتوحة فعلاً وقت وصول رسالة حية جديدة (بدون إعادة جلب
+     كامل المحادثة من جديد) */
+  socket.on('markPmRead', async (data) => {
+    const me = socket.userData?.username;
+    const withUser = data?.withUser;
+    if (!me || !withUser) return;
+    try {
+      await db.query(
+        'UPDATE private_messages SET is_read = 1 WHERE sender_name = ? AND recipient_name = ? AND is_read = 0',
+        [withUser, me]
+      );
+    } catch (err) { console.error('❌ markPmRead:', err.message); }
+  });
+
   /* حذف محادثة من طرفي أنا فقط — الطرف الآخر يحتفظ بها كاملة كأن شي ما صار */
   socket.on('deletePrivateConversation', async (data) => {
     const me = socket.userData?.username;
