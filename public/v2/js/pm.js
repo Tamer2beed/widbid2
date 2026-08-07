@@ -1,36 +1,14 @@
-/* pm.js — نظام الرسائل الخاصة: محادثات محلية لكل عضو، مع عداد غير مقروء. */
+/* pm.js — [S18-26] نظام الرسائل الخاصة الحقيقي 100% — يستبدل النظام
+   الوهمي القديم (localStorage بالكامل، صفر اتصال حقيقي). الآن كل رسالة
+   تُخزَّن بقاعدة البيانات وتوصل فوراً عبر Socket.io الحقيقي، بما فيها
+   لحظات وصولها لمستخدم بمتصفح/جهاز مختلف تماماً. */
 
-let pmConversations = {};   // { userId: [ {from:'me'|'them', text, time} ] }
-let pmUnreadCounts = {};    // { userId: count }
-let currentPmUserId = null;
-
-let pmContactsInfo = {};
-
-function loadPmData() {
-    try { pmConversations = JSON.parse(localStorage.getItem('pmConversations') || '{}'); } catch (e) { pmConversations = {}; }
-    try { pmUnreadCounts = JSON.parse(localStorage.getItem('pmUnreadCounts') || '{}'); } catch (e) { pmUnreadCounts = {}; }
-    try { pmContactsInfo = JSON.parse(localStorage.getItem('pmContactsInfo') || '{}'); } catch (e) { pmContactsInfo = {}; }
-}
-function savePmData() {
-    try { localStorage.setItem('pmConversations', JSON.stringify(pmConversations)); } catch (e) {}
-    try { localStorage.setItem('pmUnreadCounts', JSON.stringify(pmUnreadCounts)); } catch (e) {}
-    try { localStorage.setItem('pmContactsInfo', JSON.stringify(pmContactsInfo)); } catch (e) {}
-}
-
-/* يعيد بيانات عرض جهة الاتصال (اسم/صورة) حتى لو غادر العضو الغرفة، معتمداً على آخر ما نعرفه عنه */
-function getPmContactDisplay(userId) {
-    const live = (typeof mockUsersList !== 'undefined') ? mockUsersList.find(u => String(u.id) === String(userId)) : null;
-    if (live) {
-        pmContactsInfo[userId] = { name: live.name, avatar: live.avatar };
-        savePmData();
-        return { name: live.name, avatar: live.avatar, online: true };
-    }
-    if (pmContactsInfo[userId]) return { name: pmContactsInfo[userId].name, avatar: pmContactsInfo[userId].avatar, online: false };
-    return { name: 'عضو غادر', avatar: (typeof ME_AVATAR !== 'undefined' ? ME_AVATAR : ''), online: false };
-}
+let pmConversationsList = [];  // [{contact, lastMessage, lastFromMe, lastAt, unread}]
+let pmCurrentMessages = [];    // رسائل المحادثة المفتوحة حالياً
+let currentPmUserId = null;    // اسم المستخدم (username) للمحادثة المفتوحة
 
 function getTotalUnreadPm() {
-    return Object.values(pmUnreadCounts).reduce((sum, n) => sum + (n || 0), 0);
+    return pmConversationsList.reduce((sum, c) => sum + (c.unread || 0), 0);
 }
 
 function updatePmBadge() {
@@ -43,44 +21,52 @@ function updatePmBadge() {
 
 function pmSafe(str) { return (typeof sanitize === 'function') ? sanitize(str) : String(str); }
 
-/* ---------- قائمة المحادثات ---------- */
+function pmFormatTime(iso) {
+    try { return new Date(iso).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }); }
+    catch (e) { return ''; }
+}
+
+/* يعيد بيانات عرض جهة الاتصال (اسم/صورة/لون) اعتماداً على القائمة الحية
+   الحقيقية لو متواجد الآن، وإلا صورة افتراضية عامة (ما نعرف شكله لو غادر) */
+function getPmContactDisplay(username) {
+    const live = (typeof mockUsersList !== 'undefined') ? mockUsersList.find(u => u.name === username) : null;
+    if (live) return { name: live.name, avatar: live.avatar, online: true };
+    return { name: username, avatar: '/avatars/av1.svg', online: false };
+}
+
+/* ---------- قائمة المحادثات (حقيقية من السيرفر) ---------- */
 function openPmListModal() {
     document.getElementById('sideMenu')?.classList.remove('active');
     document.getElementById('onlineUsersPanel')?.classList.remove('active');
-    renderPmList();
+    document.getElementById('pmListItems').innerHTML = '<div class="text-center text-gray-400 text-xs py-10">جاري التحميل...</div>';
     document.getElementById('pmListModal')?.classList.remove('hidden');
+    if (typeof wbSocket !== 'undefined' && wbSocket?.connected) {
+        wbSocket.emit('getPrivateConversationsList');
+    }
 }
 
 function renderPmList() {
     const listEl = document.getElementById('pmListItems');
     if (!listEl) return;
-    const userIds = Object.keys(pmConversations).filter(id => pmConversations[id] && pmConversations[id].length > 0);
-    if (userIds.length === 0) {
+    if (pmConversationsList.length === 0) {
         listEl.innerHTML = '<div class="text-center text-gray-400 text-xs py-10">لا توجد محادثات خاصة بعد<br>ابدأ محادثة من الضغط على أي عضو</div>';
         return;
     }
-    userIds.sort((a, b) => {
-        const la = pmConversations[a][pmConversations[a].length - 1];
-        const lb = pmConversations[b][pmConversations[b].length - 1];
-        return (lb.ts || 0) - (la.ts || 0);
-    });
-    listEl.innerHTML = userIds.map(uid => {
-        const info = getPmContactDisplay(uid);
-        const last = pmConversations[uid][pmConversations[uid].length - 1];
-        const unread = pmUnreadCounts[uid] || 0;
+    listEl.innerHTML = pmConversationsList.map(c => {
+        const info = getPmContactDisplay(c.contact);
         return `
         <div class="pm-swipe-wrapper relative overflow-hidden rounded-xl mb-2">
             <div class="absolute inset-0 flex items-center justify-between px-4 text-white text-xs font-bold" style="background:linear-gradient(to left, #ef4444 50%, #f59e0b 50%);">
                 <span>حذف</span><span>غير مقروءة</span>
             </div>
-            <button class="pm-open-conv-btn relative w-full flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl" data-user-id="${uid}" style="touch-action: pan-y;">
+            <button class="pm-open-conv-btn relative w-full flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl" data-user-id="${pmSafe(c.contact)}" style="touch-action: pan-y;">
                 <img src="${pmSafe(info.avatar)}" class="w-11 h-11 rounded-xl object-cover border-2 ${info.online ? 'border-purple-200' : 'border-gray-200 opacity-60'} shrink-0">
                 <div class="flex-1 text-right overflow-hidden">
                     <div class="flex items-center justify-between">
                         <span class="font-bold text-gray-800 text-sm truncate">${pmSafe(info.name)}</span>
-                        ${unread > 0 ? `<span class="bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center shrink-0">${unread > 9 ? '9+' : unread}</span>` : ''}
+                        ${c.unread > 0 ? `<span class="bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center shrink-0">${c.unread > 9 ? '9+' : c.unread}</span>` : ''}
                     </div>
-                    <span class="text-gray-400 text-[11px] truncate block">${last.from === 'me' ? 'أنت: ' : ''}${pmSafe(last.text)}</span>
+                    <span class="text-gray-400 text-[11px] truncate block">${c.lastFromMe ? 'أنت: ' : ''}${pmSafe(c.lastMessage)}</span>
                 </div>
             </button>
         </div>`;
@@ -111,9 +97,6 @@ function attachPmSwipeHandlers() {
             if (moved && diff < -70) {
                 item.style.transform = 'translateX(-100%)';
                 setTimeout(() => deletePmConversation(uid), 180);
-            } else if (moved && diff > 70) {
-                markPmConversationUnread(uid);
-                item.style.transform = 'translateX(0)';
             } else {
                 item.style.transform = 'translateX(0)';
             }
@@ -121,26 +104,20 @@ function attachPmSwipeHandlers() {
     });
 }
 
-function deletePmConversation(userId) {
-    delete pmConversations[userId];
-    delete pmUnreadCounts[userId];
-    savePmData();
+function deletePmConversation(username) {
+    if (typeof wbSocket !== 'undefined' && wbSocket?.connected) {
+        wbSocket.emit('deletePrivateConversation', { withUser: username });
+    }
+    pmConversationsList = pmConversationsList.filter(c => c.contact !== username);
     updatePmBadge();
     renderPmList();
     if (typeof showNotification === 'function') showNotification('🗑️ تم حذف المحادثة', 'leave');
 }
 
-function markPmConversationUnread(userId) {
-    pmUnreadCounts[userId] = Math.max(1, pmUnreadCounts[userId] || 0);
-    savePmData();
-    updatePmBadge();
-    renderPmList();
-}
-
-/* ---------- نافذة محادثة فردية ---------- */
-function openPmConversation(userId) {
-    const info = getPmContactDisplay(userId);
-    currentPmUserId = String(userId);
+/* ---------- نافذة محادثة فردية (حقيقية) ---------- */
+function openPmConversation(username) {
+    const info = getPmContactDisplay(username);
+    currentPmUserId = username;
     document.getElementById('pmListModal')?.classList.add('hidden');
 
     const nameEl = document.getElementById('pmConvName');
@@ -148,29 +125,32 @@ function openPmConversation(userId) {
     const avatarEl = document.getElementById('pmConvAvatar');
     if (avatarEl) avatarEl.src = info.avatar;
 
-    pmUnreadCounts[currentPmUserId] = 0;
-    savePmData();
-    updatePmBadge();
-
-    renderPmConversation();
+    document.getElementById('pmConvBody').innerHTML = '<div class="text-center text-gray-400 text-xs py-10">جاري التحميل...</div>';
     document.getElementById('pmConversationModal')?.classList.remove('hidden');
+
+    if (typeof wbSocket !== 'undefined' && wbSocket?.connected) {
+        wbSocket.emit('getPrivateConversation', { withUser: username });
+    } else if (typeof showNotification === 'function') {
+        showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave');
+    }
 }
 
 function renderPmConversation() {
     const bodyEl = document.getElementById('pmConvBody');
-    if (!bodyEl || !currentPmUserId) return;
-    const list = pmConversations[currentPmUserId] || [];
-    if (list.length === 0) {
+    if (!bodyEl) return;
+    if (pmCurrentMessages.length === 0) {
         bodyEl.innerHTML = '<div class="text-center text-gray-400 text-xs py-10">ابدأ المحادثة الآن</div>';
     } else {
-        bodyEl.innerHTML = list.map(m => `
-            <div class="flex ${m.from === 'me' ? 'justify-end' : 'justify-start'} mb-2">
-                <div class="max-w-[75%] px-3 py-2 rounded-2xl text-sm ${m.from === 'me' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-800'}">
-                    ${pmSafe(m.text)}
-                    <div class="text-[9px] mt-1 opacity-60">${pmSafe(m.time)}</div>
+        bodyEl.innerHTML = pmCurrentMessages.map(m => {
+            const mine = m.sender === wbUsername;
+            return `
+            <div class="flex ${mine ? 'justify-end' : 'justify-start'} mb-2">
+                <div class="max-w-[75%] px-3 py-2 rounded-2xl text-sm ${mine ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-800'}">
+                    ${pmSafe(m.message)}
+                    <div class="text-[9px] mt-1 opacity-60">${pmFormatTime(m.created_at)}</div>
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     }
     bodyEl.scrollTop = bodyEl.scrollHeight;
 }
@@ -180,37 +160,46 @@ function sendPmMessage() {
     if (!input || !currentPmUserId) return;
     const text = input.value.trim();
     if (!text) return;
-    const now = new Date();
-    const entry = { from: 'me', text, time: now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }), ts: Date.now() };
-    if (!pmConversations[currentPmUserId]) pmConversations[currentPmUserId] = [];
-    pmConversations[currentPmUserId].push(entry);
-    savePmData();
+    if (typeof wbSocket === 'undefined' || !wbSocket?.connected) {
+        if (typeof showNotification === 'function') showNotification('⚠️ لا يوجد اتصال حقيقي بالسيرفر', 'leave');
+        return;
+    }
+    wbSocket.emit('sendPrivateMessage', { recipient: currentPmUserId, message: text });
     input.value = '';
-    renderPmConversation();
-
-    /* محاكاة رد تلقائي بسيط بعد لحظات (للتجربة فقط) */
-    const targetId = currentPmUserId;
-    setTimeout(() => simulatePmReply(targetId), 1500 + Math.random() * 2000);
 }
 
-const pmAutoReplies = ["تمام، وصلتني رسالتك 👍", "أهلاً بيك، شن أخبارك؟", "حاضر، خلني أرد عليك بعدين", "😄", "ما فهمت قصدك بالضبط، وضّح أكثر", "أوك تمام"];
-function simulatePmReply(userId) {
-    const user = (typeof mockUsersList !== 'undefined') ? mockUsersList.find(u => String(u.id) === String(userId)) : null;
-    if (!user) return;
-    const now = new Date();
-    const reply = pmAutoReplies[Math.floor(Math.random() * pmAutoReplies.length)];
-    const entry = { from: 'them', text: reply, time: now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }), ts: Date.now() };
-    if (!pmConversations[userId]) pmConversations[userId] = [];
-    pmConversations[userId].push(entry);
+/* ---------- استقبال حقيقي حي (يُستدعى من socket-bridge.js) ---------- */
+function wbHandleIncomingPm(payload) {
+    const otherUser = payload.sender === wbUsername ? payload.recipient : payload.sender;
+    const isOpenNow = currentPmUserId === otherUser
+        && !document.getElementById('pmConversationModal')?.classList.contains('hidden');
 
-    if (currentPmUserId === String(userId) && !document.getElementById('pmConversationModal')?.classList.contains('hidden')) {
+    if (isOpenNow) {
+        pmCurrentMessages.push(payload);
         renderPmConversation();
-    } else {
-        pmUnreadCounts[userId] = (pmUnreadCounts[userId] || 0) + 1;
-        if (typeof showNotification === 'function') showNotification(`💬 رسالة جديدة من ${user.name}`, 'join');
+    } else if (payload.sender !== wbUsername) {
+        if (typeof showNotification === 'function') {
+            const info = getPmContactDisplay(payload.sender);
+            showNotification(`💬 رسالة خاصة جديدة من ${info.name}`, 'join');
+        }
     }
-    savePmData();
+    /* حدّث قائمة المحادثات بالخلفية دايماً (تظهر صحيحة لما تُفتح لاحقاً) */
+    if (typeof wbSocket !== 'undefined' && wbSocket?.connected) {
+        wbSocket.emit('getPrivateConversationsList');
+    }
+}
+
+function wbHandlePmConversationLoaded(data) {
+    if (data.withUser !== currentPmUserId) return;
+    pmCurrentMessages = data.messages || [];
+    renderPmConversation();
+}
+
+function wbHandlePmListLoaded(list) {
+    pmConversationsList = list || [];
     updatePmBadge();
+    const modalOpen = !document.getElementById('pmListModal')?.classList.contains('hidden');
+    if (modalOpen) renderPmList();
 }
 
 function backToPmList() {
@@ -225,6 +214,9 @@ function closePmConversation() {
 }
 
 function initPmSystem() {
-    loadPmData();
     updatePmBadge();
+    /* نجلب قائمة المحادثات فور توفر اتصال حقيقي (تحدّث البادج بهدوء) */
+    if (typeof wbSocket !== 'undefined' && wbSocket?.connected) {
+        wbSocket.emit('getPrivateConversationsList');
+    }
 }
