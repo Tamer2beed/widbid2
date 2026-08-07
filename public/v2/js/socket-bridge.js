@@ -187,6 +187,17 @@ function wbConnect(roomId, username, userId, onJoinResult) {
     if (typeof renderRoomAdmins === 'function') renderRoomAdmins();
   });
 
+  /* [S18-26] نظام الرسائل الخاصة الحقيقي */
+  wbSocket.on('newPrivateMessage', (payload) => {
+    if (typeof wbHandleIncomingPm === 'function') wbHandleIncomingPm(payload);
+  });
+  wbSocket.on('privateConversationLoaded', (data) => {
+    if (typeof wbHandlePmConversationLoaded === 'function') wbHandlePmConversationLoaded(data);
+  });
+  wbSocket.on('privateConversationsListLoaded', (list) => {
+    if (typeof wbHandlePmListLoaded === 'function') wbHandlePmListLoaded(list);
+  });
+
   /* [S18-16] تحديث نموذج "إدارة السبيكر" فور وصول الإعدادات الحالية
      (سواء عند فتح البانل أو بعد أي تعديل حي من مشرف آخر بنفس الغرفة) */
   wbSocket.on('speakerSettingsUpdated', (s) => {
