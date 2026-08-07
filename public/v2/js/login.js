@@ -212,6 +212,12 @@ function finishLoginReal(username, rank, userId, token, roomId, avatar) {
             if (success) {
                 document.getElementById('loginScreen')?.classList.add('hidden');
                 if (typeof showNotification === 'function') showNotification(`👋 أهلاً بك ${username}`, 'join');
+                /* [S18-29] تحديث فوري لبادج الرسائل الخاصة — كان يعتمد فقط
+                   على وصول رسالة حية جديدة بعد الدخول، فلو فيه رسائل غير
+                   مقروءة من قبل، البادج ما يظهرها إلا بالصدفة لاحقاً. */
+                if (typeof wbSocket !== 'undefined' && wbSocket?.connected) {
+                    wbSocket.emit('getPrivateConversationsList');
+                }
             } else {
                 if (typeof wbSocket !== 'undefined' && wbSocket) { wbSocket.disconnect(); wbSocket = null; }
                 document.getElementById('loginScreen')?.classList.remove('hidden');
