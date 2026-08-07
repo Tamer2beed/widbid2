@@ -177,6 +177,11 @@ function wbHandleIncomingPm(payload) {
     if (isOpenNow) {
         pmCurrentMessages.push(payload);
         renderPmConversation();
+        /* [S18-29] المحادثة مفتوحة فعلاً — علّمها مقروءة فوراً بقاعدة
+           البيانات بدل ما تبقى "غير مقروءة" وهمياً بالبادج لاحقاً */
+        if (payload.sender !== wbUsername && typeof wbSocket !== 'undefined' && wbSocket?.connected) {
+            wbSocket.emit('markPmRead', { withUser: otherUser });
+        }
     } else if (payload.sender !== wbUsername) {
         if (typeof showNotification === 'function') {
             const info = getPmContactDisplay(payload.sender);
