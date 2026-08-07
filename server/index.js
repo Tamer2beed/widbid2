@@ -815,6 +815,123 @@ io.on('connection', (socket) => {
     } catch {}
   });
 
+  /* ═══════════════════════════════════════════════
+     [S18-26] نظام الرسائل الخاصة الحقيقي — يستبدل
+     localStorage الوهمي بالكامل بواجهة v2 (pm.js)
+     ═══════════════════════════════════════════════ */
+
+  /* إرسال رسالة خاصة حقيقية */
+  socket.on('sendPrivateMessage', async (data) => {
+    const sender = socket.userData?.username;
+    const senderId = socket.userData?.user_id || null;
+    const recipient = data?.recipient;
+    const message = (data?.message || '').trim();
+
+    if (!sender || !recipient || !message) return;
+    if (recipient === sender) { socket.emit('error', 'لا يمكنك مراسلة نفسك'); return; }
+    if (message.length > 2000) { socket.emit('error', 'الرسالة طويلة جداً'); return; }
+
+    try {
+      const [result] = await db.query(
+        'INSERT INTO private_messages (sender_id, sender_name, recipient_name, message) VALUES (?,?,?,?)',
+        [senderId, sender, recipient, message]
+      );
+      const payload = {
+        id: result.insertId,
+        sender, recipient, message,
+        created_at: new Date().toISOString(),
+      };
+      /* صدى للمرسل نفسه (لتحديث واجهته فوراً بلا انتظار) */
+      socket.emit('newPrivateMessage', payload);
+      /* توصيل حقيقي فوري لأي اتصال حالي للمستلم (بأي غرفة كان) */
+      const allSockets = await io.fetchSockets();
+      allSockets
+        .filter(s => s.userData?.username === recipient)
+        .forEach(s => s.emit('newPrivateMessage', payload));
+    } catch (err) {
+      console.error('❌ sendPrivateMessage:', err.message);
+      socket.emit('error', 'فشل إرسال الرسالة الخاصة');
+    }
+  });
+
+  /* جلب محادثة كاملة مع شخص معيّن + تعليمها كمقروءة */
+  socket.on('getPrivateConversation', async (data) => {
+    const me = socket.userData?.username;
+    const withUser = data?.withUser;
+    if (!me || !withUser) return;
+    try {
+      const [rows] = await db.query(
+        `SELECT id, sender_name AS sender, recipient_name AS recipient, message, created_at
+         FROM private_messages
+         WHERE (sender_name = ? AND recipient_name = ?) OR (sender_name = ? AND recipient_name = ?)
+         ORDER BY created_at ASC LIMIT 300`,
+        [me, withUser, withUser, me]
+      );
+      await db.query(
+        'UPDATE private_messages SET is_read = 1 WHERE sender_name = ? AND recipient_name = ? AND is_read = 0',
+        [withUser, me]
+      );
+      socket.emit('privateConversationLoaded', { withUser, messages: rows });
+    } catch (err) {
+      console.error('❌ getPrivateConversation:', err.message);
+    }
+  });
+
+  /* جلب قائمة كل المحادثات (آخر رسالة + عدد غير مقروء لكل جهة اتصال) */
+  socket.on('getPrivateConversationsList', async () => {
+    const me = socket.userData?.username;
+    if (!me) return;
+    try {
+      const [contacts] = await db.query(
+        `SELECT DISTINCT CASE WHEN sender_name = ? THEN recipient_name ELSE sender_name END AS contact
+         FROM private_messages WHERE sender_name = ? OR recipient_name = ?`,
+        [me, me, me]
+      );
+      const list = [];
+      for (const c of contacts) {
+        const [[lastMsg]] = await db.query(
+          `SELECT message, sender_name, created_at FROM private_messages
+           WHERE (sender_name=? AND recipient_name=?) OR (sender_name=? AND recipient_name=?)
+           ORDER BY created_at DESC LIMIT 1`,
+          [me, c.contact, c.contact, me]
+        );
+        const [[{ unread }]] = await db.query(
+          `SELECT COUNT(*) AS unread FROM private_messages WHERE sender_name=? AND recipient_name=? AND is_read=0`,
+          [c.contact, me]
+        );
+        if (lastMsg) {
+          list.push({
+            contact: c.contact,
+            lastMessage: lastMsg.message,
+            lastFromMe: lastMsg.sender_name === me,
+            lastAt: lastMsg.created_at,
+            unread,
+          });
+        }
+      }
+      list.sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
+      socket.emit('privateConversationsListLoaded', list);
+    } catch (err) {
+      console.error('❌ getPrivateConversationsList:', err.message);
+    }
+  });
+
+  /* حذف محادثة كاملة (من طرفي — حذف حقيقي نهائي) */
+  socket.on('deletePrivateConversation', async (data) => {
+    const me = socket.userData?.username;
+    const withUser = data?.withUser;
+    if (!me || !withUser) return;
+    try {
+      await db.query(
+        `DELETE FROM private_messages WHERE (sender_name=? AND recipient_name=?) OR (sender_name=? AND recipient_name=?)`,
+        [me, withUser, withUser, me]
+      );
+      socket.emit('privateConversationDeleted', { withUser });
+    } catch (err) {
+      console.error('❌ deletePrivateConversation:', err.message);
+    }
+  });
+
   /* ─── رسالة نظام عامة ─────────────────────── */
   socket.on('systemMessage', (data) => {
     io.to(data.room_id).emit('systemMessage', data.text);
