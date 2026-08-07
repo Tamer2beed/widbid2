@@ -34,7 +34,17 @@ const DB = {
         INDEX idx_recipient_unread (recipient_name, is_read)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log('✅ جدول private_messages جاهز — نظام رسائل خاصة حقيقي 100%');
+    console.log('✅ جدول private_messages جاهز');
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS pm_deleted_marks (
+        username           VARCHAR(50) NOT NULL,
+        contact             VARCHAR(50) NOT NULL,
+        deleted_before_id   INT NOT NULL DEFAULT 0,
+        PRIMARY KEY (username, contact)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✅ جدول pm_deleted_marks جاهز — حذف محادثة صار طرف واحد بس (مو الاثنين)');
 
   } catch (err) {
     console.error('❌ خطأ:', err.message);
