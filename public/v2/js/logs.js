@@ -341,7 +341,12 @@ function openPromoteModal(logId) {
     const pwInput = document.getElementById('promotePasswordInput');
     if (pwInput) pwInput.value = '';
 
-    const myIdx = (typeof getCurrentUserRoleIndex === 'function') ? getCurrentUserRoleIndex() : 99;
+    /* [S18-30] إصلاح — getCurrentUserRoleIndex() صارت ترجع رتبة حقيقية
+       (100-1200) بدل فهرس 0-3 القديم لـ ADMIN_ROLE_ORDER، فكانت المقارنة
+       المباشرة تكسر الفلتر (كل الرتب تظهر لأي حد). نحوّل رتبتي الحقيقية
+       لمكافئها بنفس السلّم القديم قبل المقارنة. */
+    const myRealRank = typeof getCurrentUserRank === 'function' ? getCurrentUserRank() : 100;
+    const myIdx = myRealRank >= 700 ? 3 : myRealRank >= 600 ? 2 : myRealRank >= 500 ? 1 : 0;
     const isSuperM = typeof isCurrentUserSuperMaster === 'function' && isCurrentUserSuperMaster();
     let options = Object.keys(ROLE_LABELS).filter(r => r !== currentRole);
     if (!isSuperM && typeof ADMIN_ROLE_ORDER !== 'undefined') {
